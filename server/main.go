@@ -71,7 +71,11 @@ func main() {
 	common.Melody.HandleDisconnect(wsOnDisconnect)
 	go common.WSHealthCheck(common.Melody)
 
-	app.Run(config.Config.Listen)
+	err = app.Run(config.Config.Listen)
+	if err != nil {
+		golog.Error(err)
+		return
+	}
 }
 
 func wsHandshake(ctx *gin.Context) {
