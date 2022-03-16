@@ -1,0 +1,12 @@
+#root {
+    height: 100%;
+    background-image: url('static/bg.svg');
+    background-repeat: no-repeat;
+    background-position: center 110px;
+    background-color: #f0f2f5;
+    background-size: 100%;
+}
+
+.ant-table-cell {
+    border: none !important;
+}
