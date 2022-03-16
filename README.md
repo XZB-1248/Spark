@@ -1,10 +1,14 @@
 <h1 align="center">Spark</h1>
 
-**Spark** is a free, safe, open-source, web-based, cross-platform and full-featured RAT (Remote Administration Tool) that allow you control all your devices via browser anywhere.
+**Spark** is a free, safe, open-source, web-based, cross-platform and full-featured RAT (Remote Administration Tool)
+that allow you control all your devices via browser anywhere.
+
+### [English] [[中文]](./README.ZH.md)
 
 ---
 
 ## **Quick start**
+
 Only local installation are available yet.
 
 <details>
@@ -34,7 +38,7 @@ Only local installation are available yet.
 ## **Features**
 
 | Feature/OS      | Windows | Linux | MacOS |
-|-----------------| ------- | ----- | ----- |
+|-----------------| ------- |-------| ----- |
 | Process manager | ✔       | ✔     | ✔     |
 | Kill process    | ✔       | ✔     | ✔     |
 | File explorer   | ✔       | ✔     | ✔     |
@@ -45,10 +49,10 @@ Only local installation are available yet.
 | Screenshot      | ✔       | ✔     | ✔     |
 | Shutdown        | ✔       | ✔     | ❌    |
 | Reboot          | ✔       | ✔     | ❌    |
-| Hibernate       | ✔       | ---    | ❌    |
-| Sleep           | ✔       | ---    | ❌    |
-| Log off         | ✔       | ❌    | ❌    |
-| Lock screen     | ✔       | ❌    | ❌    |
+| Hibernate       | ✔       |       | ❌    |
+| Sleep           | ✔       |       | ❌    |
+| Log off         | ✔       | ❌     | ❌    |
+| Lock screen     | ✔       | ❌     | ❌    |
 
 * Blank cell means the situation is not tested yet.
 
@@ -57,9 +61,11 @@ Only local installation are available yet.
 ## **Development**
 
 ### note
+
 There are three components in this project, so you have to build them all.
 
 Go to [Quick start](#quick-start) if you don't want to make yourself boring.
+
 * Client
 * Server
 * Front-end
@@ -69,6 +75,7 @@ If you want to make client support OS except linux and windows, you should insta
 For example, to support android, you have to install [Android NDK](https://developer.android.com/ndk/downloads).
 
 ### tutorial
+
 ```bash
 # Clone this repository
 $ git clone https://github.com/XZB-1248/Spark
@@ -120,4 +127,4 @@ $ go build -ldflags "-s -w" -o Spark Spark/Server
 
 ## License
 
-[MPL-2.0 License](./LICENSE)
+[BSD-2 License](./LICENSE)
