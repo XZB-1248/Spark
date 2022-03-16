@@ -1,4 +1,5 @@
 /built
+/tools
 /.idea
 /Config.json
 node_modules/
