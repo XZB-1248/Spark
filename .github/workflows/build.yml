@@ -1,8 +1,9 @@
-name: Go
+name: Build
 
 on:
   push:
-    branches: [ master ]
+    tags-ignore:
+      - '!v*.*.*'
 
 jobs:
 
@@ -11,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [ 14.x ]
 
     steps:
     - uses: actions/checkout@v2
@@ -30,7 +31,17 @@ jobs:
       run: |
         export PATH=$PATH:~/go/bin/
         go install github.com/rakyll/statik
-
+        
+    - name: Build and embed clients
+      run: |
+        chmod +x ./build.client.sh
+        export GOMOD=`pwd`/go.mod
+        export CGO_ENABLED=0
+        go mod tidy
+        go mod download
+        ./build.client.sh
+        statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
+        
     - name: Build and embed static resources
       run: |
         cd ./web
@@ -38,61 +49,90 @@ jobs:
         npm run build-prod
         statik -m -src="./dist" -f -dest="../server/embed" -p web -ns web
         cd ..
-
-    - name: Build and embed clients
-      run: |
-        chmod +x ./build.client.sh
-        ./build.client.sh
-
+        
     - name: Build server
       run: |
         chmod +x ./build.server.sh
+        export GOMOD=`pwd`/go.mod
+        export CGO_ENABLED=0
+        go mod tidy
+        go mod download
         ./build.server.sh
 
+    - name: Install zip and tar
+      run: |
+        cd ./releases
+        sudo apt install zip tar -y
+        tar -zcvf server_linux_arm.tar.gz server_linux_arm
+        tar -zcvf server_linux_arm64.tar.gz server_linux_arm64
+        tar -zcvf server_linux_i386.tar.gz server_linux_i386
+        tar -zcvf server_linux_amd64.tar.gz server_linux_amd64
+        zip -r server_windows_arm.zip server_windows_arm.exe
+        zip -r server_windows_arm64.zip server_windows_arm64.exe
+        zip -r server_windows_i386.zip server_windows_i386.exe
+        zip -r server_windows_amd64.zip server_windows_amd64.exe
+        
     - name: Upload binary files (server_linux_arm)
       uses: actions/upload-artifact@v2
       with:
-        name: server_linux_arm
-        path: releases/server_linux_arm
+        name: server_linux_arm.tar.gz
+        path: releases/server_linux_arm.tar.gz
 
     - name: Upload binary files (server_linux_arm64)
       uses: actions/upload-artifact@v2
       with:
-        name: server_linux_arm64
-        path: releases/server_linux_arm64
+        name: server_linux_arm64.tar.gz
+        path: releases/server_linux_arm64.tar.gz
 
     - name: Upload binary files (server_linux_i386)
       uses: actions/upload-artifact@v2
       with:
-        name: server_linux_i386
-        path: releases/server_linux_i386
+        name: server_linux_i386.tar.gz
+        path: releases/server_linux_i386.tar.gz
 
     - name: Upload binary files (server_linux_amd64)
       uses: actions/upload-artifact@v2
       with:
-        name: server_linux_amd64
-        path: releases/server_linux_amd64
+        name: server_linux_amd64.tar.gz
+        path: releases/server_linux_amd64.tar.gz
 
     - name: Upload binary files (server_windows_arm)
       uses: actions/upload-artifact@v2
       with:
-        name: server_windows_arm.exe
-        path: releases/server_windows_arm.exe
+        name: server_windows_arm.zip
+        path: releases/server_windows_arm.zip
 
     - name: Upload binary files (server_windows_arm64)
       uses: actions/upload-artifact@v2
       with:
-        name: server_windows_arm64.exe
-        path: releases/server_windows_arm64.exe
+        name: server_windows_arm64.zip
+        path: releases/server_windows_arm64.zip
 
     - name: Upload binary files (server_windows_i386)
       uses: actions/upload-artifact@v2
       with:
-        name: server_windows_i386.exe
-        path: releases/server_windows_i386.exe
+        name: server_windows_i386.zip
+        path: releases/server_windows_i386.zip
 
     - name: Upload binary files (server_windows_amd64)
       uses: actions/upload-artifact@v2
       with:
-        name: server_windows_amd64.exe
-        path: releases/server_windows_amd64.exe
+        name: server_windows_amd64.zip
+        path: releases/server_windows_amd64.zip
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: |
+          releases/server_linux_arm.tar.gz
+          releases/server_linux_arm64.tar.gz
+          releases/server_linux_i386.tar.gz
+          releases/server_linux_amd64.tar.gz
+          releases/server_windows_arm.zip
+          releases/server_windows_arm64.zip
+          releases/server_windows_i386.zip
+          releases/server_windows_amd64.zip
+      env:
+        GITHUB_REPOSITORY: XZB-1248/TestPlace

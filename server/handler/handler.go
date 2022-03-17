@@ -42,11 +42,9 @@ func putScreenshot(ctx *gin.Context) {
 	}
 	if len(errMsg) > 0 {
 		common.CallEvent(modules.Packet{
-			Code: 1,
-			Msg:  fmt.Sprintf(`截图失败：%v`, errMsg),
-			Data: map[string]interface{}{
-				`callback`: trigger,
-			},
+			Code:  1,
+			Msg:   fmt.Sprintf(`截图失败：%v`, errMsg),
+			Event: trigger,
 		}, nil)
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		return
@@ -62,11 +60,9 @@ func putScreenshot(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
 		common.CallEvent(modules.Packet{
-			Code: 1,
-			Msg:  msg,
-			Data: map[string]interface{}{
-				`callback`: trigger,
-			},
+			Code:  1,
+			Msg:   msg,
+			Event: trigger,
 		}, nil)
 		return
 	}
@@ -74,8 +70,8 @@ func putScreenshot(ctx *gin.Context) {
 		Code: 0,
 		Data: map[string]interface{}{
 			`screenshot`: data,
-			`callback`:   trigger,
 		},
+		Event: trigger,
 	}, nil)
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 }
@@ -106,7 +102,7 @@ func getScreenshot(ctx *gin.Context) {
 			return
 		}
 	}
-	common.SendPackUUID(modules.Packet{Code: 0, Act: `screenshot`, Data: gin.H{`event`: trigger}}, target)
+	common.SendPackUUID(modules.Packet{Code: 0, Act: `screenshot`, Event: trigger}, target)
 	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -169,7 +165,7 @@ func callDevice(ctx *gin.Context) {
 			return
 		}
 	}
-	common.SendPackUUID(modules.Packet{Act: act, Data: gin.H{`event`: trigger}}, connUUID)
+	common.SendPackUUID(modules.Packet{Act: act, Event: trigger}, connUUID)
 	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -205,8 +201,9 @@ func WSDevice(data []byte, session *melody.Session) error {
 	}
 
 	if pack.Act == `report` {
-		// 查询设备列表中，该设备是否已经上线
-		// 如果已经上线，就找到对应的session，发送命令使其退出
+		// Check if this device has already connected.
+		// If so, then find the session and let client quit.
+		// This will keep only one connection remained per device.
 		exSession := ``
 		common.Devices.IterCb(func(uuid string, v interface{}) bool {
 			device := v.(*modules.Device)
@@ -225,12 +222,23 @@ func WSDevice(data []byte, session *melody.Session) error {
 			common.Devices.Remove(exSession)
 		}
 	}
+	common.SendPack(modules.Packet{Code: 0}, session)
 
-	common.Devices.Set(session.UUID, &pack.Device)
-	if pack.Act == `setDevice` {
-		common.SendPack(modules.Packet{Act: `heartbeat`}, session)
-	} else {
-		common.SendPack(modules.Packet{Code: 0}, session)
+	{
+		val, ok := common.Devices.Get(session.UUID)
+		if ok {
+			deviceInfo, ok := val.(*modules.Device)
+			if ok {
+				deviceInfo.CPU = pack.Device.CPU
+				deviceInfo.Mem = pack.Device.Mem
+				if pack.Device.Disk.Total > 0 {
+					deviceInfo.Disk = pack.Device.Disk
+				}
+				deviceInfo.Uptime = pack.Device.Uptime
+				return nil
+			}
+		}
+		common.Devices.Set(session.UUID, &pack.Device)
 	}
 	return nil
 }

@@ -129,9 +129,13 @@ module.exports = (env, args) => {
             hot: true,
             proxy: {
                 '/api/': {
-                    target: 'https://1248.ink/spark/',
+                    target: 'http://localhost:8000/',
                     secure: false
-                }
+                },
+                '/api/device/terminal': {
+                    target: 'ws://localhost:8000/',
+                    ws: true
+                },
             }
         }
     };

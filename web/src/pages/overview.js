@@ -1,6 +1,6 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import ProTable, {TableDropdown} from '@ant-design/pro-table';
-import {Button, Image, message, Modal} from 'antd';
+import {Button, Image, message, Modal, Progress} from 'antd';
 import {formatSize, request, tsToTime, waitTime} from "../utils/utils";
 import Terminal from "../components/terminal";
 import Processes from "../components/processes";
@@ -8,14 +8,18 @@ import Generate from "../components/generate";
 import Browser from "../components/browser";
 import {QuestionCircleOutlined} from "@ant-design/icons";
 
-import columnsState from "../config/columnsState.json";
+import defaultColumnsState from "../config/columnsState.json";
 
 function overview(props) {
-    const [screenBlob, setScreenBlob] = useState('');
-    const [terminal, setTerminal] = useState(false);
     const [procMgr, setProcMgr] = useState(false);
     const [browser, setBrowser] = useState(false);
+    const [generate, setGenerate] = useState(false);
+    const [terminal, setTerminal] = useState(false);
+    const [screenBlob, setScreenBlob] = useState('');
     const [isWindows, setIsWindows] = useState(false);
+    const [dataSource, setDataSource] = useState([]);
+    const [columnsState, setColumnsState] = useState(getInitColumnsState());
+
     const columns = [
         {
             key: 'hostname',
@@ -32,6 +36,38 @@ function overview(props) {
             width: 100
         },
         {
+            key: 'ping',
+            title: 'Ping',
+            dataIndex: 'latency',
+            ellipsis: true,
+            renderText: (v) => String(v) + 'ms',
+            width: 60
+        },
+        {
+            key: 'cpu_usage',
+            title: 'CPU Usage',
+            dataIndex: 'cpu_usage',
+            ellipsis: true,
+            render: (_, v) => <Progress percent={v.cpu_usage} showInfo={false} strokeWidth={12} />,
+            width: 100
+        },
+        {
+            key: 'mem_usage',
+            title: 'Mem Usage',
+            dataIndex: 'mem_usage',
+            ellipsis: true,
+            render: (_, v) => <Progress percent={v.mem_usage} showInfo={false} strokeWidth={12} />,
+            width: 100
+        },
+        {
+            key: 'disk_usage',
+            title: 'Disk Usage',
+            dataIndex: 'disk_usage',
+            ellipsis: true,
+            render: (_, v) => <Progress percent={v.disk_usage} showInfo={false} strokeWidth={12} />,
+            width: 100
+        },
+        {
             key: 'os',
             title: 'OS',
             dataIndex: 'os',
@@ -43,14 +79,6 @@ function overview(props) {
             title: 'Arch',
             dataIndex: 'arch',
             ellipsis: true,
-            width: 70
-        },
-        {
-            key: 'latency',
-            title: 'Latency',
-            dataIndex: 'latency',
-            ellipsis: true,
-            renderText: (v) => String(v) + 'ms',
             width: 70
         },
         {
@@ -75,9 +103,9 @@ function overview(props) {
             width: 100
         },
         {
-            key: 'mem',
+            key: 'mem_total',
             title: 'Mem',
-            dataIndex: 'mem',
+            dataIndex: 'mem_total',
             ellipsis: true,
             renderText: formatSize,
             width: 70
@@ -106,6 +134,36 @@ function overview(props) {
         setting: true,
     };
     const tableRef = useRef();
+
+    useEffect(() => {
+        // Auto update is only available when all modal are closed.
+        if (!procMgr && !browser && !generate && !terminal) {
+            let id = setInterval(getData, 3000);
+            return () => {
+                clearInterval(id);
+            };
+        }
+    }, [procMgr, browser, generate, terminal]);
+
+    function getInitColumnsState() {
+        let data = localStorage.getItem(`columnsState`);
+        if (data !== null) {
+            let stateMap = {};
+            try {
+                stateMap = JSON.parse(data);
+            } catch (e) {
+                stateMap = {};
+            }
+            return stateMap
+        } else {
+            localStorage.setItem(`columnsState`, JSON.stringify(defaultColumnsState));
+        }
+        return defaultColumnsState;
+    }
+    function saveColumnsState(stateMap) {
+        setColumnsState(stateMap);
+        localStorage.setItem(`columnsState`, JSON.stringify(stateMap));
+    }
 
     function renderOperation(device) {
         return [
@@ -186,10 +244,7 @@ function overview(props) {
 
     function toolBar() {
         return (
-            <Generate
-                title='生成客户端'
-                trigger={<Button type='primary'>生成客户端</Button>}
-            />
+            <Button type='primary' onClick={setGenerate.bind(null, true)}>生成客户端</Button>
         )
     }
 
@@ -203,6 +258,17 @@ function overview(props) {
                 let temp = data.data[uuid];
                 temp.conn = uuid;
                 result.push(temp);
+            }
+            // Iterate all object and expand them.
+            for (let i = 0; i < result.length; i++) {
+                for (const k in result[i]) {
+                    if (typeof result[i][k] === 'object') {
+                        for (const key in result[i][k]) {
+                            result[i][k + '_' + key] = result[i][k][key];
+                        }
+                        delete result[i][k];
+                    }
+                }
             }
             result = result.sort((first, second) => {
                 let firstEl = first.hostname.toUpperCase();
@@ -218,6 +284,7 @@ function overview(props) {
                 if (firstEl > secondEl) return 1;
                 return 0;
             });
+            setDataSource(result);
             return ({
                 data: result,
                 success: true,
@@ -238,6 +305,10 @@ function overview(props) {
                         setScreenBlob('');
                     }
                 }}
+            />
+            <Generate
+                visible={generate}
+                onVisibleChange={setGenerate}
             />
             <Browser
                 isWindows={isWindows}
@@ -260,11 +331,16 @@ function overview(props) {
                 search={false}
                 options={options}
                 columns={columns}
-                columnsStateMap={columnsState}
+                columnsState={{
+                    value: columnsState,
+                    onChange: saveColumnsState
+                }}
                 request={getData}
                 pagination={false}
                 actionRef={tableRef}
                 toolBarRender={toolBar}
+                dataSource={dataSource}
+                onDataSourceChange={setDataSource}
             />
         </>
     );

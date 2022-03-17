@@ -44,7 +44,7 @@ func removeDeviceFile(ctx *gin.Context) {
 			return
 		}
 	}
-	common.SendPackUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`path`: form.Path, `event`: trigger}}, target)
+	common.SendPackUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`path`: form.Path}, Event: trigger}, target)
 	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -84,7 +84,7 @@ func listDeviceFiles(ctx *gin.Context) {
 			return
 		}
 	}
-	common.SendPackUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path, `event`: trigger}}, connUUID)
+	common.SendPackUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path}, Event: trigger}, connUUID)
 	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -129,7 +129,7 @@ func getDeviceFile(ctx *gin.Context) {
 	var err error
 	partial := false
 	{
-		command := gin.H{`file`: form.File, `event`: trigger}
+		command := gin.H{`file`: form.File}
 		rangeHeader := ctx.GetHeader(`Range`)
 		if len(rangeHeader) > 6 {
 			if rangeHeader[:6] != `bytes=` {
@@ -163,7 +163,7 @@ func getDeviceFile(ctx *gin.Context) {
 			command[`start`] = rangeStart
 			partial = true
 		}
-		common.SendPackUUID(modules.Packet{Code: 0, Act: `uploadFile`, Data: command}, target)
+		common.SendPackUUID(modules.Packet{Code: 0, Act: `uploadFile`, Data: command, Event: trigger}, target)
 	}
 
 	wait := make(chan bool)
@@ -255,11 +255,9 @@ func putDeviceFile(ctx *gin.Context) {
 	}
 	if len(errMsg) > 0 {
 		common.CallEvent(modules.Packet{
-			Code: 1,
-			Msg:  fmt.Sprintf(`文件上传失败：%v`, errMsg),
-			Data: map[string]interface{}{
-				`callback`: trigger,
-			},
+			Code:  1,
+			Msg:   fmt.Sprintf(`文件上传失败：%v`, errMsg),
+			Event: trigger,
 		}, nil)
 		original.Close()
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
@@ -268,9 +266,9 @@ func putDeviceFile(ctx *gin.Context) {
 	common.CallEvent(modules.Packet{
 		Code: 0,
 		Data: map[string]interface{}{
-			`request`:  ctx.Request,
-			`callback`: trigger,
+			`request`: ctx.Request,
 		},
+		Event: trigger,
 	}, nil)
 	original.Close()
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})

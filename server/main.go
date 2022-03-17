@@ -6,8 +6,12 @@ import (
 	"Spark/server/config"
 	"Spark/server/handler"
 	"bytes"
+	"context"
 	"net"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/rakyll/statik/fs"
@@ -71,11 +75,26 @@ func main() {
 	common.Melody.HandleDisconnect(wsOnDisconnect)
 	go common.WSHealthCheck(common.Melody)
 
-	err = app.Run(config.Config.Listen)
-	if err != nil {
-		golog.Error(err)
-		return
+	srv := &http.Server{Addr: config.Config.Listen, Handler: app}
+	go func() {
+		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			golog.Fatal(`Failed to bind address: `, err)
+		}
+	}()
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	golog.Warn(`Server is shutting down ...`)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		golog.Fatal(`Server shutdown: `, err)
 	}
+	select {
+	case <-ctx.Done():
+	}
+	golog.Info(`Server exited,`)
 }
 
 func wsHandshake(ctx *gin.Context) {

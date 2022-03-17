@@ -43,17 +43,8 @@ func SendPack(pack interface{}, wsConn *Conn) error {
 }
 
 func SendCb(pack, prev modules.Packet, wsConn *Conn) error {
-	if prev.Data != nil {
-		trigger, ok := prev.Data[`event`]
-		if ok {
-			if pack.Data == nil {
-				pack.Data = map[string]interface{}{
-					`callback`: trigger,
-				}
-			} else {
-				pack.Data[`callback`] = trigger
-			}
-		}
+	if len(prev.Event) > 0 {
+		pack.Event = prev.Event
 	}
 	return SendPack(pack, wsConn)
 }

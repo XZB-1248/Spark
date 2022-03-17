@@ -114,6 +114,7 @@ class TerminalModal extends React.Component {
     }
 
     initialize(ev) {
+        ev?.dispose();
         let cmd = '';
         let buffer = '';
         let termEv = null;
@@ -121,7 +122,7 @@ class TerminalModal extends React.Component {
             if (!this.conn) {
                 if (e === '\r' || e === ' ') {
                     this.term.write('\n正在重新连接...\n');
-                    this.initialize(termEv);
+                    this.termEv = this.initialize(termEv);
                 }
                 return;
             }
@@ -154,9 +155,6 @@ class TerminalModal extends React.Component {
         this.ws.binaryType = 'arraybuffer';
         this.ws.onopen = () => {
             this.conn = true;
-            if (ev != null) {
-                ev.dispose();
-            }
         }
         this.ws.onmessage = (e) => {
             let data = this.decrypt(e.data);

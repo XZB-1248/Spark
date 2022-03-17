@@ -31,24 +31,29 @@ var (
 func Start() {
 	for !stop {
 		var err error
+		if common.WSConn != nil {
+			common.WSConn.Close()
+		}
 		common.WSConn, err = connectWS()
 		if err != nil && !stop {
 			golog.Error(err)
-			<-time.After(5 * time.Second)
+			<-time.After(3 * time.Second)
 			continue
 		}
 
 		err = reportWS(common.WSConn)
 		if err != nil && !stop {
 			golog.Error(err)
-			<-time.After(5 * time.Second)
+			<-time.After(3 * time.Second)
 			continue
 		}
+
+		go heartbeat(common.WSConn)
 
 		err = handleWS(common.WSConn)
 		if err != nil && !stop {
 			golog.Error(err)
-			<-time.After(5 * time.Second)
+			<-time.After(3 * time.Second)
 			continue
 		}
 	}
@@ -107,7 +112,6 @@ func handleWS(wsConn *common.Conn) error {
 		_, data, err := wsConn.ReadMessage()
 		if err != nil {
 			golog.Error(err)
-			wsConn.Close()
 			return nil
 		}
 		data, err = utils.Decrypt(data, wsConn.Secret)
@@ -190,10 +194,8 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 		}
 	case `screenshot`:
-		if pack.Data != nil {
-			if trigger, ok := pack.Data[`event`]; ok {
-				screenshot.GetScreenshot(trigger.(string))
-			}
+		if len(pack.Event) > 0 {
+			screenshot.GetScreenshot(pack.Event)
 		}
 	case `initTerminal`:
 		err := terminal.InitTerminal(pack)
@@ -237,8 +239,8 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 		}
 	case `uploadFile`:
-		var path, trigger string
 		var start, end int64
+		var path string
 		{
 			tempVal, ok := pack.Data[`file`]
 			if !ok {
@@ -246,15 +248,6 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 				return
 			}
 			if path, ok = tempVal.(string); !ok {
-				common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
-				return
-			}
-			tempVal, ok = pack.Data[`event`]
-			if !ok {
-				common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
-				return
-			}
-			if trigger, ok = tempVal.(string); !ok {
 				common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
 				return
 			}
@@ -278,7 +271,7 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 				return
 			}
 		}
-		err := file.UploadFile(path, trigger, start, end)
+		err := file.UploadFile(path, pack.Event, start, end)
 		if err != nil {
 			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 		}
@@ -306,14 +299,29 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 		} else {
 			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 		}
-	case `heartbeat`:
-		device, err := GetDevice()
-		if err != nil {
-			return
-		}
-		common.SendCb(modules.Packet{Act: `setDevice`, Data: smap{`device`: device}}, pack, wsConn)
 	default:
 		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 	}
 	return
+}
+
+func heartbeat(wsConn *common.Conn) error {
+	t := 0
+	for range time.NewTicker(5 * time.Second).C {
+		t++
+		// Get disk info every 30*5 seconds.
+		device, err := GetPartialInfo(t >= 30)
+		if err != nil {
+			golog.Error(err)
+			continue
+		}
+		if t >= 30 {
+			t = 0
+		}
+		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: device}, wsConn)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

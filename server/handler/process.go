@@ -37,8 +37,8 @@ func listDeviceProcesses(ctx *gin.Context) {
 			return
 		}
 	}
-	common.SendPackUUID(modules.Packet{Act: `listProcesses`, Data: gin.H{`event`: trigger}}, connUUID)
-	ok := addEventOnce(func(p modules.Packet, _ *melody.Session) {
+	common.SendPackUUID(modules.Packet{Act: `listProcesses`, Event: trigger}, connUUID)
+	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -78,8 +78,8 @@ func killDeviceProcess(ctx *gin.Context) {
 			return
 		}
 	}
-	common.SendPackUUID(modules.Packet{Code: 0, Act: `killProcess`, Data: gin.H{`pid`: strconv.FormatInt(int64(form.Pid), 10), `event`: trigger}}, target)
-	ok := addEventOnce(func(p modules.Packet, _ *melody.Session) {
+	common.SendPackUUID(modules.Packet{Code: 0, Act: `killProcess`, Data: gin.H{`pid`: strconv.FormatInt(int64(form.Pid), 10)}, Event: trigger}, target)
+	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {

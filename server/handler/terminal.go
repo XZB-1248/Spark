@@ -66,11 +66,10 @@ func init() {
 			eventUUID:  eventUUID,
 		}
 		terminals.Set(termUUID, terminal)
-		addEvent(eventWrapper(terminal), connUUID, eventUUID)
+		common.AddEvent(eventWrapper(terminal), connUUID, eventUUID)
 		common.SendPack(modules.Packet{Act: `initTerminal`, Data: gin.H{
-			`event`:    eventUUID,
 			`terminal`: termUUID,
-		}}, deviceConn)
+		}, Event: eventUUID}, deviceConn)
 	})
 	wsTerminals.HandleMessage(onMessage)
 	wsTerminals.HandleMessageBinary(onMessage)
@@ -92,11 +91,10 @@ func init() {
 			return
 		}
 		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
-			`event`:    terminal.eventUUID,
 			`terminal`: terminal.termUUID,
-		}}, terminal.deviceConn)
+		}, Event: terminal.eventUUID}, terminal.deviceConn)
 		terminals.Remove(termUUID)
-		removeEvent(terminal.eventUUID)
+		common.RemoveEvent(terminal.eventUUID)
 	})
 	go common.WSHealthCheck(wsTerminals)
 }
@@ -137,7 +135,7 @@ func initTerminal(ctx *gin.Context) {
 
 // eventWrapper 会包装一个eventCb，当收到与浏览器session对应的device响应时，
 // 会自动把数据转发给浏览器端
-func eventWrapper(terminal *terminal) common.eventCb {
+func eventWrapper(terminal *terminal) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
 		if pack.Act == `initTerminal` {
 			if pack.Code != 0 {
@@ -147,7 +145,7 @@ func eventWrapper(terminal *terminal) common.eventCb {
 				}
 				simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 				terminals.Remove(terminal.termUUID)
-				removeEvent(terminal.eventUUID)
+				common.RemoveEvent(terminal.eventUUID)
 			}
 			return
 		}
@@ -158,7 +156,7 @@ func eventWrapper(terminal *terminal) common.eventCb {
 			}
 			simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 			terminals.Remove(terminal.termUUID)
-			removeEvent(terminal.eventUUID)
+			common.RemoveEvent(terminal.eventUUID)
 			terminal.session.Close()
 			return
 		}
@@ -255,9 +253,8 @@ func onMessage(session *melody.Session, data []byte) {
 		if input, ok := pack.Data[`input`]; ok {
 			common.SendPack(modules.Packet{Act: `inputTerminal`, Data: gin.H{
 				`input`:    input,
-				`event`:    terminal.eventUUID,
 				`terminal`: terminal.termUUID,
-			}}, terminal.deviceConn)
+			}, Event: terminal.eventUUID}, terminal.deviceConn)
 		}
 	}
 }

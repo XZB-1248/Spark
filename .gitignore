@@ -1,5 +1,7 @@
+/releases
 /built
 /tools
 /.idea
 /Config.json
+dist/
 node_modules/

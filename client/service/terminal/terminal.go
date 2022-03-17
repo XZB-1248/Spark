@@ -85,15 +85,9 @@ func InitTerminal(pack modules.Packet) error {
 		}
 	}()
 
-	event := ``
-	if pack.Data != nil {
-		if val, ok := pack.Data[`event`]; ok {
-			event, _ = val.(string)
-		}
-	}
 	terminals.Set(pack.Data[`terminal`].(string), &terminal{
 		cmd:       cmd,
-		event:     event,
+		event:     pack.Event,
 		stdout:    &stdout,
 		stderr:    &stderr,
 		stdin:     &stdin,

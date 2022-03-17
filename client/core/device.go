@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"time"
 )
 
 func isPrivateIP(ip net.IP) bool {
@@ -35,17 +37,6 @@ func isPrivateIP(ip net.IP) bool {
 		}
 	}
 	return false
-}
-
-func GetCPUInfo() (string, error) {
-	info, err := cpu.Info()
-	if err != nil {
-		return ``, nil
-	}
-	if len(info) > 0 {
-		return info[0].ModelName, nil
-	}
-	return ``, errors.New(`failed to read cpu info`)
 }
 
 func GetLocalIP() (string, error) {
@@ -97,12 +88,54 @@ func GetMacAddress() (string, error) {
 	return strings.ToUpper(address[0]), nil
 }
 
-func GetMemSize() (uint64, error) {
-	memStat, err := mem.VirtualMemory()
+func GetCPUInfo() (modules.CPU, error) {
+	result := modules.CPU{}
+	info, err := cpu.Info()
 	if err != nil {
-		return 0, nil
+		return result, nil
 	}
-	return memStat.Total, nil
+	if len(info) == 0 {
+		return result, errors.New(`failed to read cpu info`)
+	}
+	result.Model = info[0].ModelName
+	stat, err := cpu.Percent(3*time.Second, false)
+	if err != nil {
+		return result, nil
+	}
+	if len(stat) == 0 {
+		return result, errors.New(`failed to read cpu info`)
+	}
+	result.Usage = stat[0]
+	return result, nil
+}
+
+func GetMemInfo() (modules.Mem, error) {
+	result := modules.Mem{}
+	stat, err := mem.VirtualMemory()
+	if err != nil {
+		return result, nil
+	}
+	result.Total = stat.Total
+	result.Used = stat.Used
+	result.Usage = float64(stat.Used) / float64(stat.Total) * 100
+	return result, nil
+}
+
+func GetDiskInfo() (modules.Disk, error) {
+	result := modules.Disk{}
+	disks, err := disk.Partitions(true)
+	if err != nil {
+		return result, nil
+	}
+	for i := 0; i < len(disks); i++ {
+		stat, err := disk.Usage(disks[i].Mountpoint)
+		if err == nil {
+			result.Total += stat.Total
+			result.Used += stat.Used
+		}
+	}
+	result.Usage = float64(result.Used) / float64(result.Total) * 100
+	return result, nil
 }
 
 func GetDevice() (*modules.Device, error) {
@@ -115,10 +148,6 @@ func GetDevice() (*modules.Device, error) {
 			id = hex.EncodeToString(secBuffer)
 		}
 	}
-	cpuModel, err := GetCPUInfo()
-	if err != nil {
-		cpuModel = `unknown`
-	}
 	localIP, err := GetLocalIP()
 	if err != nil {
 		localIP = `unknown`
@@ -127,13 +156,36 @@ func GetDevice() (*modules.Device, error) {
 	if err != nil {
 		macAddr = `unknown`
 	}
-	memSize, err := GetMemSize()
+	cpuInfo, err := GetCPUInfo()
 	if err != nil {
-		memSize = 0
+		cpuInfo = modules.CPU{
+			Model: `unknown`,
+			Usage: 0,
+		}
+	}
+	memInfo, err := GetMemInfo()
+	if err != nil {
+		memInfo = modules.Mem{
+			Total: 0,
+			Used:  0,
+			Usage: 0,
+		}
+	}
+	diskInfo, err := GetDiskInfo()
+	if err != nil {
+		diskInfo = modules.Disk{
+			Total: 0,
+			Used:  0,
+			Usage: 0,
+		}
 	}
 	uptime, err := host.Uptime()
 	if err != nil {
 		uptime = 0
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = `unknown`
 	}
 	username, err := user.Current()
 	if err != nil {
@@ -144,20 +196,53 @@ func GetDevice() (*modules.Device, error) {
 			username.Username = username.Username[slashIndex+1:]
 		}
 	}
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = `unknown`
-	}
 	return &modules.Device{
 		ID:       id,
 		OS:       runtime.GOOS,
 		Arch:     runtime.GOARCH,
-		CPU:      cpuModel,
 		LAN:      localIP,
 		Mac:      macAddr,
-		Mem:      memSize,
+		CPU:      cpuInfo,
+		Mem:      memInfo,
+		Disk:     diskInfo,
 		Uptime:   uptime,
 		Hostname: hostname,
 		Username: username.Username,
+	}, nil
+}
+
+func GetPartialInfo(getDisk bool) (*modules.Device, error) {
+	cpuInfo, err := GetCPUInfo()
+	if err != nil {
+		cpuInfo = modules.CPU{
+			Model: `unknown`,
+			Usage: 0,
+		}
+	}
+	memInfo, err := GetMemInfo()
+	if err != nil {
+		memInfo = modules.Mem{
+			Total: 0,
+			Used:  0,
+			Usage: 0,
+		}
+	}
+	diskInfo, err := GetDiskInfo()
+	if err != nil {
+		diskInfo = modules.Disk{
+			Total: 0,
+			Used:  0,
+			Usage: 0,
+		}
+	}
+	uptime, err := host.Uptime()
+	if err != nil {
+		uptime = 0
+	}
+	return &modules.Device{
+		CPU:    cpuInfo,
+		Mem:    memInfo,
+		Disk:   diskInfo,
+		Uptime: uptime,
 	}, nil
 }

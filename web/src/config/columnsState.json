@@ -1,5 +1,11 @@
 {
-	"mem": {
+	"mac": {
+		"show": false
+	},
+	"mem_total": {
+		"show": false
+	},
+	"disk_usage": {
 		"show": false
 	}
 }

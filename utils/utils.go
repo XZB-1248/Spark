@@ -17,6 +17,7 @@ var (
 	ErrFailedVerification = errors.New(`failed to verify entity`)
 	JSON                  = jsoniter.ConfigCompatibleWithStandardLibrary
 )
+
 func GenRandByte(n int) []byte {
 	secBuffer := make([]byte, n)
 	rand.Reader.Read(secBuffer)

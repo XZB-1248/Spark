@@ -16,12 +16,16 @@ dayjs.locale('zh-cn');
 console.log("%c By XZB", 'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:64px;color:#00bbee;-webkit-text-fill-color:#00bbee;-webkit-text-stroke:1px#00bbee;');
 
 axios.defaults.baseURL = '.';
-axios.defaults.timeout = 5000;
 axios.interceptors.response.use(async (res) => {
     let data = res.data;
     if (data.hasOwnProperty('code')) {
         if (data.code !== 0){
             message.warn(data.msg);
+        } else {
+            // The first request will ask user to provide user/pass.
+            // If set timeout at the beginning, then timeout warning
+            // might be triggered before authentication finished.
+            axios.defaults.timeout = 5000;
         }
     }
     return Promise.resolve(res);
