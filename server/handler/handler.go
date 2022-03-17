@@ -41,7 +41,7 @@ func putScreenshot(ctx *gin.Context) {
 		return
 	}
 	if len(errMsg) > 0 {
-		evCaller(modules.Packet{
+		common.CallEvent(modules.Packet{
 			Code: 1,
 			Msg:  fmt.Sprintf(`截图失败：%v`, errMsg),
 			Data: map[string]interface{}{
@@ -61,7 +61,7 @@ func putScreenshot(ctx *gin.Context) {
 			msg = `截图失败：未知错误`
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
-		evCaller(modules.Packet{
+		common.CallEvent(modules.Packet{
 			Code: 1,
 			Msg:  msg,
 			Data: map[string]interface{}{
@@ -70,7 +70,7 @@ func putScreenshot(ctx *gin.Context) {
 		}, nil)
 		return
 	}
-	evCaller(modules.Packet{
+	common.CallEvent(modules.Packet{
 		Code: 0,
 		Data: map[string]interface{}{
 			`screenshot`: data,
@@ -107,7 +107,7 @@ func getScreenshot(ctx *gin.Context) {
 		}
 	}
 	common.SendPackUUID(modules.Packet{Code: 0, Act: `screenshot`, Data: gin.H{`event`: trigger}}, target)
-	ok := addEventOnce(func(p modules.Packet, _ *melody.Session) {
+	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -170,7 +170,7 @@ func callDevice(ctx *gin.Context) {
 		}
 	}
 	common.SendPackUUID(modules.Packet{Act: act, Data: gin.H{`event`: trigger}}, connUUID)
-	ok := addEventOnce(func(p modules.Packet, _ *melody.Session) {
+	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -238,5 +238,5 @@ func WSDevice(data []byte, session *melody.Session) error {
 // WSRouter 负责处理client回复的packet
 func WSRouter(pack modules.Packet, session *melody.Session) {
 
-	evCaller(pack, session)
+	common.CallEvent(pack, session)
 }

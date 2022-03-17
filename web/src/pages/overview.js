@@ -8,6 +8,8 @@ import Generate from "../components/generate";
 import Browser from "../components/browser";
 import {QuestionCircleOutlined} from "@ant-design/icons";
 
+import columnsState from "../config/columnsState.json";
+
 function overview(props) {
     const [screenBlob, setScreenBlob] = useState('');
     const [terminal, setTerminal] = useState(false);
@@ -16,56 +18,64 @@ function overview(props) {
     const [isWindows, setIsWindows] = useState(false);
     const columns = [
         {
-            key: 'Hostname',
+            key: 'hostname',
             title: 'Hostname',
             dataIndex: 'hostname',
             ellipsis: true,
             width: 100
         },
         {
-            key: 'Username',
+            key: 'username',
             title: 'Username',
             dataIndex: 'username',
             ellipsis: true,
             width: 100
         },
         {
-            key: 'OS',
+            key: 'os',
             title: 'OS',
             dataIndex: 'os',
             ellipsis: true,
             width: 80
         },
         {
-            key: 'Arch',
+            key: 'arch',
             title: 'Arch',
             dataIndex: 'arch',
             ellipsis: true,
             width: 70
         },
         {
-            key: 'Mac',
+            key: 'latency',
+            title: 'Latency',
+            dataIndex: 'latency',
+            ellipsis: true,
+            renderText: (v) => String(v) + 'ms',
+            width: 70
+        },
+        {
+            key: 'mac',
             title: 'Mac',
             dataIndex: 'mac',
             ellipsis: true,
             width: 100
         },
         {
-            key: 'LAN',
+            key: 'lan',
             title: 'LAN',
             dataIndex: 'lan',
             ellipsis: true,
             width: 100
         },
         {
-            key: 'WAN',
+            key: 'wan',
             title: 'WAN',
             dataIndex: 'wan',
             ellipsis: true,
             width: 100
         },
         {
-            key: 'Mem',
+            key: 'mem',
             title: 'Mem',
             dataIndex: 'mem',
             ellipsis: true,
@@ -73,7 +83,7 @@ function overview(props) {
             width: 70
         },
         {
-            key: 'Uptime',
+            key: 'uptime',
             title: 'Uptime',
             dataIndex: 'uptime',
             ellipsis: true,
@@ -81,7 +91,7 @@ function overview(props) {
             width: 100
         },
         {
-            key: 'Option',
+            key: 'option',
             width: 180,
             title: '操作',
             dataIndex: 'id',
@@ -93,7 +103,7 @@ function overview(props) {
     const options = {
         show: true,
         density: true,
-        setting: false,
+        setting: true,
     };
     const tableRef = useRef();
 
@@ -127,13 +137,14 @@ function overview(props) {
             request('/api/device/screenshot/get', {device: device}, {}, {
                 responseType: 'blob'
             }).then((res) => {
-                if ((res.data.type??'').substring(0, 16) === 'application/json') {
+                if ((res.data.type ?? '').substring(0, 16) === 'application/json') {
                     res.data.text().then((str) => {
                         let data = {};
                         try {
                             data = JSON.parse(str);
-                        } catch (e) {}
-                        message.warn(data.msg??'请求服务器失败')
+                        } catch (e) {
+                        }
+                        message.warn(data.msg ?? '请求服务器失败')
                     });
                 } else {
                     if (screenBlob.length > 0) {
@@ -249,6 +260,7 @@ function overview(props) {
                 search={false}
                 options={options}
                 columns={columns}
+                columnsStateMap={columnsState}
                 request={getData}
                 pagination={false}
                 actionRef={tableRef}

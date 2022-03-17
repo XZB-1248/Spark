@@ -137,7 +137,7 @@ func initTerminal(ctx *gin.Context) {
 
 // eventWrapper 会包装一个eventCb，当收到与浏览器session对应的device响应时，
 // 会自动把数据转发给浏览器端
-func eventWrapper(terminal *terminal) eventCb {
+func eventWrapper(terminal *terminal) common.eventCb {
 	return func(pack modules.Packet, device *melody.Session) {
 		if pack.Act == `initTerminal` {
 			if pack.Code != 0 {

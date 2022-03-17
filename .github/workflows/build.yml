@@ -1,0 +1,98 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Install statik
+      run: |
+        export PATH=$PATH:~/go/bin/
+        go install github.com/rakyll/statik
+
+    - name: Build and embed static resources
+      run: |
+        cd ./web
+        npm install
+        npm run build-prod
+        statik -m -src="./dist" -f -dest="../server/embed" -p web -ns web
+        cd ..
+
+    - name: Build and embed clients
+      run: |
+        chmod +x ./build.client.sh
+        ./build.client.sh
+
+    - name: Build server
+      run: |
+        chmod +x ./build.server.sh
+        ./build.server.sh
+
+    - name: Upload binary files (server_linux_arm)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_linux_arm
+        path: releases/server_linux_arm
+
+    - name: Upload binary files (server_linux_arm64)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_linux_arm64
+        path: releases/server_linux_arm64
+
+    - name: Upload binary files (server_linux_i386)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_linux_i386
+        path: releases/server_linux_i386
+
+    - name: Upload binary files (server_linux_amd64)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_linux_amd64
+        path: releases/server_linux_amd64
+
+    - name: Upload binary files (server_windows_arm)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_windows_arm.exe
+        path: releases/server_windows_arm.exe
+
+    - name: Upload binary files (server_windows_arm64)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_windows_arm64.exe
+        path: releases/server_windows_arm64.exe
+
+    - name: Upload binary files (server_windows_i386)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_windows_i386.exe
+        path: releases/server_windows_i386.exe
+
+    - name: Upload binary files (server_windows_amd64)
+      uses: actions/upload-artifact@v2
+      with:
+        name: server_windows_amd64.exe
+        path: releases/server_windows_amd64.exe

@@ -1,4 +1,4 @@
-package handler
+package common
 
 import (
 	"Spark/modules"
@@ -16,9 +16,9 @@ type eventCb func(modules.Packet, *melody.Session)
 
 var eventTable = cmap.New()
 
-// evCaller 负责判断packet中的Callback字段，如果存在该字段，
+// CallEvent 负责判断packet中的Callback字段，如果存在该字段，
 // 就会调用event中的函数，并在调用完成之后通过chan通知addOnceEvent调用方
-func evCaller(pack modules.Packet, session *melody.Session) {
+func CallEvent(pack modules.Packet, session *melody.Session) {
 	if pack.Data == nil {
 		return
 	}
@@ -49,9 +49,9 @@ func evCaller(pack modules.Packet, session *melody.Session) {
 	}
 }
 
-// addEventOnce 会添加一个一次性的回调命令，client可以对事件成功与否进行回复
+// AddEventOnce 会添加一个一次性的回调命令，client可以对事件成功与否进行回复
 // trigger一般是uuid，以此尽可能保证事件的独一无二
-func addEventOnce(fn eventCb, connUUID, trigger string, timeout time.Duration) bool {
+func AddEventOnce(fn eventCb, connUUID, trigger string, timeout time.Duration) bool {
 	done := make(chan bool)
 	ev := &event{
 		connection: connUUID,
@@ -68,9 +68,9 @@ func addEventOnce(fn eventCb, connUUID, trigger string, timeout time.Duration) b
 	}
 }
 
-// addEvent 会添加一个持续的回调命令，client可以对事件成功与否进行回复
+// AddEvent 会添加一个持续的回调命令，client可以对事件成功与否进行回复
 // trigger一般是uuid，以此尽可能保证事件的独一无二
-func addEvent(fn eventCb, connUUID, trigger string) {
+func AddEvent(fn eventCb, connUUID, trigger string) {
 	ev := &event{
 		connection: connUUID,
 		callback:   fn,
@@ -79,12 +79,12 @@ func addEvent(fn eventCb, connUUID, trigger string) {
 	eventTable.Set(trigger, ev)
 }
 
-// removeEvent 会删除特定的回调命令
-func removeEvent(trigger string) {
+// RemoveEvent 会删除特定的回调命令
+func RemoveEvent(trigger string) {
 	eventTable.Remove(trigger)
 }
 
-// hasEvent returns if the event exists.
-func hasEvent(trigger string) bool {
+// HasEvent returns if the event exists.
+func HasEvent(trigger string) bool {
 	return eventTable.Has(trigger)
 }

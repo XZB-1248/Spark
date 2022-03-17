@@ -20,6 +20,9 @@ import (
 	"time"
 )
 
+// simplified type of map
+type smap map[string]interface{}
+
 var stop bool
 var (
 	errNoSecretHeader = errors.New(`can not find secret header`)
@@ -41,8 +44,6 @@ func Start() {
 			<-time.After(5 * time.Second)
 			continue
 		}
-
-		go heartbeat(common.WSConn)
 
 		err = handleWS(common.WSConn)
 		if err != nil && !stop {
@@ -130,7 +131,7 @@ func handleWS(wsConn *common.Conn) error {
 		}
 		errCount = 0
 		if pack.Data == nil {
-			pack.Data = map[string]interface{}{}
+			pack.Data = smap{}
 		}
 		go handleAct(pack, wsConn)
 	}
@@ -217,7 +218,7 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 		if err != nil {
 			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 		} else {
-			common.SendCb(modules.Packet{Code: 0, Data: map[string]interface{}{`files`: files}}, pack, wsConn)
+			common.SendCb(modules.Packet{Code: 0, Data: smap{`files`: files}}, pack, wsConn)
 		}
 	case `removeFile`:
 		path, ok := pack.Data[`path`]
@@ -306,24 +307,13 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 		}
 	case `heartbeat`:
-		break
+		device, err := GetDevice()
+		if err != nil {
+			return
+		}
+		common.SendCb(modules.Packet{Act: `setDevice`, Data: smap{`device`: device}}, pack, wsConn)
 	default:
 		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 	}
 	return
-}
-
-func heartbeat(wsConn *common.Conn) error {
-	for range time.NewTicker(60 * time.Second).C {
-		device, err := GetDevice()
-		if err != nil {
-			golog.Error(err)
-			continue
-		}
-		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: device}, wsConn)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

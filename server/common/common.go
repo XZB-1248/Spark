@@ -68,10 +68,24 @@ func Decrypt(data []byte, session *melody.Session) ([]byte, bool) {
 
 func WSHealthCheck(container *melody.Melody) {
 	const MaxInterval = 90
+	go func() {
+		// ping client every 3 seconds
+		for range time.NewTicker(3 * time.Second).C {
+			container.IterSessions(func(uuid string, s *melody.Session) bool {
+
+				SendPack(modules.Packet{Act: `ping`}, s)
+				return true
+			})
+		}
+	}()
 	for now := range time.NewTicker(30 * time.Second).C {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		queue := make([]*melody.Session, 0)
+		container.IterSessions(func(uuid string, s *melody.Session) bool {
+			SendPack(modules.Packet{Act: `heartbeat`}, s)
+			return true
+		})
 		container.IterSessions(func(uuid string, s *melody.Session) bool {
 			val, ok := s.Get(`LastPack`)
 			if !ok {

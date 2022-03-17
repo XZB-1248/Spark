@@ -18,7 +18,7 @@ var Config Cfg
 
 func GetBaseURL(ws bool) string {
 	baseUrl := url.URL{
-		Host: fmt.Sprintf(`%v:%v`, Config.Host, Config.Port),
+		Host: fmt.Sprintf(`%v:%d`, Config.Host, Config.Port),
 		Path: Config.Path,
 	}
 	if ws {

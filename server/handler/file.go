@@ -45,7 +45,7 @@ func removeDeviceFile(ctx *gin.Context) {
 		}
 	}
 	common.SendPackUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`path`: form.Path, `event`: trigger}}, target)
-	ok := addEventOnce(func(p modules.Packet, _ *melody.Session) {
+	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -85,7 +85,7 @@ func listDeviceFiles(ctx *gin.Context) {
 		}
 	}
 	common.SendPackUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path, `event`: trigger}}, connUUID)
-	ok := addEventOnce(func(p modules.Packet, _ *melody.Session) {
+	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -125,6 +125,8 @@ func getDeviceFile(ctx *gin.Context) {
 			return
 		}
 	}
+	var rangeStart, rangeEnd int64
+	var err error
 	partial := false
 	{
 		command := gin.H{`file`: form.File, `event`: trigger}
@@ -141,12 +143,11 @@ func getDeviceFile(ctx *gin.Context) {
 				return
 			}
 			r := strings.Split(rangesList[0], `-`)
-			rangeStart, err := strconv.ParseInt(r[0], 10, 64)
+			rangeStart, err = strconv.ParseInt(r[0], 10, 64)
 			if err != nil {
 				ctx.Status(http.StatusRequestedRangeNotSatisfiable)
 				return
 			}
-			rangeEnd := int64(0)
 			if len(r[1]) > 0 {
 				rangeEnd, err = strconv.ParseInt(r[1], 10, 64)
 				if err != nil {
@@ -167,9 +168,9 @@ func getDeviceFile(ctx *gin.Context) {
 
 	wait := make(chan bool)
 	called := false
-	addEvent(func(p modules.Packet, _ *melody.Session) {
+	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
 		called = true
-		removeEvent(trigger)
+		common.RemoveEvent(trigger)
 		if p.Code != 0 {
 			wait <- false
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -201,7 +202,14 @@ func getDeviceFile(ctx *gin.Context) {
 			ctx.Header(`Content-Disposition`, `attachment; filename* = UTF-8''`+filename+`;`)
 
 			if partial {
-				ctx.Header(`Content-Range`, fmt.Sprintf(`bytes %v-%v/%v`))
+				if rangeEnd == 0 {
+					rangeEnd, err = strconv.ParseInt(req.Header.Get(`FileSize`), 10, 64)
+					if err == nil {
+						ctx.Header(`Content-Range`, fmt.Sprintf(`bytes %d-%d/%d`, rangeStart, rangeEnd-1, rangeEnd))
+					}
+				} else {
+					ctx.Header(`Content-Range`, fmt.Sprintf(`bytes %d-%d/%v`, rangeStart, rangeEnd, req.Header.Get(`FileSize`)))
+				}
 				ctx.Status(http.StatusPartialContent)
 			} else {
 				ctx.Status(http.StatusOK)
@@ -224,7 +232,7 @@ func getDeviceFile(ctx *gin.Context) {
 	case <-wait:
 	case <-time.After(5 * time.Second):
 		if !called {
-			removeEvent(trigger)
+			common.RemoveEvent(trigger)
 			ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
 		} else {
 			<-wait
@@ -246,7 +254,7 @@ func putDeviceFile(ctx *gin.Context) {
 		return
 	}
 	if len(errMsg) > 0 {
-		evCaller(modules.Packet{
+		common.CallEvent(modules.Packet{
 			Code: 1,
 			Msg:  fmt.Sprintf(`文件上传失败：%v`, errMsg),
 			Data: map[string]interface{}{
@@ -257,7 +265,7 @@ func putDeviceFile(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		return
 	}
-	evCaller(modules.Packet{
+	common.CallEvent(modules.Packet{
 		Code: 0,
 		Data: map[string]interface{}{
 			`request`:  ctx.Request,
