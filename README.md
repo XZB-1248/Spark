@@ -1,7 +1,7 @@
 <h1 align="center">Spark</h1>
 
 **Spark** is a free, safe, open-source, web-based, cross-platform and full-featured RAT (Remote Administration Tool)
-that allow you control all your devices via browser anywhere.
+that allow you to control all your devices via browser anywhere.
 
 ### [English] [[中文]](./README.ZH.md)
 
@@ -38,7 +38,7 @@ Only local installation are available yet.
 ## **Features**
 
 | Feature/OS      | Windows | Linux | MacOS |
-|-----------------| ------- |-------| ----- |
+|-----------------|---------|-------|-------|
 | Process manager | ✔       | ✔     | ✔     |
 | Kill process    | ✔       | ✔     | ✔     |
 | File explorer   | ✔       | ✔     | ✔     |
@@ -47,12 +47,12 @@ Only local installation are available yet.
 | OS info         | ✔       | ✔     | ✔     |
 | Shell           | ✔       | ✔     | ✔     |
 | Screenshot      | ✔       | ✔     | ✔     |
-| Shutdown        | ✔       | ✔     | ❌    |
-| Reboot          | ✔       | ✔     | ❌    |
-| Hibernate       | ✔       |       | ❌    |
-| Sleep           | ✔       |       | ❌    |
-| Log off         | ✔       | ❌     | ❌    |
-| Lock screen     | ✔       | ❌     | ❌    |
+| Shutdown        | ✔       | ✔     | ❌     |
+| Reboot          | ✔       | ✔     | ❌     |
+| Hibernate       | ✔       |       | ❌     |
+| Sleep           | ✔       |       | ❌     |
+| Log off         | ✔       | ❌     | ❌     |
+| Lock screen     | ✔       | ❌     | ❌     |
 
 * Blank cell means the situation is not tested yet.
 
@@ -81,7 +81,7 @@ For example, to support android, you have to install [Android NDK](https://devel
 $ git clone https://github.com/XZB-1248/Spark
 
 
-$ cd ./Spark-master
+$ cd ./Spark
 
 
 # Here we're going to build front-end pages.
@@ -91,7 +91,7 @@ $ npm install
 $ npm run build-prod
 
 
-# Embed all static resouces into one single file by using statik.
+# Embed all static resources into one single file by using statik.
 $ cd ..
 $ go install github.com/rakyll/statik
 $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web

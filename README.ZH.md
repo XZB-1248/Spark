@@ -43,7 +43,7 @@
 ## **特性**
 
 | 特性/OS | Windows | Linux | MacOS |
-|-------| ------- |-------| ----- |
+|-------|---------|-------|-------|
 | 进程管理  | ✔       | ✔     | ✔     |
 | 结束进程  | ✔       | ✔     | ✔     |
 | 文件浏览器 | ✔       | ✔     | ✔     |
@@ -52,14 +52,14 @@
 | 系统信息  | ✔       | ✔     | ✔     |
 | Shell | ✔       | ✔     | ✔     |
 | 屏幕快照  | ✔       | ✔     | ✔     |
-| 关机    | ✔       | ✔     | ❌    |
-| 重启    | ✔       | ✔     | ❌    |
-| 休眠    | ✔       |       | ❌    |
-| 睡眠    | ✔       |       | ❌    |
-| 注销    | ✔       | ❌     | ❌    |
-| 锁屏    | ✔       | ❌     | ❌    |
+| 关机    | ✔       | ✔     | ❌     |
+| 重启    | ✔       | ✔     | ❌     |
+| 休眠    | ✔       |       | ❌     |
+| 睡眠    | ✔       |       | ❌     |
+| 注销    | ✔       | ❌     | ❌     |
+| 锁屏    | ✔       | ❌     | ❌     |
 
-* 空着的代表目前暂未测试。
+* 空单元格代表目前暂未测试。
 
 ---
 
@@ -86,7 +86,7 @@
 $ git clone https://github.com/XZB-1248/Spark
 
 
-$ cd ./Spark-master
+$ cd ./Spark
 
 
 # Here we're going to build front-end pages.
@@ -96,7 +96,7 @@ $ npm install
 $ npm run build-prod
 
 
-# Embed all static resouces into one single file by using statik.
+# Embed all static resources into one single file by using statik.
 $ cd ..
 $ go install github.com/rakyll/statik
 $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
