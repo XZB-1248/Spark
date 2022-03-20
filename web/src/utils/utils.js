@@ -22,12 +22,12 @@ function waitTime(time) {
     });
 };
 
-function formatSize(bytes) {
-    if (bytes === 0) return 'Unknown';
+function formatSize(size) {
+    if (size === 0) return 'Unknown';
     let k = 1024,
-        i = Math.floor(Math.log(bytes) / Math.log(k)),
-        sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        i = Math.floor(Math.log(size) / Math.log(k)),
+        units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    return (size / Math.pow(k, i)).toFixed(2) + ' ' + units[i];
 }
 
 function tsToTime(ts) {

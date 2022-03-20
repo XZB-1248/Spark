@@ -31,7 +31,7 @@ func SendPack(pack interface{}, wsConn *Conn) error {
 		return err
 	}
 	if len(data) > 1024 {
-		_, err = req.C().R().
+		_, err = req.R().
 			SetBody(data).
 			SetHeader(`Secret`, hex.EncodeToString(wsConn.Secret)).
 			Send(`POST`, config.GetBaseURL(false)+`/ws`)

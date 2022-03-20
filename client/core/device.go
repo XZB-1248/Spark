@@ -10,7 +10,8 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
-	"net"
+	"github.com/shirou/gopsutil/v3/net"
+	_net "net"
 	"os"
 	"os/user"
 	"runtime"
@@ -18,8 +19,8 @@ import (
 	"time"
 )
 
-func isPrivateIP(ip net.IP) bool {
-	var privateIPBlocks []*net.IPNet
+func isPrivateIP(ip _net.IP) bool {
+	var privateIPBlocks []*_net.IPNet
 	for _, cidr := range []string{
 		//"127.0.0.0/8",    // IPv4 loopback
 		//"::1/128",        // IPv6 loopback
@@ -28,7 +29,7 @@ func isPrivateIP(ip net.IP) bool {
 		"172.16.0.0/12",  // RFC1918
 		"192.168.0.0/16", // RFC1918
 	} {
-		_, block, _ := net.ParseCIDR(cidr)
+		_, block, _ := _net.ParseCIDR(cidr)
 		privateIPBlocks = append(privateIPBlocks, block)
 	}
 	for _, block := range privateIPBlocks {
@@ -40,7 +41,7 @@ func isPrivateIP(ip net.IP) bool {
 }
 
 func GetLocalIP() (string, error) {
-	ifaces, err := net.Interfaces()
+	ifaces, err := _net.Interfaces()
 	if err != nil {
 		return `Unknown`, err
 	}
@@ -51,11 +52,11 @@ func GetLocalIP() (string, error) {
 		}
 
 		for _, addr := range addrs {
-			var ip net.IP
+			var ip _net.IP
 			switch v := addr.(type) {
-			case *net.IPNet:
+			case *_net.IPNet:
 				ip = v.IP
-			case *net.IPAddr:
+			case *_net.IPAddr:
 				ip = v.IP
 			}
 			if isPrivateIP(ip) {
@@ -71,7 +72,7 @@ func GetLocalIP() (string, error) {
 }
 
 func GetMacAddress() (string, error) {
-	interfaces, err := net.Interfaces()
+	interfaces, err := _net.Interfaces()
 	if err != nil {
 		return ``, err
 	}
@@ -86,6 +87,28 @@ func GetMacAddress() (string, error) {
 		return ``, nil
 	}
 	return strings.ToUpper(address[0]), nil
+}
+
+func GetNetIOInfo() (modules.Net, error) {
+	result := modules.Net{}
+	first, err := net.IOCounters(false)
+	if err != nil {
+		return result, nil
+	}
+	if len(first) == 0 {
+		return result, errors.New(`failed to read network io counters`)
+	}
+	<-time.After(time.Second)
+	second, err := net.IOCounters(false)
+	if err != nil {
+		return result, nil
+	}
+	if len(second) == 0 {
+		return result, errors.New(`failed to read network io counters`)
+	}
+	result.Recv = second[0].BytesRecv - first[0].BytesRecv
+	result.Sent = second[0].BytesSent - first[0].BytesSent
+	return result, nil
 }
 
 func GetCPUInfo() (modules.CPU, error) {
@@ -109,8 +132,8 @@ func GetCPUInfo() (modules.CPU, error) {
 	return result, nil
 }
 
-func GetMemInfo() (modules.Mem, error) {
-	result := modules.Mem{}
+func GetMemInfo() (modules.IO, error) {
+	result := modules.IO{}
 	stat, err := mem.VirtualMemory()
 	if err != nil {
 		return result, nil
@@ -121,8 +144,9 @@ func GetMemInfo() (modules.Mem, error) {
 	return result, nil
 }
 
-func GetDiskInfo() (modules.Disk, error) {
-	result := modules.Disk{}
+func GetDiskInfo() (modules.IO, error) {
+	result := modules.IO{}
+	disk.IOCounters()
 	disks, err := disk.Partitions(true)
 	if err != nil {
 		return result, nil
@@ -163,9 +187,16 @@ func GetDevice() (*modules.Device, error) {
 			Usage: 0,
 		}
 	}
+	netInfo, err := GetNetIOInfo()
+	if err != nil {
+		netInfo = modules.Net{
+			Sent: 0,
+			Recv: 0,
+		}
+	}
 	memInfo, err := GetMemInfo()
 	if err != nil {
-		memInfo = modules.Mem{
+		memInfo = modules.IO{
 			Total: 0,
 			Used:  0,
 			Usage: 0,
@@ -173,7 +204,7 @@ func GetDevice() (*modules.Device, error) {
 	}
 	diskInfo, err := GetDiskInfo()
 	if err != nil {
-		diskInfo = modules.Disk{
+		diskInfo = modules.IO{
 			Total: 0,
 			Used:  0,
 			Usage: 0,
@@ -203,6 +234,7 @@ func GetDevice() (*modules.Device, error) {
 		LAN:      localIP,
 		Mac:      macAddr,
 		CPU:      cpuInfo,
+		Net:      netInfo,
 		Mem:      memInfo,
 		Disk:     diskInfo,
 		Uptime:   uptime,
@@ -211,7 +243,7 @@ func GetDevice() (*modules.Device, error) {
 	}, nil
 }
 
-func GetPartialInfo(getDisk bool) (*modules.Device, error) {
+func GetPartialInfo(getDisk bool) (modules.Device, error) {
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{
@@ -219,9 +251,16 @@ func GetPartialInfo(getDisk bool) (*modules.Device, error) {
 			Usage: 0,
 		}
 	}
+	netInfo, err := GetNetIOInfo()
+	if err != nil {
+		netInfo = modules.Net{
+			Recv: 0,
+			Sent: 0,
+		}
+	}
 	memInfo, err := GetMemInfo()
 	if err != nil {
-		memInfo = modules.Mem{
+		memInfo = modules.IO{
 			Total: 0,
 			Used:  0,
 			Usage: 0,
@@ -229,7 +268,7 @@ func GetPartialInfo(getDisk bool) (*modules.Device, error) {
 	}
 	diskInfo, err := GetDiskInfo()
 	if err != nil {
-		diskInfo = modules.Disk{
+		diskInfo = modules.IO{
 			Total: 0,
 			Used:  0,
 			Usage: 0,
@@ -239,8 +278,9 @@ func GetPartialInfo(getDisk bool) (*modules.Device, error) {
 	if err != nil {
 		uptime = 0
 	}
-	return &modules.Device{
+	return modules.Device{
 		CPU:    cpuInfo,
+		Net:    netInfo,
 		Mem:    memInfo,
 		Disk:   diskInfo,
 		Uptime: uptime,

@@ -8,3 +8,6 @@ type Cfg struct {
 }
 
 var Config Cfg
+
+// COMMIT means this commit hash, for auto upgrade.
+var COMMIT = ``

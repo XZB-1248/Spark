@@ -193,6 +193,7 @@ func getDeviceFile(ctx *gin.Context) {
 				ctx.Header(`Content-Length`, strconv.FormatInt(req.ContentLength, 10))
 			}
 			ctx.Header(`Accept-Ranges`, `bytes`)
+			ctx.Header(`Content-Transfer-Encoding`, `binary`)
 			ctx.Header(`Content-Type`, `application/octet-stream`)
 			filename := ctx.GetHeader(`FileName`)
 			if len(filename) == 0 {

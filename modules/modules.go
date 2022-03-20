@@ -23,13 +23,20 @@ type Device struct {
 	LAN      string `json:"lan"`
 	WAN      string `json:"wan"`
 	Mac      string `json:"mac"`
+	Net      Net    `json:"net"`
 	CPU      CPU    `json:"cpu"`
-	Mem      Mem    `json:"mem"`
-	Disk     Disk   `json:"disk"`
+	Mem      IO     `json:"mem"`
+	Disk     IO     `json:"disk"`
 	Uptime   uint64 `json:"uptime"`
 	Latency  uint   `json:"latency"`
 	Hostname string `json:"hostname"`
 	Username string `json:"username"`
+}
+
+type IO struct {
+	Total uint64  `json:"total"`
+	Used  uint64  `json:"used"`
+	Usage float64 `json:"usage"`
 }
 
 type CPU struct {
@@ -37,14 +44,7 @@ type CPU struct {
 	Usage float64 `json:"usage"`
 }
 
-type Mem struct {
-	Total uint64  `json:"total"`
-	Used  uint64  `json:"used"`
-	Usage float64 `json:"usage"`
-}
-
-type Disk struct {
-	Total uint64  `json:"total"`
-	Used  uint64  `json:"used"`
-	Usage float64 `json:"usage"`
+type Net struct {
+	Sent uint64 `json:"sent"`
+	Recv uint64 `json:"recv"`
 }

@@ -136,6 +136,7 @@ func generateClient(ctx *gin.Context) {
 	} else {
 		ctx.Header(`Content-Disposition`, `attachment; filename=client;`)
 	}
+	// Find and replace plain buffer with encrypted configuration.
 	cfgBuffer := bytes.Repeat([]byte{'\x19'}, 384)
 	prevBuffer := make([]byte, 0)
 	for {
@@ -173,6 +174,7 @@ func genConfig(cfg clientCfg) ([]byte, error) {
 	if len(final) > 384-2 {
 		return nil, errTooLargeEntity
 	}
+
 	dataLen := big.NewInt(int64(len(final))).Bytes()
 	dataLen = append(bytes.Repeat([]byte{'\x00'}, 2-len(dataLen)), dataLen...)
 

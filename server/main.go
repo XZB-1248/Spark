@@ -62,11 +62,11 @@ func main() {
 	}
 	app := gin.New()
 	auth := gin.BasicAuth(config.Config.Auth)
+	handler.APIRouter(app.Group(`/api`), auth)
+	app.Any(`/ws`, wsHandshake)
 	app.NoRoute(auth, func(ctx *gin.Context) {
 		http.FileServer(webFS).ServeHTTP(ctx.Writer, ctx.Request)
 	})
-	handler.APIRouter(app.Group(`/api`), auth)
-	app.Any(`/ws`, wsHandshake)
 
 	common.Melody.Config.MaxMessageSize = 1024
 	common.Melody.HandleConnect(wsOnConnect)
@@ -126,26 +126,23 @@ func wsHandshake(ctx *gin.Context) {
 	} else {
 		// When message is too large to transport via websocket,
 		// client will try to send these data via http.
-		// Here is the data validator.
-		const MaxBufferSize = 2 << 18 //524288 512KB
-		secret, err := hex.DecodeString(ctx.GetHeader(`Secret`))
-		if err != nil || len(secret) != 32 {
+		const MaxBodySize = 2 << 18 //524288 512KB
+		if ctx.Request.ContentLength > MaxBodySize {
+			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1})
 			return
 		}
 		body, err := ctx.GetRawData()
 		if err != nil {
+			ctx.JSON(http.StatusBadRequest, modules.Packet{Code: 1})
 			return
 		}
-		common.Melody.IterSessions(func(uuid string, s *melody.Session) bool {
-			if val, ok := s.Get(`Secret`); ok {
-				// Check if there's the connection with the secret.
-				if b, ok := val.([]byte); ok && bytes.Equal(b, secret) {
-					wsOnMessageBinary(s, body)
-					return false
-				}
-			}
-			return true
+		auth := common.CheckClientReq(ctx, func(s *melody.Session) {
+			wsOnMessageBinary(s, body)
 		})
+		if !auth {
+			ctx.JSON(http.StatusUnauthorized, modules.Packet{Code: 1})
+		}
+		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 	}
 }
 

@@ -59,7 +59,7 @@ func InitTerminal(pack modules.Packet) error {
 			buffer := make([]byte, 512)
 			n, err := stdout.Read(buffer)
 			buffer = buffer[:n]
-			buffer, _ = gbkToUtf8(buffer)
+			buffer, _ = encodeUTF8(buffer)
 			common.SendCb(modules.Packet{Act: `outputTerminal`, Data: map[string]interface{}{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack, common.WSConn)
@@ -74,7 +74,7 @@ func InitTerminal(pack modules.Packet) error {
 			buffer := make([]byte, 512)
 			n, err := stderr.Read(buffer)
 			buffer = buffer[:n]
-			buffer, _ = gbkToUtf8(buffer)
+			buffer, _ = encodeUTF8(buffer)
 			common.SendCb(modules.Packet{Act: `outputTerminal`, Data: map[string]interface{}{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack, common.WSConn)
@@ -138,7 +138,7 @@ func InputTerminal(pack modules.Packet) error {
 		terminal.cmd.Process.Signal(os.Interrupt)
 		return nil
 	}
-	data, _ = utf8ToGbk(data)
+	data, _ = decodeUTF8(data)
 	(*terminal.stdin).Write(data)
 	return nil
 }
@@ -180,15 +180,33 @@ func doKillTerminal(terminal *terminal) {
 }
 
 func getTerminal() string {
-	switch runtime.GOOS {
-	case `windows`:
+	if runtime.GOOS == `windows` {
 		return `cmd.exe`
-	case `linux`:
-		return `sh`
-	case `darwin`:
-		return `sh`
-	default:
-		return `sh`
+	}
+	sh := []string{`bash`, `zsh`, `sh`}
+	for i := 0; i < len(sh); i++ {
+		f, err := os.Open(sh[i])
+		if err == nil {
+			f.Close()
+			return sh[i]
+		}
+	}
+	return `sh`
+}
+
+func encodeUTF8(s []byte) ([]byte, error) {
+	if runtime.GOOS == `windows` {
+		return gbkToUtf8(s)
+	} else {
+		return s, nil
+	}
+}
+
+func decodeUTF8(s []byte) ([]byte, error) {
+	if runtime.GOOS == `windows` {
+		return utf8ToGbk(s)
+	} else {
+		return s, nil
 	}
 }
 

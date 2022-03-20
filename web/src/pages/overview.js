@@ -10,6 +10,9 @@ import {QuestionCircleOutlined} from "@ant-design/icons";
 
 import defaultColumnsState from "../config/columnsState.json";
 
+// DO NOT EDIT OR DELETE THIS COPYRIGHT MESSAGE.
+console.log("%c By XZB %c https://github.com/XZB-1248/Spark", 'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:64px;color:#00bbee;-webkit-text-fill-color:#00bbee;-webkit-text-stroke:1px#00bbee;', 'font-size:12px;');
+
 function overview(props) {
     const [procMgr, setProcMgr] = useState(false);
     const [browser, setBrowser] = useState(false);
@@ -33,7 +36,7 @@ function overview(props) {
             title: 'Username',
             dataIndex: 'username',
             ellipsis: true,
-            width: 100
+            width: 90
         },
         {
             key: 'ping',
@@ -48,7 +51,7 @@ function overview(props) {
             title: 'CPU Usage',
             dataIndex: 'cpu_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.cpu_usage} showInfo={false} strokeWidth={12} />,
+            render: (_, v) => <Progress percent={v.cpu_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
             width: 100
         },
         {
@@ -56,7 +59,7 @@ function overview(props) {
             title: 'Mem Usage',
             dataIndex: 'mem_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.mem_usage} showInfo={false} strokeWidth={12} />,
+            render: (_, v) => <Progress percent={v.mem_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
             width: 100
         },
         {
@@ -64,8 +67,16 @@ function overview(props) {
             title: 'Disk Usage',
             dataIndex: 'disk_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.disk_usage} showInfo={false} strokeWidth={12} />,
+            render: (_, v) => <Progress percent={v.disk_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
             width: 100
+        },
+        {
+            key: 'mem_total',
+            title: 'Mem',
+            dataIndex: 'mem_total',
+            ellipsis: true,
+            renderText: formatSize,
+            width: 70
         },
         {
             key: 'os',
@@ -103,14 +114,6 @@ function overview(props) {
             width: 100
         },
         {
-            key: 'mem_total',
-            title: 'Mem',
-            dataIndex: 'mem_total',
-            ellipsis: true,
-            renderText: formatSize,
-            width: 70
-        },
-        {
             key: 'uptime',
             title: 'Uptime',
             dataIndex: 'uptime',
@@ -119,13 +122,20 @@ function overview(props) {
             width: 100
         },
         {
+            key: 'net_stat',
+            title: 'Network IO',
+            ellipsis: true,
+            renderText: (_, v) => renderNetworkIO(v),
+            width: 170
+        },
+        {
             key: 'option',
-            width: 180,
             title: '操作',
             dataIndex: 'id',
             valueType: 'option',
             ellipsis: true,
-            render: (_, device) => renderOperation(device)
+            render: (_, device) => renderOperation(device),
+            width: 170
         },
     ];
     const options = {
@@ -163,6 +173,22 @@ function overview(props) {
     function saveColumnsState(stateMap) {
         setColumnsState(stateMap);
         localStorage.setItem(`columnsState`, JSON.stringify(stateMap));
+    }
+
+    function renderNetworkIO(device) {
+        // Make unit starts with Kbps.
+        let sent = device.net_sent * 8 / 1024;
+        let recv = device.net_recv * 8 / 1024;
+        return `${format(sent)} ↑ / ${format(recv)} ↓`;
+
+        function format(size) {
+            if (size <= 1) return '0 Kbps';
+            // Units array is large enough.
+            let k = 1024,
+                i = Math.floor(Math.log(size) / Math.log(k)),
+                units = ['Kbps', 'Mbps', 'Gbps', 'Tbps'];
+            return (size / Math.pow(k, i)).toFixed(1) + ' ' + units[i];
+        }
     }
 
     function renderOperation(device) {

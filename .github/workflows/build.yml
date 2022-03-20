@@ -134,5 +134,3 @@ jobs:
           releases/server_windows_arm64.zip
           releases/server_windows_i386.zip
           releases/server_windows_amd64.zip
-      env:
-        GITHUB_REPOSITORY: XZB-1248/Spark

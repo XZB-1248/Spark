@@ -3,20 +3,24 @@ package handler
 import (
 	"Spark/modules"
 	"Spark/server/common"
+	"Spark/server/config"
 	"Spark/utils"
 	"Spark/utils/melody"
+	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-// APIRouter 负责分配各种API接口
+// APIRouter will initialize http and websocket routers.
 func APIRouter(ctx *gin.RouterGroup, auth gin.HandlerFunc) {
-	ctx.PUT(`/device/screenshot/put`, putScreenshot)
-	ctx.PUT(`/device/file/put`, putDeviceFile)
-	ctx.Any(`/device/terminal`, initTerminal)
+	ctx.PUT(`/device/screenshot/put`, putScreenshot) // Client, upload screenshot and forward to browser.
+	ctx.PUT(`/device/file/put`, putDeviceFile)       // Client, to upload file and forward to browser.
+	ctx.Any(`/device/terminal`, initTerminal)        // Browser, handle websocket events for web terminal.
+	ctx.Any(`/client/update`, checkUpdate)           // Client, for update.
 	group := ctx.Group(`/`, auth)
 	{
 		group.POST(`/device/screenshot/get`, getScreenshot)
@@ -32,7 +36,73 @@ func APIRouter(ctx *gin.RouterGroup, auth gin.HandlerFunc) {
 	}
 }
 
-// putScreenshot 负责获取client发送过来的屏幕截图
+// checkUpdate will check if client need update and return latest client if so.
+func checkUpdate(ctx *gin.Context) {
+	var form struct {
+		OS     string `form:"os" binding:"required"`
+		Arch   string `form:"arch" binding:"required"`
+		Commit string `form:"commit" binding:"required"`
+	}
+	if err := ctx.ShouldBind(&form); err != nil {
+		golog.Error(err)
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		return
+	}
+	if form.Commit == config.COMMIT {
+		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
+		return
+	}
+	tpl, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `该系统或架构的客户端尚未编译`})
+		return
+	}
+
+	const MaxBodySize = 384 // This is size of client config buffer.
+	if ctx.Request.ContentLength > MaxBodySize {
+		ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1})
+		return
+	}
+	body, err := ctx.GetRawData()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: 1})
+		return
+	}
+	auth := common.CheckClientReq(ctx, nil)
+	if !auth {
+		ctx.JSON(http.StatusUnauthorized, modules.Packet{Code: 1})
+	}
+
+	ctx.Header(`Accept-Ranges`, `none`)
+	ctx.Header(`Content-Transfer-Encoding`, `binary`)
+	ctx.Header(`Content-Type`, `application/octet-stream`)
+	if stat, err := tpl.Stat(); err == nil {
+		ctx.Header(`Content-Length`, strconv.FormatInt(stat.Size(), 10))
+	}
+	cfgBuffer := bytes.Repeat([]byte{'\x19'}, 384)
+	prevBuffer := make([]byte, 0)
+	for {
+		thisBuffer := make([]byte, 1024)
+		n, err := tpl.Read(thisBuffer)
+		thisBuffer = thisBuffer[:n]
+		tempBuffer := append(prevBuffer, thisBuffer...)
+		bufIndex := bytes.Index(tempBuffer, cfgBuffer)
+		if bufIndex > -1 {
+			tempBuffer = bytes.Replace(tempBuffer, cfgBuffer, body, -1)
+		}
+		ctx.Writer.Write(tempBuffer[:len(prevBuffer)])
+		prevBuffer = tempBuffer[len(prevBuffer):]
+		if err != nil {
+			break
+		}
+	}
+	if len(prevBuffer) > 0 {
+		ctx.Writer.Write(prevBuffer)
+		prevBuffer = []byte{}
+	}
+}
+
+// putScreenshot will forward screenshot image from client to browser.
 func putScreenshot(ctx *gin.Context) {
 	errMsg := ctx.GetHeader(`Error`)
 	trigger := ctx.GetHeader(`Trigger`)
@@ -76,7 +146,7 @@ func putScreenshot(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 }
 
-// getScreenshot 负责发送指令给client，让其截图
+// getScreenshot will call client to screenshot.
 func getScreenshot(ctx *gin.Context) {
 	var form struct {
 		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
@@ -125,7 +195,7 @@ func getScreenshot(ctx *gin.Context) {
 	}
 }
 
-// getDevices 负责获取所有device的基本信息
+// getDevices will return all info about all clients.
 func getDevices(ctx *gin.Context) {
 	devices := make(map[string]modules.Device)
 	common.Devices.IterCb(func(uuid string, v interface{}) bool {
@@ -138,7 +208,7 @@ func getDevices(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, modules.CommonPack{Code: 0, Data: devices})
 }
 
-// callDevice 负责把HTTP网关发送的请求转发给client
+// callDevice will call client with command from browser.
 func callDevice(ctx *gin.Context) {
 	var form struct {
 		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
@@ -178,7 +248,8 @@ func callDevice(ctx *gin.Context) {
 	}
 }
 
-// WSDevice 负责处理client设备信息上报的事件
+// WSDevice handles events about device info.
+// Such as websocket handshake and update device info.
 func WSDevice(data []byte, session *melody.Session) error {
 	var pack struct {
 		Code   int            `json:"code,omitempty"`
@@ -230,6 +301,7 @@ func WSDevice(data []byte, session *melody.Session) error {
 			deviceInfo, ok := val.(*modules.Device)
 			if ok {
 				deviceInfo.CPU = pack.Device.CPU
+				deviceInfo.Net = pack.Device.Net
 				deviceInfo.Mem = pack.Device.Mem
 				if pack.Device.Disk.Total > 0 {
 					deviceInfo.Disk = pack.Device.Disk
@@ -243,8 +315,7 @@ func WSDevice(data []byte, session *melody.Session) error {
 	return nil
 }
 
-// WSRouter 负责处理client回复的packet
+// WSRouter handles all packets from client.
 func WSRouter(pack modules.Packet, session *melody.Session) {
-
 	common.CallEvent(pack, session)
 }

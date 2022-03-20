@@ -130,6 +130,46 @@ $ go build -ldflags "-s -w" -o Spark Spark/Server
 
 ---
 
+## 项目依赖
+
+Spark使用了许多第三方的开源项目。
+
+依赖列表可以在 `go.mod` 和 `package.json` 里面找到。
+
+一些主要的依赖项如下列所示。
+
+### 后端
+
+* [Go](https://github.com/golang/go) ([License](https://github.com/golang/go/blob/master/LICENSE))
+
+* [gin-gonic/gin](https://github.com/gin-gonic/gin) (MIT License)
+
+* [imroc/req](https://github.com/imroc/req) (MIT License)
+
+* [kbinani/screenshot](https://github.com/kbinani/screenshot) (MIT License)
+
+* [shirou/gopsutil](https://github.com/shirou/gopsutil) ([License](https://github.com/shirou/gopsutil/blob/master/LICENSE))
+
+* [gorilla/websocket](https://github.com/gorilla/websocket) (BSD-2-Clause License)
+
+* [olahol/melody](https://github.com/olahol/melody) (BSD-2-Clause License)
+
+* [orcaman/concurrent-map](https://github.com/orcaman/concurrent-map) (MIT License)
+
+### 前端
+
+* [React](https://github.com/facebook/react) (MIT License)
+
+* [Ant-Design](https://github.com/ant-design/ant-design) (MIT License)
+
+* [axios](https://github.com/axios/axios) (MIT License)
+
+* [xterm.js](https://github.com/xtermjs/xterm.js) (MIT License)
+
+* [crypto-js](https://github.com/brix/crypto-js) (MIT License)
+
+---
+
 ## 开源协议
 
 本项目基于 [BSD-2 协议](./LICENSE) 。

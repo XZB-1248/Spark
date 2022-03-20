@@ -13,7 +13,6 @@ import 'dayjs/locale/zh-cn';
 import Overview from "./pages/overview";
 
 dayjs.locale('zh-cn');
-console.log("%c By XZB", 'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:64px;color:#00bbee;-webkit-text-fill-color:#00bbee;-webkit-text-stroke:1px#00bbee;');
 
 axios.defaults.baseURL = '.';
 axios.interceptors.response.use(async (res) => {

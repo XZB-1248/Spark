@@ -125,6 +125,44 @@ $ go build -ldflags "-s -w" -o Spark Spark/Server
 
 ---
 
+## Dependencies
+
+Spark contains many third-party open-source projects.
+
+Lists of dependencies can be found at `go.mod` and `package.json`.
+
+Some major dependencies are listed below.
+
+### Back-end
+
+* [Go](https://github.com/golang/go) ([License](https://github.com/golang/go/blob/master/LICENSE))
+
+* [gin-gonic/gin](https://github.com/gin-gonic/gin) (MIT License)
+
+* [imroc/req](https://github.com/imroc/req) (MIT License)
+
+* [kbinani/screenshot](https://github.com/kbinani/screenshot) (MIT License)
+
+* [shirou/gopsutil](https://github.com/shirou/gopsutil) ([License](https://github.com/shirou/gopsutil/blob/master/LICENSE))
+
+* [gorilla/websocket](https://github.com/gorilla/websocket) (BSD-2-Clause License)
+
+* [orcaman/concurrent-map](https://github.com/orcaman/concurrent-map) (MIT License)
+
+### Front-end
+
+* [React](https://github.com/facebook/react) (MIT License)
+
+* [Ant-Design](https://github.com/ant-design/ant-design) (MIT License)
+
+* [axios](https://github.com/axios/axios) (MIT License)
+
+* [xterm.js](https://github.com/xtermjs/xterm.js) (MIT License)
+
+* [crypto-js](https://github.com/brix/crypto-js) (MIT License)
+
+---
+
 ## License
 
 [BSD-2 License](./LICENSE)

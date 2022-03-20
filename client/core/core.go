@@ -13,9 +13,13 @@ import (
 	"encoding/hex"
 	"errors"
 	ws "github.com/gorilla/websocket"
+	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -47,6 +51,8 @@ func Start() {
 			<-time.After(3 * time.Second)
 			continue
 		}
+
+		checkUpdate(common.WSConn)
 
 		go heartbeat(common.WSConn)
 
@@ -102,6 +108,44 @@ func reportWS(wsConn *common.Conn) error {
 	}
 	if pack.Code != 0 {
 		return errors.New(`unknown error occurred`)
+	}
+	return nil
+}
+
+func checkUpdate(wsConn *common.Conn) error {
+	if len(config.COMMIT) == 0 {
+		return nil
+	}
+	resp, err := req.R().
+		SetBody(config.CfgBuffer).
+		SetQueryParam(`os`, runtime.GOOS).
+		SetQueryParam(`arch`, runtime.GOARCH).
+		SetQueryParam(`commit`, config.COMMIT).
+		SetHeader(`Secret`, hex.EncodeToString(wsConn.Secret)).
+		Send(`POST`, config.GetBaseURL(false)+`/api/client/update`)
+	if err != nil {
+		return err
+	}
+	if resp == nil {
+		return errors.New(`unknown error occurred`)
+	}
+	if resp.GetContentType() == `application/octet-stream` {
+		body := resp.Bytes()
+		if len(body) > 0 {
+			err = ioutil.WriteFile(os.Args[0]+`.tmp`, body, 0755)
+			if err != nil {
+				return err
+			}
+			cmd := exec.Command(os.Args[0]+`.tmp`, `--update`)
+			err = cmd.Start()
+			if err != nil {
+				return err
+			}
+			stop = true
+			wsConn.Close()
+			os.Exit(0)
+		}
+		return nil
 	}
 	return nil
 }
@@ -223,16 +267,21 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 			common.SendCb(modules.Packet{Code: 0, Data: smap{`files`: files}}, pack, wsConn)
 		}
 	case `removeFile`:
-		path, ok := pack.Data[`path`]
+		val, ok := pack.Data[`path`]
 		if !ok {
 			common.SendCb(modules.Packet{Code: 1, Msg: `can not find such a file or directory`}, pack, wsConn)
 			return
 		}
-		if path == `\` || path == `/` || len(path.(string)) == 0 {
+		path, ok := val.(string)
+		if !ok {
 			common.SendCb(modules.Packet{Code: 1, Msg: `can not find such a file or directory`}, pack, wsConn)
 			return
 		}
-		err := os.RemoveAll(path.(string))
+		if path == `\` || path == `/` || len(path) == 0 {
+			common.SendCb(modules.Packet{Code: 1, Msg: `can not find such a file or directory`}, pack, wsConn)
+			return
+		}
+		err := os.RemoveAll(path)
 		if err != nil {
 			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 		} else {
@@ -307,15 +356,16 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 
 func heartbeat(wsConn *common.Conn) error {
 	t := 0
-	for range time.NewTicker(5 * time.Second).C {
+	for range time.NewTicker(2 * time.Second).C {
 		t++
-		// Get disk info every 30*5 seconds.
-		device, err := GetPartialInfo(t >= 30)
+		// GetPartialInfo always costs more than 1 second.
+		// So it is actually get disk info every 200*3 seconds (10 minutes).
+		device, err := GetPartialInfo(t >= 200)
 		if err != nil {
 			golog.Error(err)
 			continue
 		}
-		if t >= 30 {
+		if t >= 200 {
 			t = 0
 		}
 		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: device}, wsConn)

@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/hex"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
 )
@@ -115,6 +117,28 @@ func WSHealthCheck(container *melody.Melody) {
 			queue[i].Close()
 		}
 	}
+}
+
+func CheckClientReq(ctx *gin.Context, cb func(*melody.Session)) bool {
+	secret, err := hex.DecodeString(ctx.GetHeader(`Secret`))
+	if err != nil || len(secret) != 32 {
+		return false
+	}
+	find := false
+	Melody.IterSessions(func(uuid string, s *melody.Session) bool {
+		if val, ok := s.Get(`Secret`); ok {
+			// Check if there's a connection matches this secret.
+			if b, ok := val.([]byte); ok && bytes.Equal(b, secret) {
+				find = true
+				if cb != nil {
+					cb(s)
+				}
+				return false
+			}
+		}
+		return true
+	})
+	return find
 }
 
 func CheckDevice(deviceID string) (string, bool) {
