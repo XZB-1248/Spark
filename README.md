@@ -98,18 +98,20 @@ $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 
 
 # Now we should build client.
-$ mkdir ./built
-# Use this when you're using windows.
-$ ./build.client.bat
-
 # When you're using unix-like OS, you can use this.
+$ go mod tidy
+$ go mod download
 $ ./build.client.sh
+$ statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
 
 
 # Finally we're compiling the server side.
-$ go build -ldflags "-s -w" -o Spark Spark/Server
-
+$ ./build.server.sh
 ```
+
+Then you can find executable files in `releases` directory.
+
+Copy configuration file mentioned above into this dir, and then you can execute server.
 
 ---
 

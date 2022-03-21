@@ -146,6 +146,7 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 				simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 				terminals.Remove(terminal.termUUID)
 				common.RemoveEvent(terminal.eventUUID)
+				terminal.session.Close()
 			}
 			return
 		}

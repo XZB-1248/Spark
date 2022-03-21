@@ -1,5 +1,5 @@
 import React, {createRef} from "react";
-import {Modal} from "antd";
+import {message, Modal} from "antd";
 import {Terminal} from "xterm";
 import {WebLinksAddon} from "xterm-addon-web-links";
 import {FitAddon} from "xterm-addon-fit";
@@ -160,15 +160,20 @@ class TerminalModal extends React.Component {
             let data = this.decrypt(e.data);
             try {
                 data = JSON.parse(data);
-            } catch (_) {
-            }
+            } catch (_) {}
             if (this.conn) {
-                data = ab2str(hex2buf(data?.data?.output));
-                if (data === buffer) {
-                    buffer = '';
+                if (data?.act === 'outputTerminal') {
+                    data = ab2str(hex2buf(data?.data?.output));
+                    if (data === buffer) {
+                        buffer = '';
+                        return;
+                    }
+                    this.term.write(data);
                     return;
                 }
-                this.term.write(data);
+                if (data?.act === 'warn') {
+                    message.warn(data.msg??'未知错误');
+                }
             }
         }
         this.ws.onclose = (e) => {
@@ -230,7 +235,7 @@ class TerminalModal extends React.Component {
             if (this.conn) {
                 this.ws.close();
             }
-            this.termEv.dispose();
+            this?.termEv?.dispose();
             this.termEv = null;
         } else {
             if (this.props.visible) {

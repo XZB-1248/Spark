@@ -82,39 +82,39 @@
 ### 指南
 
 ```bash
-# Clone this repository
+# Clone该项目
 $ git clone https://github.com/XZB-1248/Spark
 
 
 $ cd ./Spark
 
 
-# Here we're going to build front-end pages.
+# 开始编译前端页面
 $ cd ./web
-# Install all dependencies and build.
+# 安装所有的依赖，然后编译。
 $ npm install
 $ npm run build-prod
 
 
-# Embed all static resources into one single file by using statik.
+# 通过statik，将前端文件嵌入到服务端里。
 $ cd ..
 $ go install github.com/rakyll/statik
 $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 
 
-# Now we should build client.
-$ mkdir ./built
-# Use this when you're using windows.
-$ ./build.client.bat
-
-# When you're using unix-like OS, you can use this.
+# 开始编译客户端。
+# 在使用类Unix系统时，运行以下命令。
+$ go mod tidy
+$ go mod download
 $ ./build.client.sh
+$ statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
 
 
-# Finally we're compiling the server side.
-$ go build -ldflags "-s -w" -o Spark Spark/Server
-
+# 最终开始编译服务端。
+$ ./build.server.sh
 ```
+
+然后打开`releases`目录，放入上文提到的配置文件，选择对应平台的服务端运行即可。
 
 ---
 

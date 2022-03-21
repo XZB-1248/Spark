@@ -183,11 +183,10 @@ func getTerminal() string {
 	if runtime.GOOS == `windows` {
 		return `cmd.exe`
 	}
-	sh := []string{`bash`, `zsh`, `sh`}
+	sh := []string{`/bin/bash`, `/bin/zsh`, `/bin/sh`}
 	for i := 0; i < len(sh); i++ {
-		f, err := os.Open(sh[i])
-		if err == nil {
-			f.Close()
+		_, err := os.Stat(sh[i])
+		if !errors.Is(err, os.ErrNotExist) {
 			return sh[i]
 		}
 	}
