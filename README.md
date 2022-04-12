@@ -13,7 +13,7 @@ Only local installation are available yet.
 
 ### Local installation
 * Get prebuilt executable file from [Releases](https://github.com/XZB-1248/Spark/releases) page.
-* Modify configuration file and set your own salt.
+* Create a configuration file named "Config.json" and set your own salt.
 
   ```json
   {

@@ -19,7 +19,7 @@
 ### 本地安装
 
 * 从 [Releases](https://github.com/XZB-1248/Spark/releases) 页面下载对应系统的可执行文件。
-* 修改配置文件，特别是salt，需要修改成你自己的。
+* 在目录下创建一个名为“Config.json”的配置文件，修改其中的信息。
 
   ```json
   {
