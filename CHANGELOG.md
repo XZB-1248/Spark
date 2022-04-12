@@ -1,8 +1,10 @@
 ## v0.0.4
 
 * Add: i18n support
+* Note: from this version, you just need to upgrade server manually and client will automatically self upgrade.
 
 * 新增：支持中英文国际化
+* 注意：从本版本开始，只需要更新服务端即可，客户端会自动完成更新
 
 
 

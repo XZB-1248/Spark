@@ -69,5 +69,7 @@
 	"fileUploadFailed": "文件上传失败",
 	"screenshotFailed": "截屏失败",
 	"screenshotObtainFailed": "截屏读取失败",
-	"invalidFileRange": "文件范围错误"
+	"invalidFileRange": "文件范围错误",
+	"operationNotSupported": "不支持该操作",
+	"noDisplayFound": "设备未连接显示器"
 }

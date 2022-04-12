@@ -51,8 +51,8 @@
 | 屏幕快照  | ✔       | ✔     | ✔     |
 | 关机    | ✔       | ✔     | ❌     |
 | 重启    | ✔       | ✔     | ❌     |
-| 休眠    | ✔       |       | ❌     |
-| 睡眠    | ✔       |       | ❌     |
+| 休眠    | ✔       | ❌     | ❌     |
+| 睡眠    | ✔       | ❌     | ❌     |
 | 注销    | ✔       | ❌     | ❌     |
 | 锁屏    | ✔       | ❌     | ❌     |
 
@@ -117,13 +117,13 @@ $ ./build.server.sh
 
 ## 截图
 
-![overview](./screenshots/overview.png)
+![overview](./screenshots/overview.ZH.png)
 
-![terminal](./screenshots/terminal.png)
+![terminal](./screenshots/terminal.ZH.png)
 
-![procmgr](./screenshots/procmgr.png)
+![procmgr](./screenshots/procmgr.ZH.png)
 
-![explorer](./screenshots/explorer.png)
+![explorer](./screenshots/explorer.ZH.png)
 
 ---
 

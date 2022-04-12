@@ -13,7 +13,7 @@ func GetScreenshot(trigger string) error {
 	writer := new(bytes.Buffer)
 	num := screenshot.NumActiveDisplays()
 	if num == 0 {
-		err := errors.New(`no display found`)
+		err := errors.New(`${i18n|noDisplayFound}`)
 		putScreenshot(trigger, err.Error(), nil)
 		return err
 	}

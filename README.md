@@ -45,8 +45,8 @@ Only local installation are available yet.
 | Screenshot      | ✔       | ✔     | ✔     |
 | Shutdown        | ✔       | ✔     | ❌     |
 | Reboot          | ✔       | ✔     | ❌     |
-| Hibernate       | ✔       |       | ❌     |
-| Sleep           | ✔       |       | ❌     |
+| Hibernate       | ✔       | ❌     | ❌     |
+| Sleep           | ✔       | ❌     | ❌     |
 | Log off         | ✔       | ❌     | ❌     |
 | Lock screen     | ✔       | ❌     | ❌     |
 

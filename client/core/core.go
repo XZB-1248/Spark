@@ -111,7 +111,7 @@ func reportWS(wsConn *common.Conn) error {
 		return err
 	}
 	if pack.Code != 0 {
-		return errors.New(`unknown error occurred`)
+		return errors.New(`${i18n|unknownError}`)
 	}
 	return nil
 }
@@ -131,7 +131,7 @@ func checkUpdate(wsConn *common.Conn) error {
 		return err
 	}
 	if resp == nil {
-		return errors.New(`unknown error occurred`)
+		return errors.New(`${i18n|unknownError}`)
 	}
 	if resp.GetContentType() == `application/octet-stream` {
 		body := resp.Bytes()
