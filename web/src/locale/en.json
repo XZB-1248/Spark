@@ -69,5 +69,7 @@
 	"fileUploadFailed": "Failed to upload file",
 	"screenshotFailed": "Failed to take screenshot",
 	"screenshotObtainFailed": "Failed to obtain screenshot",
-	"invalidFileRange": "Invalid file range"
+	"invalidFileRange": "Invalid file range",
+	"operationNotSupported": "Operation is not supported",
+	"noDisplayFound": "No display found"
 }

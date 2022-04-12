@@ -59,7 +59,7 @@ func UploadFile(path, trigger string, start, end int64) error {
 		`FileSize`: strconv.FormatInt(size, 10),
 	}
 	if size < end {
-		return errors.New(`Invalid file size.`)
+		return errors.New(`${i18n|invalidFileSize}`)
 	}
 	if end == 0 {
 		uploadReq.RawRequest.ContentLength = size - start

@@ -36,7 +36,7 @@ function tsToTime(ts) {
     let hours = Math.floor(ts / 3600);
     ts %= 3600;
     let minutes = Math.floor(ts / 60);
-    return `${String(hours) + i18n.t('hours') + String(minutes) + i18n.t('minutes')}`;
+    return `${String(hours) + i18n.t('hours') + ' ' + String(minutes) + i18n.t('minutes')}`;
 }
 
 function post(url, data, ext) {

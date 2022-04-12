@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package basic
@@ -11,21 +12,19 @@ func init() {
 }
 
 func Lock() error {
-	return errors.New(`the operation is not supported`)
+	return errors.New(`${i18n|operationNotSupported}`)
 }
 
 func Logoff() error {
-	return errors.New(`the operation is not supported`)
+	return errors.New(`${i18n|operationNotSupported}`)
 }
 
 func Hibernate() error {
-	_, _, err := syscall.Syscall(syscall.SYS_REBOOT, syscall.LINUX_REBOOT_CMD_HALT, 0, 0)
-	return err
+	return syscall.Reboot(syscall.LINUX_REBOOT_CMD_HALT)
 }
 
 func Suspend() error {
-	_, _, err := syscall.Syscall(syscall.SYS_REBOOT, syscall.LINUX_REBOOT_CMD_SW_SUSPEND, 0, 0)
-	return err
+	return syscall.Reboot(syscall.LINUX_REBOOT_CMD_SW_SUSPEND)
 }
 
 func Restart() error {
