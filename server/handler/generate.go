@@ -58,12 +58,12 @@ func checkClient(ctx *gin.Context) {
 		Secure string `json:"secure" yaml:"secure" form:"secure"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	_, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `该系统或架构的客户端尚未编译`})
+		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return
 	}
 	_, err = genConfig(clientCfg{
@@ -76,10 +76,10 @@ func checkClient(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == errTooLargeEntity {
-			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `配置信息过长`})
+			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `配置文件生成失败`})
+		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return
 	}
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
@@ -95,18 +95,18 @@ func generateClient(ctx *gin.Context) {
 		Secure string `json:"secure" yaml:"secure" form:"secure"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	tpl, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `该系统或架构的客户端尚未编译`})
+		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return
 	}
 	clientUUID := utils.GetUUID()
 	clientKey, err := common.EncAES(clientUUID, config.Config.StdSalt)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `配置文件生成失败`})
+		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return
 	}
 	cfgBytes, err := genConfig(clientCfg{
@@ -119,10 +119,10 @@ func generateClient(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == errTooLargeEntity {
-			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `配置信息过长`})
+			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `配置文件生成失败`})
+		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return
 	}
 	ctx.Header(`Accept-Ranges`, `none`)

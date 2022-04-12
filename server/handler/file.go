@@ -25,7 +25,7 @@ func removeDeviceFile(ctx *gin.Context) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	target := ``
@@ -34,13 +34,13 @@ func removeDeviceFile(ctx *gin.Context) {
 		ok := false
 		target, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		target = form.Conn
 		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -53,7 +53,7 @@ func removeDeviceFile(ctx *gin.Context) {
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 
@@ -65,7 +65,7 @@ func listDeviceFiles(ctx *gin.Context) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	connUUID := ``
@@ -74,13 +74,13 @@ func listDeviceFiles(ctx *gin.Context) {
 		ok := false
 		connUUID, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		connUUID = form.Conn
 		if !common.Devices.Has(connUUID) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -93,7 +93,7 @@ func listDeviceFiles(ctx *gin.Context) {
 		}
 	}, connUUID, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 
@@ -106,7 +106,7 @@ func getDeviceFile(ctx *gin.Context) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	target := ``
@@ -115,13 +115,13 @@ func getDeviceFile(ctx *gin.Context) {
 		ok := false
 		target, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		target = form.Conn
 		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -179,13 +179,13 @@ func getDeviceFile(ctx *gin.Context) {
 			val, ok := p.Data[`request`]
 			if !ok {
 				wait <- false
-				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `文件上传失败`})
+				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|fileUploadFailed}`})
 				return
 			}
 			req, ok := val.(*http.Request)
 			if !ok || req == nil || req.Body == nil {
 				wait <- false
-				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `文件上传失败`})
+				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|fileUploadFailed}`})
 				return
 			}
 
@@ -234,7 +234,7 @@ func getDeviceFile(ctx *gin.Context) {
 	case <-time.After(5 * time.Second):
 		if !called {
 			common.RemoveEvent(trigger)
-			ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+			ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {
 			<-wait
 		}
@@ -251,13 +251,13 @@ func putDeviceFile(ctx *gin.Context) {
 	trigger := ctx.GetHeader(`Trigger`)
 	if len(trigger) == 0 {
 		original.Close()
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	if len(errMsg) > 0 {
 		common.CallEvent(modules.Packet{
 			Code:  1,
-			Msg:   fmt.Sprintf(`文件上传失败：%v`, errMsg),
+			Msg:   fmt.Sprintf(`${i18n|fileUploadFailed}: %v`, errMsg),
 			Event: trigger,
 		}, nil)
 		original.Close()

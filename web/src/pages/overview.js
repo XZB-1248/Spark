@@ -1,12 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
 import ProTable, {TableDropdown} from '@ant-design/pro-table';
 import {Button, Image, message, Modal, Progress} from 'antd';
-import {formatSize, request, tsToTime, waitTime} from "../utils/utils";
+import {formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
 import Terminal from "../components/terminal";
 import Processes from "../components/processes";
 import Generate from "../components/generate";
-import Browser from "../components/browser";
+import Explorer from "../components/explorer";
 import {QuestionCircleOutlined} from "@ant-design/icons";
+import i18n from "../locale/locale";
 
 import defaultColumnsState from "../config/columnsState.json";
 
@@ -15,7 +16,7 @@ console.log("%c By XZB %c https://github.com/XZB-1248/Spark", 'font-family:"Helv
 
 function overview(props) {
     const [procMgr, setProcMgr] = useState(false);
-    const [browser, setBrowser] = useState(false);
+    const [explorer, setExplorer] = useState(false);
     const [generate, setGenerate] = useState(false);
     const [terminal, setTerminal] = useState(false);
     const [screenBlob, setScreenBlob] = useState('');
@@ -26,14 +27,14 @@ function overview(props) {
     const columns = [
         {
             key: 'hostname',
-            title: 'Hostname',
+            title: i18n.t('hostname'),
             dataIndex: 'hostname',
             ellipsis: true,
             width: 100
         },
         {
             key: 'username',
-            title: 'Username',
+            title: i18n.t('username'),
             dataIndex: 'username',
             ellipsis: true,
             width: 90
@@ -48,7 +49,7 @@ function overview(props) {
         },
         {
             key: 'cpu_usage',
-            title: 'CPU Usage',
+            title: i18n.t('cpuUsage'),
             dataIndex: 'cpu_usage',
             ellipsis: true,
             render: (_, v) => <Progress percent={v.cpu_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
@@ -56,7 +57,7 @@ function overview(props) {
         },
         {
             key: 'mem_usage',
-            title: 'Mem Usage',
+            title: i18n.t('memUsage'),
             dataIndex: 'mem_usage',
             ellipsis: true,
             render: (_, v) => <Progress percent={v.mem_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
@@ -64,7 +65,7 @@ function overview(props) {
         },
         {
             key: 'disk_usage',
-            title: 'Disk Usage',
+            title: i18n.t('diskUsage'),
             dataIndex: 'disk_usage',
             ellipsis: true,
             render: (_, v) => <Progress percent={v.disk_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
@@ -72,7 +73,7 @@ function overview(props) {
         },
         {
             key: 'mem_total',
-            title: 'Mem',
+            title: i18n.t('memTotal'),
             dataIndex: 'mem_total',
             ellipsis: true,
             renderText: formatSize,
@@ -80,14 +81,14 @@ function overview(props) {
         },
         {
             key: 'os',
-            title: 'OS',
+            title: i18n.t('os'),
             dataIndex: 'os',
             ellipsis: true,
             width: 80
         },
         {
             key: 'arch',
-            title: 'Arch',
+            title: i18n.t('arch'),
             dataIndex: 'arch',
             ellipsis: true,
             width: 70
@@ -115,7 +116,7 @@ function overview(props) {
         },
         {
             key: 'uptime',
-            title: 'Uptime',
+            title: i18n.t('uptime'),
             dataIndex: 'uptime',
             ellipsis: true,
             renderText: tsToTime,
@@ -123,17 +124,17 @@ function overview(props) {
         },
         {
             key: 'net_stat',
-            title: 'Network IO',
+            title: i18n.t('netStat'),
             ellipsis: true,
             renderText: (_, v) => renderNetworkIO(v),
             width: 170
         },
         {
             key: 'option',
-            title: '操作',
+            title: i18n.t('operations'),
             dataIndex: 'id',
             valueType: 'option',
-            ellipsis: true,
+            ellipsis: false,
             render: (_, device) => renderOperation(device),
             width: 170
         },
@@ -147,13 +148,13 @@ function overview(props) {
 
     useEffect(() => {
         // Auto update is only available when all modal are closed.
-        if (!procMgr && !browser && !generate && !terminal) {
+        if (!procMgr && !explorer && !generate && !terminal) {
             let id = setInterval(getData, 3000);
             return () => {
                 clearInterval(id);
             };
         }
-    }, [procMgr, browser, generate, terminal]);
+    }, [procMgr, explorer, generate, terminal]);
 
     function getInitColumnsState() {
         let data = localStorage.getItem(`columnsState`);
@@ -193,24 +194,24 @@ function overview(props) {
 
     function renderOperation(device) {
         return [
-            <a key='terminal' onClick={setTerminal.bind(null, device.id)}>终端</a>,
-            <a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>进程</a>,
-            <a key='browser' onClick={() => {
-                setBrowser(device.id);
+            <a key='terminal' onClick={setTerminal.bind(null, device.id)}>{i18n.t('terminal')}</a>,
+            <a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>{i18n.t('procMgr')}</a>,
+            <a key='explorer' onClick={() => {
+                setExplorer(device.id);
                 setIsWindows(device.os === 'windows');
-            }}>文件</a>,
+            }}>{i18n.t('fileMgr')}</a>,
             <TableDropdown
                 key='more'
                 onSelect={(key) => callDevice(key, device.id)}
                 menus={[
-                    {key: 'screenshot', name: '截屏'},
-                    {key: 'lock', name: '锁屏'},
-                    {key: 'logoff', name: '注销'},
-                    {key: 'hibernate', name: '休眠'},
-                    {key: 'suspend', name: '睡眠'},
-                    {key: 'restart', name: '重启'},
-                    {key: 'shutdown', name: '关机'},
-                    {key: 'offline', name: '离线'},
+                    {key: 'screenshot', name: i18n.t('screenshot')},
+                    {key: 'lock', name: i18n.t('lock')},
+                    {key: 'logoff', name: i18n.t('logoff')},
+                    {key: 'hibernate', name: i18n.t('hibernate')},
+                    {key: 'suspend', name: i18n.t('suspend')},
+                    {key: 'restart', name: i18n.t('restart')},
+                    {key: 'shutdown', name: i18n.t('shutdown')},
+                    {key: 'offline', name: i18n.t('offline')},
                 ]}
             />,
         ]
@@ -228,7 +229,7 @@ function overview(props) {
                             data = JSON.parse(str);
                         } catch (e) {
                         }
-                        message.warn(data.msg ?? '请求服务器失败')
+                        message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
                     });
                 } else {
                     if (screenBlob.length > 0) {
@@ -239,28 +240,14 @@ function overview(props) {
             });
             return;
         }
-        let menus = {
-            lock: '锁屏',
-            logoff: '注销',
-            hibernate: '休眠',
-            suspend: '睡眠',
-            restart: '重启',
-            shutdown: '关机',
-            offline: '离线',
-        };
-        if (!menus.hasOwnProperty(act)) {
-            return;
-        }
         Modal.confirm({
-            title: `确定要${menus[act]}该设备吗？`,
+            title: i18n.t('operationConfirm').replace('{0}', i18n.t(act).toUpperCase()),
             icon: <QuestionCircleOutlined/>,
-            okText: '确定',
-            cancelText: '取消',
             onOk() {
                 request('/api/device/' + act, {device: device}).then(res => {
                     let data = res.data;
                     if (data.code === 0) {
-                        message.success('操作已执行');
+                        message.success(i18n.t('operationSuccess'));
                         tableRef.current.reload();
                     }
                 });
@@ -270,7 +257,7 @@ function overview(props) {
 
     function toolBar() {
         return (
-            <Button type='primary' onClick={setGenerate.bind(null, true)}>生成客户端</Button>
+            <Button type='primary' onClick={setGenerate.bind(null, true)}>{i18n.t('generate')}</Button>
         )
     }
 
@@ -336,11 +323,11 @@ function overview(props) {
                 visible={generate}
                 onVisibleChange={setGenerate}
             />
-            <Browser
+            <Explorer
                 isWindows={isWindows}
-                visible={browser}
-                device={browser}
-                onCancel={setBrowser.bind(null, false)}
+                visible={explorer}
+                device={explorer}
+                onCancel={setExplorer.bind(null, false)}
             />
             <Processes
                 visible={procMgr}
@@ -353,6 +340,10 @@ function overview(props) {
                 onCancel={setTerminal.bind(null, false)}
             />
             <ProTable
+                scroll={{
+                    x: 'max-content',
+                    scrollToFirstRowOnChange: true
+                }}
                 rowKey='id'
                 search={false}
                 options={options}

@@ -16,8 +16,8 @@ type EventCallback func(modules.Packet, *melody.Session)
 
 var eventTable = cmap.New()
 
-// CallEvent 负责判断packet中的Callback字段，如果存在该字段，
-// 就会调用event中的函数，并在调用完成之后通过chan通知addOnceEvent调用方
+// CallEvent tries to call the callback with the given uuid
+// after that, it will notify the caller via the channel
 func CallEvent(pack modules.Packet, session *melody.Session) {
 	if len(pack.Event) == 0 {
 		return
@@ -40,8 +40,9 @@ func CallEvent(pack modules.Packet, session *melody.Session) {
 	}
 }
 
-// AddEventOnce 会添加一个一次性的回调命令，client可以对事件成功与否进行回复
-// trigger一般是uuid，以此尽可能保证事件的独一无二
+// AddEventOnce adds a new event only once and client
+// can call back the event with the given event trigger.
+// Event trigger should be uuid to make every event unique.
 func AddEventOnce(fn EventCallback, connUUID, trigger string, timeout time.Duration) bool {
 	done := make(chan bool)
 	ev := &event{
@@ -59,8 +60,8 @@ func AddEventOnce(fn EventCallback, connUUID, trigger string, timeout time.Durat
 	}
 }
 
-// AddEvent 会添加一个持续的回调命令，client可以对事件成功与否进行回复
-// trigger一般是uuid，以此尽可能保证事件的独一无二
+// AddEvent adds a new event and client can call back
+// the event with the given event trigger.
 func AddEvent(fn EventCallback, connUUID, trigger string) {
 	ev := &event{
 		connection: connUUID,
@@ -70,7 +71,7 @@ func AddEvent(fn EventCallback, connUUID, trigger string) {
 	eventTable.Set(trigger, ev)
 }
 
-// RemoveEvent 会删除特定的回调命令
+// RemoveEvent deletes the event with the given event trigger.
 func RemoveEvent(trigger string) {
 	eventTable.Remove(trigger)
 }

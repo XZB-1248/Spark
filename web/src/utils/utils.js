@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Qs from 'qs';
+import i18n from "../locale/locale";
 
 function request(url, data, headers, ext, noTrans) {
     let _headers = headers ?? {};
@@ -35,7 +36,7 @@ function tsToTime(ts) {
     let hours = Math.floor(ts / 3600);
     ts %= 3600;
     let minutes = Math.floor(ts / 60);
-    return `${hours}小时${minutes}分钟`;
+    return `${String(hours) + i18n.t('hours') + String(minutes) + i18n.t('minutes')}`;
 }
 
 function post(url, data, ext) {
@@ -58,4 +59,10 @@ function post(url, data, ext) {
     form.remove();
 }
 
-export {post, request, waitTime, formatSize, tsToTime};
+function translate(text) {
+    return text.replace(/\$\{i18n\|([a-zA-Z0-9]+)\}/g, (match, key) => {
+        return i18n.t(key);
+    });
+}
+
+export {post, request, waitTime, formatSize, tsToTime, translate};

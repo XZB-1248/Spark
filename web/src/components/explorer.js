@@ -2,8 +2,9 @@ import React, {useEffect, useRef, useState} from 'react';
 import {message, Modal, Popconfirm} from "antd";
 import ProTable from '@ant-design/pro-table';
 import {formatSize, post, request, waitTime} from "../utils/utils";
-import './browser.css';
 import dayjs from "dayjs";
+import i18n from "../locale/locale";
+import './explorer.css';
 
 function FileBrowser(props) {
     const [path, setPath] = useState(`/`);
@@ -11,14 +12,14 @@ function FileBrowser(props) {
     const columns = [
         {
             key: 'Name',
-            title: 'Name',
+            title: i18n.t('fileName'),
             dataIndex: 'name',
             ellipsis: true,
             width: 180
         },
         {
             key: 'Size',
-            title: 'Size',
+            title: i18n.t('fileSize'),
             dataIndex: 'size',
             ellipsis: true,
             width: 60,
@@ -26,16 +27,16 @@ function FileBrowser(props) {
         },
         {
             key: 'Time',
-            title: 'Time Modified',
+            title: i18n.t('modifyTime'),
             dataIndex: 'time',
             ellipsis: true,
             width: 100,
-            renderText: (ts, file) => file.type === 0 ? dayjs.unix(ts).format('YYYY/MM/DD HH:mm') : '-'
+            renderText: (ts, file) => file.type === 0 ? dayjs.unix(ts).format(i18n.t('dateTimeFormat')) : '-'
         },
         {
             key: 'Option',
             width: 120,
-            title: '操作',
+            title: '',
             dataIndex: 'name',
             valueType: 'option',
             ellipsis: true,
@@ -59,10 +60,14 @@ function FileBrowser(props) {
         let remove = (
             <Popconfirm
                 key='remove'
-                title={'确定要删除该' + (file.type === 0 ? '文件' : '目录') + '吗？'}
+                title={
+                    i18n.t('deleteConfirm').replace('{0}',
+                        i18n.t(file.type === 0 ? 'file' : 'folder')
+                    )
+                }
                 onConfirm={removeFile.bind(null, file.name)}
             >
-                <a>删除</a>
+                <a>{i18n.t('delete')}</a>
             </Popconfirm>
         );
         switch (file.type) {
@@ -71,7 +76,7 @@ function FileBrowser(props) {
                     <a
                         key='download'
                         onClick={downloadFile.bind(null, file.name)}
-                    >下载</a>,
+                    >{i18n.t('download')}</a>,
                     remove,
                 ];
             case 1:
@@ -127,10 +132,10 @@ function FileBrowser(props) {
     }
 
     function removeFile(file) {
-        request(`/api/device/file/remove`, {path: path+file, device: props.device}).then(res => {
+        request(`/api/device/file/remove`, {path: path + file, device: props.device}).then(res => {
             let data = res.data;
             if (data.code === 0) {
-                message.success('文件或目录已被删除');
+                message.success(i18n.t('deleteSuccess'));
                 tableRef.current.reload();
             }
         });
@@ -156,7 +161,7 @@ function FileBrowser(props) {
             return ({
                 data: data.data.files,
                 success: true,
-                total: data.data.files.length - (addParentShortcut?1:0)
+                total: data.data.files.length - (addParentShortcut ? 1 : 0)
             });
         }
         setPath(getLastPath());
@@ -166,7 +171,7 @@ function FileBrowser(props) {
     return (
         <Modal
             destroyOnClose={true}
-            title='File Explorer'
+            title={i18n.t('fileExplorer')}
             footer={null}
             height={500}
             width={800}

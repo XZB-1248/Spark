@@ -2,6 +2,7 @@ import React from 'react';
 import {ModalForm, ProFormCascader, ProFormDigit, ProFormGroup, ProFormText} from '@ant-design/pro-form';
 import {post, request} from "../utils/utils";
 import prebuilt from '../config/prebuilt.json';
+import i18n from "../locale/locale";
 
 function Generate(props) {
     const initValues = getInitValues();
@@ -50,7 +51,7 @@ function Generate(props) {
                 <ProFormText
                     width="md"
                     name="host"
-                    label="Host"
+                    label={i18n.t('host')}
                     rules={[{
                         required: true
                     }]}
@@ -58,7 +59,7 @@ function Generate(props) {
                 <ProFormDigit
                     width="md"
                     name="port"
-                    label="Port"
+                    label={i18n.t('port')}
                     min={1}
                     max={65535}
                     rules={[{
@@ -70,7 +71,7 @@ function Generate(props) {
                 <ProFormText
                     width="md"
                     name="path"
-                    label="Path"
+                    label={i18n.t('path')}
                     rules={[{
                         required: true
                     }]}
@@ -78,7 +79,7 @@ function Generate(props) {
                 <ProFormCascader
                     width="md"
                     name="ArchOS"
-                    label="OS & Arch"
+                    label={i18n.t('osArch')}
                     request={() => prebuilt}
                     rules={[{
                         required: true

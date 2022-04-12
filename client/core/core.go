@@ -12,9 +12,6 @@ import (
 	"Spark/utils"
 	"encoding/hex"
 	"errors"
-	ws "github.com/gorilla/websocket"
-	"github.com/imroc/req/v3"
-	"github.com/kataras/golog"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,6 +19,10 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
+	ws "github.com/gorilla/websocket"
+	"github.com/imroc/req/v3"
+	"github.com/kataras/golog"
 )
 
 // simplified type of map
@@ -78,6 +79,9 @@ func connectWS() (*common.Conn, error) {
 		return nil, errNoSecretHeader
 	}
 	secret, err := hex.DecodeString(header[0])
+	if err != nil {
+		return nil, err
+	}
 	return &common.Conn{Conn: wsConn, Secret: secret}, nil
 }
 
@@ -246,13 +250,10 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 		if err != nil {
 			common.SendCb(modules.Packet{Act: `initTerminal`, Code: 1, Msg: err.Error()}, pack, wsConn)
 		}
-		break
 	case `inputTerminal`:
 		terminal.InputTerminal(pack)
-		break
 	case `killTerminal`:
 		terminal.KillTerminal(pack)
-		break
 	case `listFiles`:
 		path := `/`
 		if val, ok := pack.Data[`path`]; ok {
@@ -293,11 +294,11 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 		{
 			tempVal, ok := pack.Data[`file`]
 			if !ok {
-				common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
+				common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
 				return
 			}
 			if path, ok = tempVal.(string); !ok {
-				common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
+				common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
 				return
 			}
 			tempVal, ok = pack.Data[`start`]
@@ -316,7 +317,7 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 				}
 			}
 			if end > 0 && end < start {
-				common.SendCb(modules.Packet{Code: 1, Msg: `文件范围错误`}, pack, wsConn)
+				common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidFileRange}`}, pack, wsConn)
 				return
 			}
 		}
@@ -334,12 +335,12 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	case `killProcess`:
 		pidStr, ok := pack.Data[`pid`]
 		if !ok {
-			common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
+			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
 			return
 		}
 		pid, err := strconv.ParseInt(pidStr.(string), 10, 32)
 		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: `未知错误`}, pack, wsConn)
+			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
 			return
 		}
 		err = process.KillProcess(int32(pid))
@@ -351,7 +352,6 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	default:
 		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 	}
-	return
 }
 
 func heartbeat(wsConn *common.Conn) error {

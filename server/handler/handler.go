@@ -45,7 +45,7 @@ func checkUpdate(ctx *gin.Context) {
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
 		golog.Error(err)
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	if form.Commit == config.COMMIT {
@@ -54,7 +54,7 @@ func checkUpdate(ctx *gin.Context) {
 	}
 	tpl, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `该系统或架构的客户端尚未编译`})
+		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return
 	}
 
@@ -107,13 +107,13 @@ func putScreenshot(ctx *gin.Context) {
 	errMsg := ctx.GetHeader(`Error`)
 	trigger := ctx.GetHeader(`Trigger`)
 	if len(trigger) == 0 {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	if len(errMsg) > 0 {
 		common.CallEvent(modules.Packet{
 			Code:  1,
-			Msg:   fmt.Sprintf(`截图失败：%v`, errMsg),
+			Msg:   fmt.Sprintf(`${i18n|screenshotFailed}: %v`, errMsg),
 			Event: trigger,
 		}, nil)
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
@@ -123,10 +123,10 @@ func putScreenshot(ctx *gin.Context) {
 	if len(data) == 0 {
 		msg := ``
 		if err != nil {
-			msg = fmt.Sprintf(`截图读取失败：%v`, err)
+			msg = fmt.Sprintf(`${i18n|screenshotObtainFailed}: %v`, err)
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: msg})
 		} else {
-			msg = `截图失败：未知错误`
+			msg = `${i18n|screenshotFailed}: ${i18n|unknownError}`
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
 		common.CallEvent(modules.Packet{
@@ -153,7 +153,7 @@ func getScreenshot(ctx *gin.Context) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	target := ``
@@ -162,13 +162,13 @@ func getScreenshot(ctx *gin.Context) {
 		ok := false
 		target, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		target = form.Conn
 		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -179,19 +179,19 @@ func getScreenshot(ctx *gin.Context) {
 		} else {
 			data, ok := p.Data[`screenshot`]
 			if !ok {
-				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `截图获取失败`})
+				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|screenshotObtainFailed}`})
 				return
 			}
 			screenshot, ok := data.([]byte)
 			if !ok {
-				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `截图获取失败`})
+				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|screenshotObtainFailed}`})
 				return
 			}
 			ctx.Data(200, `image/png`, screenshot)
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 
@@ -216,7 +216,7 @@ func callDevice(ctx *gin.Context) {
 	}
 	act := ctx.Param(`act`)
 	if ctx.ShouldBind(&form) != nil || len(act) == 0 || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	connUUID := ``
@@ -225,13 +225,13 @@ func callDevice(ctx *gin.Context) {
 		ok := false
 		connUUID, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		connUUID = form.Conn
 		if !common.Devices.Has(connUUID) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -244,7 +244,7 @@ func callDevice(ctx *gin.Context) {
 		}
 	}, connUUID, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 

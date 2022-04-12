@@ -3,11 +3,12 @@ package file
 import (
 	"Spark/client/config"
 	"errors"
-	"github.com/imroc/req/v3"
 	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
+
+	"github.com/imroc/req/v3"
 )
 
 type file struct {
@@ -58,7 +59,7 @@ func UploadFile(path, trigger string, start, end int64) error {
 		`FileSize`: strconv.FormatInt(size, 10),
 	}
 	if size < end {
-		return errors.New(`文件大小有误`)
+		return errors.New(`Invalid file size.`)
 	}
 	if end == 0 {
 		uploadReq.RawRequest.ContentLength = size - start

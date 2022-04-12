@@ -34,16 +34,16 @@ func main() {
 
 	data, err := ioutil.ReadFile(`./Config.json`)
 	if err != nil {
-		golog.Fatal(`读取配置文件失败：`, err)
+		golog.Fatal(`Failed to read config file: `, err)
 		return
 	}
 	err = utils.JSON.Unmarshal(data, &config.Config)
 	if err != nil {
-		golog.Fatal(`解析配置文件失败：`, err)
+		golog.Fatal(`Failed to parse config file: `, err)
 		return
 	}
 	if len(config.Config.Salt) > 24 {
-		golog.Fatal(`Salt的长度不能超过24位`)
+		golog.Fatal(`Length of Salt should be less than 24.`)
 		return
 	}
 	config.Config.StdSalt = []byte(config.Config.Salt)
@@ -52,12 +52,12 @@ func main() {
 
 	webFS, err := fs.NewWithNamespace(`web`)
 	if err != nil {
-		golog.Fatal(`加载静态资源失败：`, err)
+		golog.Fatal(`Failed to load static resources: `, err)
 		return
 	}
 	common.BuiltFS, err = fs.NewWithNamespace(`built`)
 	if err != nil {
-		golog.Fatal(`加载预编译客户端失败：`, err)
+		golog.Fatal(`Failed to load prebuilt clients: `, err)
 		return
 	}
 	app := gin.New()
@@ -81,7 +81,7 @@ func main() {
 			golog.Fatal(`Failed to bind address: `, err)
 		}
 	}()
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	golog.Warn(`Server is shutting down ...`)
@@ -91,9 +91,7 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		golog.Fatal(`Server shutdown: `, err)
 	}
-	select {
-	case <-ctx.Done():
-	}
+	<-ctx.Done()
 	golog.Info(`Server exited,`)
 }
 

@@ -1,3 +1,11 @@
+## v0.0.4
+
+* Add: i18n support
+
+* 新增：支持中英文国际化
+
+
+
 ## v0.0.3
 
 * Add: network IO speed monitoring.

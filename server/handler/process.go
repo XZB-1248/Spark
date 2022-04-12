@@ -18,7 +18,7 @@ func listDeviceProcesses(ctx *gin.Context) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	connUUID := ``
@@ -27,13 +27,13 @@ func listDeviceProcesses(ctx *gin.Context) {
 		ok := false
 		connUUID, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		connUUID = form.Conn
 		if !common.Devices.Has(connUUID) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -46,7 +46,7 @@ func listDeviceProcesses(ctx *gin.Context) {
 		}
 	}, connUUID, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 
@@ -59,7 +59,7 @@ func killDeviceProcess(ctx *gin.Context) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `参数不完整`})
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	target := ``
@@ -68,13 +68,13 @@ func killDeviceProcess(ctx *gin.Context) {
 		ok := false
 		target, ok = common.CheckDevice(form.Device)
 		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	} else {
 		target = form.Conn
 		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `未找到该设备`})
+			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 			return
 		}
 	}
@@ -87,6 +87,6 @@ func killDeviceProcess(ctx *gin.Context) {
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `响应超时`})
+		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }

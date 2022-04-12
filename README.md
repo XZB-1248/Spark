@@ -11,9 +11,7 @@ that allow you to control all your devices via browser anywhere.
 
 Only local installation are available yet.
 
-<details>
-<summary>Local installation:</summary>
-
+### Local installation
 * Get prebuilt executable file from [Releases](https://github.com/XZB-1248/Spark/releases) page.
 * Modify configuration file and set your own salt.
 
@@ -27,11 +25,9 @@ Only local installation are available yet.
   }
   ```
 
-* Run it and browser the address:port you've just set.
+* Run it and browse the address:port you've just set.
 * Generate client online and execute it on your device.
 * Now you can control your device.
-
-</details>
 
 ---
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import i18n from "../locale/locale";
 
 export default function () {
     // setTimeout(()=>{
@@ -7,9 +8,7 @@ export default function () {
 
     return (
         <h1 style={{textAlign: 'center', userSelect: 'none'}}>
-            Page Not Found.
-            <br/>
-            未找到该页面。
+            {i18n.t('pageNotFound')}
         </h1>
     );
 }

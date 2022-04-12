@@ -7,14 +7,15 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
 	"time"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
 
 type terminal struct {
@@ -124,12 +125,12 @@ func InputTerminal(pack modules.Packet) error {
 	}
 	val, ok = terminals.Get(termUUID)
 	if !ok {
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `终端已退出`}, pack, common.WSConn)
+		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
 		return nil
 	}
 	terminal, ok := val.(*terminal)
 	if !ok {
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `终端已退出`}, pack, common.WSConn)
+		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
 		return nil
 	}
 
@@ -157,13 +158,13 @@ func KillTerminal(pack modules.Packet) error {
 	}
 	val, ok = terminals.Get(termUUID)
 	if !ok {
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `终端已退出`}, pack, common.WSConn)
+		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
 		return nil
 	}
 	terminal, ok := val.(*terminal)
 	if !ok {
 		terminals.Remove(termUUID)
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `终端已退出`}, pack, common.WSConn)
+		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
 		return nil
 	}
 	doKillTerminal(terminal)

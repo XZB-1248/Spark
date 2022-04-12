@@ -29,31 +29,31 @@ func init() {
 	wsTerminals.HandleConnect(func(session *melody.Session) {
 		device, ok := session.Get(`Device`)
 		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `终端创建失败`}, session)
+			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
 			session.Close()
 			return
 		}
 		val, ok := session.Get(`Terminal`)
 		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `终端创建失败`}, session)
+			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
 			session.Close()
 			return
 		}
 		termUUID, ok := val.(string)
 		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `终端创建失败`}, session)
+			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
 			session.Close()
 			return
 		}
 		connUUID, ok := common.CheckDevice(device.(string))
 		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `设备不存在或已经离线`}, session)
+			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
 			session.Close()
 			return
 		}
 		deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
 		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `设备不存在或已经离线`}, session)
+			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
 			session.Close()
 			return
 		}
@@ -99,7 +99,7 @@ func init() {
 	go common.WSHealthCheck(wsTerminals)
 }
 
-// initTerminal 负责处理terminal的websocket握手事务
+// initTerminal handles terminal websocket handshake event
 func initTerminal(ctx *gin.Context) {
 	if !ctx.IsWebsocket() {
 		ctx.Status(http.StatusUpgradeRequired)
@@ -133,15 +133,17 @@ func initTerminal(ctx *gin.Context) {
 	})
 }
 
-// eventWrapper 会包装一个eventCb，当收到与浏览器session对应的device响应时，
-// 会自动把数据转发给浏览器端
+// eventWrapper returns a eventCb function that will be called when
+// device need to send a packet to browser terminal
 func eventWrapper(terminal *terminal) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
 		if pack.Act == `initTerminal` {
 			if pack.Code != 0 {
-				msg := `终端创建失败：未知错误`
+				msg := `${i18n|terminalSessionCreationFailed}`
 				if len(pack.Msg) > 0 {
-					msg = `终端创建失败：` + pack.Msg
+					msg += pack.Msg
+				} else {
+					msg += `${i18n|unknownError}`
 				}
 				simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 				terminals.Remove(terminal.termUUID)
@@ -151,7 +153,7 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 			return
 		}
 		if pack.Act == `quitTerminal` {
-			msg := `终端已退出`
+			msg := `${i18n|terminalSessionClosed}`
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
 			}

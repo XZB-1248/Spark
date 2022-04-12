@@ -6,6 +6,8 @@ import {FitAddon} from "xterm-addon-fit";
 import debounce from 'lodash/debounce';
 import CryptoJS from 'crypto-js';
 import "xterm/css/xterm.css";
+import i18n from "../locale/locale";
+import {translate} from "../utils/utils";
 
 function hex2buf(hex) {
     if (typeof hex !== 'string') {
@@ -121,7 +123,7 @@ class TerminalModal extends React.Component {
         termEv = this.term.onData((e) => {
             if (!this.conn) {
                 if (e === '\r' || e === ' ') {
-                    this.term.write('\n正在重新连接...\n');
+                    this.term.write(`\n${i18n.t('reconnecting')}\n`);
                     this.termEv = this.initialize(termEv);
                 }
                 return;
@@ -172,20 +174,20 @@ class TerminalModal extends React.Component {
                     return;
                 }
                 if (data?.act === 'warn') {
-                    message.warn(data.msg??'未知错误');
+                    message.warn(data.msg ? translate(data.msg) : i18n.t('unknownError'));
                 }
             }
         }
         this.ws.onclose = (e) => {
             if (this.conn) {
                 this.conn = false;
-                this.term.write('\n连接已断开！\n');
+                this.term.write(`\n${i18n.t('disconnected')}\n`);
             }
         }
         this.ws.onerror = (e) => {
             if (this.conn) {
                 this.conn = false;
-                this.term.write('\n连接已断开！\n');
+                this.term.write(`\n${i18n.t('disconnected')}\n`);
             }
         }
         return termEv;
@@ -285,7 +287,7 @@ class TerminalModal extends React.Component {
     render() {
         return (
             <Modal
-                title='Terminal'
+                title={i18n.t('terminal')}
                 visible={this.props.visible}
                 onCancel={this.props.onCancel}
                 destroyOnClose={false}

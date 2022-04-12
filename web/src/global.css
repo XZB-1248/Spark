@@ -1,3 +1,7 @@
+body {
+    overflow-x: hidden;
+}
+
 #root {
     height: 100%;
     background-image: url('static/bg.svg');
