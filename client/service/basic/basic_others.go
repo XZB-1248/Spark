@@ -1,9 +1,11 @@
 //go:build !linux && !windows
-// +build !linux,!windows
 
 package basic
 
-import "errors"
+import (
+	"errors"
+	"os/exec"
+)
 
 func init() {
 }
@@ -25,9 +27,9 @@ func Suspend() error {
 }
 
 func Restart() error {
-	return errors.New(`${i18n|operationNotSupported}`)
+	return exec.Command(`reboot`).Run()
 }
 
 func Shutdown() error {
-	return errors.New(`${i18n|operationNotSupported}`)
+	return exec.Command(`shutdown`).Run()
 }

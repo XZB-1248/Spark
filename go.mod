@@ -3,6 +3,7 @@ module Spark
 go 1.17
 
 require (
+	github.com/creack/pty v1.1.18
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gorilla/websocket v1.5.0

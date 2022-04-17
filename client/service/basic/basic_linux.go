@@ -20,11 +20,15 @@ func Logoff() error {
 }
 
 func Hibernate() error {
-	return syscall.Reboot(syscall.LINUX_REBOOT_CMD_HALT)
+	// Prevent constant overflow when GOARCH is arm or i386.
+	_, _, err := syscall.Syscall(syscall.SYS_REBOOT, syscall.LINUX_REBOOT_CMD_HALT, 0, 0)
+	return err
 }
 
 func Suspend() error {
-	return syscall.Reboot(syscall.LINUX_REBOOT_CMD_SW_SUSPEND)
+	// Prevent constant overflow when GOARCH is arm or i386.
+	_, _, err := syscall.Syscall(syscall.SYS_REBOOT, syscall.LINUX_REBOOT_CMD_SW_SUSPEND, 0, 0)
+	return err
 }
 
 func Restart() error {

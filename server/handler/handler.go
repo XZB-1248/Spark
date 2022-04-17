@@ -219,6 +219,20 @@ func callDevice(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
+	{
+		actions := []string{`lock`, `logoff`, `hibernate`, `suspend`, `restart`, `shutdown`, `offline`}
+		ok := false
+		for _, v := range actions {
+			if v == act {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+			return
+		}
+	}
 	connUUID := ``
 	trigger := utils.GetStrUUID()
 	if len(form.Conn) == 0 {
@@ -244,7 +258,9 @@ func callDevice(ctx *gin.Context) {
 		}
 	}, connUUID, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		//This means the client is offline.
+		//So we take this as a success.
+		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 	}
 }
 

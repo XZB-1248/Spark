@@ -194,7 +194,7 @@ function overview(props) {
 
     function renderOperation(device) {
         return [
-            <a key='terminal' onClick={setTerminal.bind(null, device.id)}>{i18n.t('terminal')}</a>,
+            <a key='terminal' onClick={setTerminal.bind(null, device)}>{i18n.t('terminal')}</a>,
             <a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>{i18n.t('procMgr')}</a>,
             <a key='explorer' onClick={() => {
                 setExplorer(device.id);

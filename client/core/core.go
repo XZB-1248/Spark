@@ -252,6 +252,8 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 		}
 	case `inputTerminal`:
 		terminal.InputTerminal(pack)
+	case `resizeTerminal`:
+		terminal.ResizeTerminal(pack)
 	case `killTerminal`:
 		terminal.KillTerminal(pack)
 	case `listFiles`:

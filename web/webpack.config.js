@@ -1,7 +1,6 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
 
@@ -38,7 +37,6 @@ module.exports = (env, args) => {
                             loader: 'less-loader',
                             options: {
                                 lessOptions: {
-                                    modifyVars: {'@primary-color': '#1DA57A'},
                                     javascriptEnabled: true
                                 }
                             }
@@ -76,28 +74,13 @@ module.exports = (env, args) => {
             minimize: mode === 'production',
             minimizer: [
                 new TerserPlugin({
+                    test: /\.js(\?.*)?$/i,
                     extractComments: false,
                     terserOptions: {
                         compress: {
-                            drop_console: mode === 'production'
-                        }
-                    }
-                }),
-                new UglifyJsPlugin({
-                    test: /\.js(\?.*)?$/i,
-                    chunkFilter: (chunk) => chunk.name !== 'vendor',
-                    cache: true,
-                    parallel: 5,
-                    sourceMap: mode === 'development',
-                    uglifyOptions: {
-                        compress: {
-                            drop_console: mode === 'production',
+                            drop_console: false, //mode === 'production'
                             collapse_vars: true,
                             reduce_vars: true,
-                        },
-                        output: {
-                            beautify: mode === 'production',
-                            comments: mode === 'development',
                         }
                     }
                 })

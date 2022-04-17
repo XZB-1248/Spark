@@ -58,6 +58,7 @@
 
 	"reconnecting": "Reconnecting...",
 	"disconnected": "Session disconnected",
+	"connectFailed": "Connection failed",
 
 	"terminalSessionCreationFailed": "Failed to create terminal session",
 	"deviceNotExists": "Device not exists or not online",

@@ -92,7 +92,7 @@ func main() {
 		golog.Fatal(`Server shutdown: `, err)
 	}
 	<-ctx.Done()
-	golog.Info(`Server exited,`)
+	golog.Info(`Server exited.`)
 }
 
 func wsHandshake(ctx *gin.Context) {
@@ -173,7 +173,13 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 }
 
 func wsOnDisconnect(session *melody.Session) {
+	if val, ok := common.Devices.Get(session.UUID); ok {
+		if deviceInfo, ok := val.(*modules.Device); ok {
+			handler.CloseSessionsByDevice(deviceInfo.ID)
+		}
+	}
 	common.Devices.Remove(session.UUID)
+
 }
 
 func getRemoteAddr(ctx *gin.Context) string {

@@ -58,6 +58,7 @@
 
 	"reconnecting": "正在重新连接...",
 	"disconnected": "连接已断开",
+	"connectFailed": "连接失败",
 
 	"terminalSessionCreationFailed": "终端会话创建失败",
 	"deviceNotExists": "设备不存在或已离线",

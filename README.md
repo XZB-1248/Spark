@@ -41,16 +41,17 @@ Only local installation are available yet.
 | File transfer   | ✔       | ✔     | ✔     |
 | Delete file     | ✔       | ✔     | ✔     |
 | OS info         | ✔       | ✔     | ✔     |
-| Shell           | ✔       | ✔     | ✔     |
+| Terminal        | ✔       | ✔     | ✔     |
 | Screenshot      | ✔       | ✔     | ✔     |
-| Shutdown        | ✔       | ✔     | ❌     |
-| Reboot          | ✔       | ✔     | ❌     |
-| Hibernate       | ✔       | ❌     | ❌     |
-| Sleep           | ✔       | ❌     | ❌     |
-| Log off         | ✔       | ❌     | ❌     |
-| Lock screen     | ✔       | ❌     | ❌     |
+| * Shutdown      | ✔       | ✔     | ✔     |
+| * Reboot        | ✔       | ✔     | ✔     |
+| * Hibernate     | ✔       | ❌     | ❌     |
+| * Sleep         | ✔       | ❌     | ❌     |
+| * Log off       | ✔       | ❌     | ❌     |
+| * Lock screen   | ✔       | ❌     | ❌     |
 
 * Blank cell means the situation is not tested yet.
+* The Star symbol means the function may need administration or root privilege.
 
 ---
 

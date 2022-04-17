@@ -1,5 +1,4 @@
 export GO111MODULE=auto
-mkdir ./releases
 export COMMIT=`git rev-parse HEAD`
 
 

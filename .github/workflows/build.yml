@@ -1,4 +1,4 @@
-name: Build
+name: build
 
 on:
   push:
@@ -6,32 +6,89 @@ on:
       - '!v*.*.*'
 
 jobs:
+  build-macOS-clients:
+    runs-on: macos-latest
 
-  build:
-    runs-on: ubuntu-latest
-    
     strategy:
       matrix:
-        node-version: [ 14.x ]
+        go-version: [ 1.17 ]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - name: Set up golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Build clients
+        run: |
+          export COMMIT=`git rev-parse HEAD`
+          export GOMOD=`pwd`/go.mod
+          export CGO_ENABLED=1
+          go mod tidy
+          go mod download
+          mkdir ./built
+          
+          export GOOS=darwin
+          export GOARCH=arm64
+          go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/darwin_arm64 Spark/client
+          export GOARCH=amd64
+          go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/darwin_amd64 Spark/client
+
+      - name: Upload prebuilt client (darwin_arm64)
+        uses: actions/upload-artifact@v2
+        with:
+          name: darwin_arm64
+          path: ./built/darwin_arm64
+
+      - name: Upload prebuilt client (darwin_amd64)
+        uses: actions/upload-artifact@v2
+        with:
+          name: darwin_amd64
+          path: ./built/darwin_amd64
+
+
+
+  build-others:
+    needs: [ build-macOS-clients ]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [ 16.x ]
+        go-version: [ 1.17 ]
+
+    steps:
+    - uses: actions/checkout@v3
 
     - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
+    - name: Set up golang
+      uses: actions/setup-go@v3
       with:
-        go-version: 1.17
+        go-version: ${{ matrix.go-version }}
 
     - name: Install statik
       run: |
         export PATH=$PATH:~/go/bin/
         go install github.com/rakyll/statik
-        
+
+    - name: Get artifacts from previous job (arm64)
+      uses: actions/download-artifact@v3
+      with:
+        name: darwin_arm64
+        path: ./built
+
+    - name: Get artifacts from previous job (amd64)
+      uses: actions/download-artifact@v3
+      with:
+        name: darwin_amd64
+        path: ./built
+
     - name: Build and embed clients
       run: |
         chmod +x ./build.client.sh
@@ -39,17 +96,19 @@ jobs:
         export CGO_ENABLED=0
         go mod tidy
         go mod download
+        
         ./build.client.sh
         statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
-        
-    - name: Build and embed static resources
+
+    - name: Build and pack static resources
       run: |
         cd ./web
         npm install
         npm run build-prod
         statik -m -src="./dist" -f -dest="../server/embed" -p web -ns web
         cd ..
-        
+        zip -q -r ./embed.zip ./server/embed
+
     - name: Build server
       run: |
         chmod +x ./build.server.sh
@@ -57,9 +116,10 @@ jobs:
         export CGO_ENABLED=0
         go mod tidy
         go mod download
+        mkdir ./releases
         ./build.server.sh
 
-    - name: Install zip and tar
+    - name: Pack releases
       run: |
         cd ./releases
         sudo apt install zip tar -y
@@ -71,54 +131,12 @@ jobs:
         zip -r server_windows_arm64.zip server_windows_arm64.exe
         zip -r server_windows_i386.zip server_windows_i386.exe
         zip -r server_windows_amd64.zip server_windows_amd64.exe
-        
-    - name: Upload binary files (server_linux_arm)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_linux_arm.tar.gz
-        path: releases/server_linux_arm.tar.gz
 
-    - name: Upload binary files (server_linux_arm64)
+    - name: Upload embedding resources (embed.zip)
       uses: actions/upload-artifact@v2
       with:
-        name: server_linux_arm64.tar.gz
-        path: releases/server_linux_arm64.tar.gz
-
-    - name: Upload binary files (server_linux_i386)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_linux_i386.tar.gz
-        path: releases/server_linux_i386.tar.gz
-
-    - name: Upload binary files (server_linux_amd64)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_linux_amd64.tar.gz
-        path: releases/server_linux_amd64.tar.gz
-
-    - name: Upload binary files (server_windows_arm)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_windows_arm.zip
-        path: releases/server_windows_arm.zip
-
-    - name: Upload binary files (server_windows_arm64)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_windows_arm64.zip
-        path: releases/server_windows_arm64.zip
-
-    - name: Upload binary files (server_windows_i386)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_windows_i386.zip
-        path: releases/server_windows_i386.zip
-
-    - name: Upload binary files (server_windows_amd64)
-      uses: actions/upload-artifact@v2
-      with:
-        name: server_windows_amd64.zip
-        path: releases/server_windows_amd64.zip
+        name: embed.zip
+        path: embed.zip
 
     - name: Release
       uses: softprops/action-gh-release@v1
@@ -134,3 +152,67 @@ jobs:
           releases/server_windows_arm64.zip
           releases/server_windows_i386.zip
           releases/server_windows_amd64.zip
+
+
+
+  build-macOS-servers:
+    needs: [ build-others ]
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        go-version: [ 1.17 ]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Get artifacts from previous job (embed.zip)
+        uses: actions/download-artifact@v3
+        with:
+          name: embed.zip
+          path: .
+
+      - name: Build and compress servers
+        run: |
+          rm -rf ./server/embed
+          unzip -q embed.zip
+          
+          export COMMIT=`git rev-parse HEAD`
+          export GOMOD=`pwd`/go.mod
+          export CGO_ENABLED=0
+          go mod tidy
+          go mod download
+          mkdir ./releases
+          
+          export GOOS=darwin
+          export GOARCH=arm64
+          go build -ldflags "-s -w -X 'Spark/server/config.COMMIT=$COMMIT'" -tags=jsoniter -o ./releases/server_darwin_arm64 Spark/server
+          export GOARCH=amd64
+          go build -ldflags "-s -w -X 'Spark/server/config.COMMIT=$COMMIT'" -tags=jsoniter -o ./releases/server_darwin_amd64 Spark/server
+          
+          cd ./releases
+          tar -zcvf server_darwin_arm64.tar.gz server_darwin_arm64
+          tar -zcvf server_darwin_amd64.tar.gz server_darwin_amd64
+          cd ..
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            releases/server_darwin_arm64.tar.gz
+            releases/server_darwin_amd64.tar.gz
+
+      - name: Clean up
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: |
+            embed.zip
+            darwin_arm64
+            darwin_amd64

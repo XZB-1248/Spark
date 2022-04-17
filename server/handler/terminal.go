@@ -141,7 +141,7 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 			if pack.Code != 0 {
 				msg := `${i18n|terminalSessionCreationFailed}`
 				if len(pack.Msg) > 0 {
-					msg += pack.Msg
+					msg += `: ` + pack.Msg
 				} else {
 					msg += `${i18n|unknownError}`
 				}
@@ -259,5 +259,55 @@ func onMessage(session *melody.Session, data []byte) {
 				`terminal`: terminal.termUUID,
 			}, Event: terminal.eventUUID}, terminal.deviceConn)
 		}
+	}
+	if pack.Act == `resizeTerminal` {
+		val, ok := session.Get(`Terminal`)
+		if !ok {
+			return
+		}
+		termUUID, ok := val.(string)
+		if !ok {
+			return
+		}
+		val, ok = terminals.Get(termUUID)
+		if !ok {
+			return
+		}
+		terminal, ok := val.(*terminal)
+		if !ok {
+			return
+		}
+		if pack.Data == nil {
+			return
+		}
+		if width, ok := pack.Data[`width`]; ok {
+			if height, ok := pack.Data[`height`]; ok {
+				common.SendPack(modules.Packet{Act: `resizeTerminal`, Data: gin.H{
+					`width`:    width,
+					`height`:   height,
+					`terminal`: terminal.termUUID,
+				}, Event: terminal.eventUUID}, terminal.deviceConn)
+			}
+		}
+	}
+}
+
+func CloseSessionsByDevice(deviceID string) {
+	var queue []string
+	terminals.IterCb(func(key string, val interface{}) bool {
+		terminal, ok := val.(*terminal)
+		if !ok {
+			return false
+		}
+		if terminal.device == deviceID {
+			common.RemoveEvent(terminal.eventUUID)
+			terminal.session.Close()
+			queue = append(queue, key)
+		}
+		return false
+	})
+
+	for _, key := range queue {
+		terminals.Remove(key)
 	}
 }

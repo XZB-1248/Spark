@@ -5,6 +5,7 @@ import {WebLinksAddon} from "xterm-addon-web-links";
 import {FitAddon} from "xterm-addon-fit";
 import debounce from 'lodash/debounce';
 import CryptoJS from 'crypto-js';
+import wcwidth from 'wcwidth';
 import "xterm/css/xterm.css";
 import i18n from "../locale/locale";
 import {translate} from "../utils/utils";
@@ -73,12 +74,12 @@ function wordArray2Uint8Array(wordArray) {
     const l = wordArray.sigBytes;
     const words = wordArray.words;
     const result = new Uint8Array(l);
-    var i = 0 /*dst*/, j = 0 /*src*/;
+    let i = 0 /*dst*/, j = 0 /*src*/;
     while (true) {
         // here i is a multiple of 4
         if (i === l)
             break;
-        var w = words[j++];
+        const w = words[j++];
         result[i++] = (w & 0xff000000) >>> 24;
         if (i === l)
             break;
@@ -117,43 +118,62 @@ class TerminalModal extends React.Component {
 
     initialize(ev) {
         ev?.dispose();
-        let cmd = '';
         let buffer = '';
         let termEv = null;
-        termEv = this.term.onData((e) => {
-            if (!this.conn) {
-                if (e === '\r' || e === ' ') {
-                    this.term.write(`\n${i18n.t('reconnecting')}\n`);
-                    this.termEv = this.initialize(termEv);
+        // Windows don't support pty, so we still use traditional way.
+        if (this.props.device.os === 'windows') {
+            let cmd = '';
+            termEv = this.term.onData((e) => {
+                if (!this.conn) {
+                    if (e === '\r' || e === ' ') {
+                        this.term.write(`\n${i18n.t('reconnecting')}\n`);
+                        this.termEv = this.initialize(termEv);
+                    }
+                    return;
                 }
-                return;
-            }
-            switch (e) {
-                case '\u0003':
-                    this.term.write('^C');
-                    this.sendInput('\u0003');
-                    break;
-                case '\r':
-                    this.term.write('\n');
-                    this.sendInput(cmd + '\n');
-                    buffer = cmd + '\n';
-                    cmd = '';
-                    break;
-                case '\u007F':
-                    if (cmd.length > 0) {
-                        cmd = cmd.substring(0, cmd.length - 1);
-                        this.term.write('\b \b');
+                switch (e) {
+                    case '\r':
+                        this.term.write('\n');
+                        this.sendInput(cmd + '\n');
+                        buffer = cmd + '\n';
+                        cmd = '';
+                        break;
+                    case '\u0003':
+                        this.term.write('^C');
+                        this.sendInput('\u0003');
+                        break;
+                    case '\u007F':
+                        if (cmd.length > 0) {
+                            let charWidth = wcwidth(cmd[cmd.length - 1]);
+                            cmd = cmd.substring(0, cmd.length - 1);
+
+                            this.term.write('\b'.repeat(charWidth));
+                            this.term.write(' '.repeat(charWidth));
+                            this.term.write('\b'.repeat(charWidth));
+                        }
+                        break;
+                    default:
+                        if ((e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7B)) || e >= '\u00a0') {
+                            cmd += e;
+                            this.term.write(e);
+                            return;
+                        }
+                }
+            });
+        } else {
+            termEv = this.term.onData((e) => {
+                if (!this.conn) {
+                    if (e === '\r' || e === ' ') {
+                        this.term.write(`\n${i18n.t('reconnecting')}\n`);
+                        this.termEv = this.initialize(termEv);
                     }
-                    break;
-                default:
-                    if ((e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7B)) || e >= '\u00a0') {
-                        cmd += e;
-                        this.term.write(e);
-                        return;
-                    }
-            }
-        });
-        this.ws = new WebSocket(`${getBaseURL()}?device=${this.props.device}&secret=${this.secret}`);
+                    return;
+                }
+                this.sendInput(e);
+            });
+        }
+
+        this.ws = new WebSocket(`${getBaseURL()}?device=${this.props.device.id}&secret=${this.secret}`);
         this.ws.binaryType = 'arraybuffer';
         this.ws.onopen = () => {
             this.conn = true;
@@ -166,8 +186,12 @@ class TerminalModal extends React.Component {
             if (this.conn) {
                 if (data?.act === 'outputTerminal') {
                     data = ab2str(hex2buf(data?.data?.output));
-                    if (data === buffer) {
-                        buffer = '';
+                    if (buffer.length > 0) {
+                        // check if data starts with buffer, if so, remove buffer.
+                        if (data.startsWith(buffer)) {
+                            data = data.substring(buffer.length);
+                            buffer = '';
+                        }
                         return;
                     }
                     this.term.write(data);
@@ -182,12 +206,16 @@ class TerminalModal extends React.Component {
             if (this.conn) {
                 this.conn = false;
                 this.term.write(`\n${i18n.t('disconnected')}\n`);
+                this.secret = CryptoJS.enc.Hex.parse(genRandHex(32));
             }
         }
         this.ws.onerror = (e) => {
             if (this.conn) {
                 this.conn = false;
                 this.term.write(`\n${i18n.t('disconnected')}\n`);
+                this.secret = CryptoJS.enc.Hex.parse(genRandHex(32));
+            } else {
+                this.term.write(`\n${i18n.t('connectFailed')}\n`);
             }
         }
         return termEv;
@@ -272,10 +300,21 @@ class TerminalModal extends React.Component {
 
     doResize() {
         let height = document.body.clientHeight;
-        let rows = height / 42;
+        let rows = Math.floor(height / 42);
+        let cols = this?.term?.cols;
         this?.fit?.fit?.();
-        this?.term?.resize?.(this?.term?.cols, parseInt(rows));
+        this?.term?.resize?.(cols, rows);
         this?.term?.scrollToBottom?.();
+
+        if (this.conn) {
+            this.sendData({
+                act: 'resizeTerminal',
+                data: {
+                    width: cols,
+                    height: rows
+                }
+            });
+        }
     }
 
     onResize() {

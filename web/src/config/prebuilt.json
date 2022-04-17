@@ -42,5 +42,19 @@
 				"label": "amd64"
 			}
 		]
+	},
+	{
+		"value": "darwin",
+		"label": "Darwin",
+		"children": [
+			{
+				"value": "arm64",
+				"label": "arm64"
+			},
+			{
+				"value": "amd64",
+				"label": "amd64"
+			}
+		]
 	}
 ]

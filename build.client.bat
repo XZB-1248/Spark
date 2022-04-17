@@ -1,5 +1,4 @@
 set GO111MODULE=auto
-mkdir .\built
 for /F %%i in ('git rev-parse HEAD') do ( set COMMIT=%%i)
 
 
