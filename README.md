@@ -3,7 +3,17 @@
 **Spark** is a free, safe, open-source, web-based, cross-platform and full-featured RAT (Remote Administration Tool)
 that allow you to control all your devices via browser anywhere.
 
+We **won't** collect any data, thus the server will never self-upgrade. Your clients will only communicate with your server forever.
+
 ### [English] [[中文]](./README.ZH.md)
+
+---
+
+## **Disclaimer**
+
+**THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.YOU SHALL USE THIS PROJECT AT YOUR OWN RISK.THE AUTHORS AND DEVELOPERS ARE NOT RESPONSIBLE FOR ANY DAMAGE CAUSED BY YOUR MISUSE OF THIS PROJECT.**
+
+**YOUR DATA IS PRICELESS. THINK TWICE BEFORE YOU CLICK ANY BUTTON OR ENTER ANY COMMAND.**
 
 ---
 

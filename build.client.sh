@@ -2,6 +2,7 @@ export GO111MODULE=auto
 export COMMIT=`git rev-parse HEAD`
 
 
+
 export GOOS=linux
 
 export GOARCH=arm

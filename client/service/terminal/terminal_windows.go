@@ -5,7 +5,6 @@ import (
 	"Spark/modules"
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -173,17 +172,7 @@ func doKillTerminal(terminal *terminal) {
 }
 
 func getTerminal() string {
-	if runtime.GOOS == `windows` {
-		return `cmd.exe`
-	}
-	sh := []string{`/bin/bash`, `/bin/zsh`, `/bin/sh`}
-	for i := 0; i < len(sh); i++ {
-		_, err := os.Stat(sh[i])
-		if !errors.Is(err, os.ErrNotExist) {
-			return sh[i]
-		}
-	}
-	return `sh`
+	return `cmd.exe`
 }
 
 func encodeUTF8(s []byte) ([]byte, error) {
@@ -227,14 +216,14 @@ func healthCheck() {
 		// stores sessions to be disconnected
 		queue := make([]string, 0)
 		terminals.IterCb(func(uuid string, t interface{}) bool {
-			terminal, ok := t.(*terminal)
+			termSession, ok := t.(*terminal)
 			if !ok {
 				queue = append(queue, uuid)
 				return true
 			}
-			if timestamp-terminal.lastPack > MaxInterval {
+			if timestamp-termSession.lastPack > MaxInterval {
 				queue = append(queue, uuid)
-				doKillTerminal(terminal)
+				doKillTerminal(termSession)
 			}
 			return true
 		})
