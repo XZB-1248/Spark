@@ -132,7 +132,7 @@ function FileBrowser(props) {
     }
 
     function removeFile(file) {
-        request(`/api/device/file/remove`, {path: path + file, device: props.device}).then(res => {
+        request(`/api/device/file/remove`, {file: path + file, device: props.device}).then(res => {
             let data = res.data;
             if (data.code === 0) {
                 message.success(i18n.t('deleteSuccess'));
@@ -170,6 +170,7 @@ function FileBrowser(props) {
 
     return (
         <Modal
+            maskClosable={false}
             destroyOnClose={true}
             title={i18n.t('fileExplorer')}
             footer={null}
@@ -185,10 +186,6 @@ function FileBrowser(props) {
                 onRow={file => ({
                     onDoubleClick: onRowClick.bind(null, file),
                 })}
-                tableStyle={{
-                    minHeight: '350px',
-                    maxHeight: '350px'
-                }}
                 toolbar={{
                     actions: []
                 }}
@@ -204,7 +201,6 @@ function FileBrowser(props) {
                 pagination={false}
                 actionRef={tableRef}
             >
-
             </ProTable>
         </Modal>
     )

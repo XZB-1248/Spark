@@ -326,6 +326,7 @@ class TerminalModal extends React.Component {
     render() {
         return (
             <Modal
+                maskClosable={false}
                 title={i18n.t('terminal')}
                 visible={this.props.visible}
                 onCancel={this.props.onCancel}

@@ -20,32 +20,15 @@ import (
 // client and let it upload the file specified.
 func removeDeviceFile(ctx *gin.Context) {
 	var form struct {
-		Path   string `json:"path" yaml:"path" form:"path" binding:"required"`
-		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
-		Device string `json:"device" yaml:"device" form:"device"`
+		File string `json:"file" yaml:"file" form:"file" binding:"required"`
 	}
-	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+	target, ok := checkForm(ctx, &form)
+	if !ok {
 		return
 	}
-	target := ``
 	trigger := utils.GetStrUUID()
-	if len(form.Conn) == 0 {
-		ok := false
-		target, ok = common.CheckDevice(form.Device)
-		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	} else {
-		target = form.Conn
-		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	}
-	common.SendPackUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`path`: form.Path}, Event: trigger}, target)
-	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
+	common.SendPackUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`file`: form.File}, Event: trigger}, target)
+	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -60,38 +43,21 @@ func removeDeviceFile(ctx *gin.Context) {
 // listDeviceFiles will list files on remote client
 func listDeviceFiles(ctx *gin.Context) {
 	var form struct {
-		Path   string `json:"path" yaml:"path" form:"path" binding:"required"`
-		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
-		Device string `json:"device" yaml:"device" form:"device"`
+		Path string `json:"path" yaml:"path" form:"path" binding:"required"`
 	}
-	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+	target, ok := checkForm(ctx, &form)
+	if !ok {
 		return
 	}
-	connUUID := ``
 	trigger := utils.GetStrUUID()
-	if len(form.Conn) == 0 {
-		ok := false
-		connUUID, ok = common.CheckDevice(form.Device)
-		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	} else {
-		connUUID = form.Conn
-		if !common.Devices.Has(connUUID) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	}
-	common.SendPackUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path}, Event: trigger}, connUUID)
-	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
+	common.SendPackUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path}, Event: trigger}, target)
+	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0, Data: p.Data})
 		}
-	}, connUUID, trigger, 5*time.Second)
+	}, target, trigger, 5*time.Second)
 	if !ok {
 		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
@@ -101,30 +67,13 @@ func listDeviceFiles(ctx *gin.Context) {
 // client and let it upload the file specified.
 func getDeviceFile(ctx *gin.Context) {
 	var form struct {
-		File   string `json:"file" yaml:"file" form:"file" binding:"required"`
-		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
-		Device string `json:"device" yaml:"device" form:"device"`
+		File string `json:"file" yaml:"file" form:"file" binding:"required"`
 	}
-	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+	target, ok := checkForm(ctx, &form)
+	if !ok {
 		return
 	}
-	target := ``
 	trigger := utils.GetStrUUID()
-	if len(form.Conn) == 0 {
-		ok := false
-		target, ok = common.CheckDevice(form.Device)
-		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	} else {
-		target = form.Conn
-		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	}
 	var rangeStart, rangeEnd int64
 	var err error
 	partial := false

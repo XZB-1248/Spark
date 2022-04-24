@@ -24,6 +24,8 @@ func init() {
 		os.Exit(0)
 		return
 	}
+
+	// Convert first 2 bytes to int, which is the length of the encrypted config.
 	dataLen := int(big.NewInt(0).SetBytes([]byte(config.CfgBuffer[:2])).Uint64())
 	if dataLen > len(config.CfgBuffer)-2 {
 		os.Exit(0)

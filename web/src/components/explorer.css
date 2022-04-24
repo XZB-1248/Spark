@@ -2,3 +2,8 @@
     user-select: none;
     cursor: pointer;
 }
+
+.ant-table-body {
+    max-height: 300px;
+    min-height: 300px;
+}

@@ -20,6 +20,7 @@
 	"terminal": "终端",
 	"procMgr": "进程",
 	"fileMgr": "文件",
+	"regedit": "注册表",
 	"screenshot": "截屏",
 	"lock": "锁屏",
 	"logoff": "注销",
@@ -44,6 +45,14 @@
 	"deleteConfirm": "确定要删除该{0}吗？",
 	"deleteSuccess": "文件或目录已被删除",
 	"dateTimeFormat": "YYYY/MM/DD HH:mm",
+	"fileOrDirNotExist": "文件或目录不存在",
+
+	"registryEditor": "注册表编辑器",
+	"unknownRegistryKey": "注册表键有误",
+	"invalidRegistryPath": "注册表路径有误",
+	"invalidRegistryRecordName": "注册表记录名有误",
+	"invalidRegistryRecordValue": "注册表记录值有误",
+	"invalidRegistryRecordType": "注册表记录类型有误",
 
 	"host": "主机",
 	"port": "端口",

@@ -83,6 +83,7 @@ function ProcessMgr(props) {
 
     return (
         <Modal
+            maskClosable={false}
             destroyOnClose={true}
             title={i18n.t('processManager')}
             footer={null}

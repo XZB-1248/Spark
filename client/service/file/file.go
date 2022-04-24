@@ -15,7 +15,7 @@ type file struct {
 	Name string `json:"name"`
 	Size int64  `json:"size"`
 	Time int64  `json:"time"`
-	Type int    `json:"type"` //0: file, 1: folder, 2: volume
+	Type int    `json:"type"` // 0: file, 1: folder, 2: volume
 }
 
 // listFiles returns files and directories find in path.
@@ -38,6 +38,17 @@ func listFiles(path string) ([]file, error) {
 		})
 	}
 	return result, nil
+}
+
+func RemoveFile(path string) error {
+	if path == `\` || path == `/` || len(path) == 0 {
+		return errors.New(`${i18n|fileOrDirNotExist}`)
+	}
+	err := os.RemoveAll(path)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func UploadFile(path, trigger string, start, end int64) error {

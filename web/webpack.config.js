@@ -51,16 +51,7 @@ module.exports = (env, args) => {
                 '.jsx'
             ]
         },
-        plugins: mode === 'production' ? [
-            new HtmlWebpackPlugin({
-                appMountId: 'root',
-                template: './public/index.html',
-                filename: 'index.html',
-                inject: true
-            }),
-            new CleanWebpackPlugin(),
-            new AntdDayjsWebpackPlugin()
-        ] : [
+        plugins: [
             new HtmlWebpackPlugin({
                 appMountId: 'root',
                 template: './public/index.html',

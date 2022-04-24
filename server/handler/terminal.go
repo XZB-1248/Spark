@@ -45,7 +45,7 @@ func init() {
 			session.Close()
 			return
 		}
-		connUUID, ok := common.CheckDevice(device.(string))
+		connUUID, ok := common.CheckDevice(device.(string), ``)
 		if !ok {
 			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
 			session.Close()
@@ -120,7 +120,7 @@ func initTerminal(ctx *gin.Context) {
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
-	if _, ok := common.CheckDevice(device); !ok {
+	if _, ok := common.CheckDevice(device, ``); !ok {
 		ctx.Status(http.StatusBadRequest)
 		return
 	}

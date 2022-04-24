@@ -102,99 +102,6 @@ func checkUpdate(ctx *gin.Context) {
 	}
 }
 
-// putScreenshot will forward screenshot image from client to browser.
-func putScreenshot(ctx *gin.Context) {
-	errMsg := ctx.GetHeader(`Error`)
-	trigger := ctx.GetHeader(`Trigger`)
-	if len(trigger) == 0 {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
-		return
-	}
-	if len(errMsg) > 0 {
-		common.CallEvent(modules.Packet{
-			Code:  1,
-			Msg:   fmt.Sprintf(`${i18n|screenshotFailed}: %v`, errMsg),
-			Event: trigger,
-		}, nil)
-		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
-		return
-	}
-	data, err := ctx.GetRawData()
-	if len(data) == 0 {
-		msg := ``
-		if err != nil {
-			msg = fmt.Sprintf(`${i18n|screenshotObtainFailed}: %v`, err)
-			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: msg})
-		} else {
-			msg = `${i18n|screenshotFailed}: ${i18n|unknownError}`
-			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
-		}
-		common.CallEvent(modules.Packet{
-			Code:  1,
-			Msg:   msg,
-			Event: trigger,
-		}, nil)
-		return
-	}
-	common.CallEvent(modules.Packet{
-		Code: 0,
-		Data: map[string]interface{}{
-			`screenshot`: data,
-		},
-		Event: trigger,
-	}, nil)
-	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
-}
-
-// getScreenshot will call client to screenshot.
-func getScreenshot(ctx *gin.Context) {
-	var form struct {
-		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
-		Device string `json:"device" yaml:"device" form:"device"`
-	}
-	if ctx.ShouldBind(&form) != nil || (len(form.Conn) == 0 && len(form.Device) == 0) {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
-		return
-	}
-	target := ``
-	trigger := utils.GetStrUUID()
-	if len(form.Conn) == 0 {
-		ok := false
-		target, ok = common.CheckDevice(form.Device)
-		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	} else {
-		target = form.Conn
-		if !common.Devices.Has(target) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	}
-	common.SendPackUUID(modules.Packet{Code: 0, Act: `screenshot`, Event: trigger}, target)
-	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
-		if p.Code != 0 {
-			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
-		} else {
-			data, ok := p.Data[`screenshot`]
-			if !ok {
-				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|screenshotObtainFailed}`})
-				return
-			}
-			screenshot, ok := data.([]byte)
-			if !ok {
-				ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|screenshotObtainFailed}`})
-				return
-			}
-			ctx.Data(200, `image/png`, screenshot)
-		}
-	}, target, trigger, 5*time.Second)
-	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
-	}
-}
-
 // getDevices will return all info about all clients.
 func getDevices(ctx *gin.Context) {
 	devices := make(map[string]modules.Device)
@@ -210,12 +117,8 @@ func getDevices(ctx *gin.Context) {
 
 // callDevice will call client with command from browser.
 func callDevice(ctx *gin.Context) {
-	var form struct {
-		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
-		Device string `json:"device" yaml:"device" form:"device"`
-	}
 	act := ctx.Param(`act`)
-	if ctx.ShouldBind(&form) != nil || len(act) == 0 || (len(form.Conn) == 0 && len(form.Device) == 0) {
+	if len(act) == 0 {
 		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
@@ -233,24 +136,13 @@ func callDevice(ctx *gin.Context) {
 			return
 		}
 	}
-	connUUID := ``
-	trigger := utils.GetStrUUID()
-	if len(form.Conn) == 0 {
-		ok := false
-		connUUID, ok = common.CheckDevice(form.Device)
-		if !ok {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
-	} else {
-		connUUID = form.Conn
-		if !common.Devices.Has(connUUID) {
-			ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
-			return
-		}
+	connUUID, ok := checkForm(ctx, nil)
+	if !ok {
+		return
 	}
+	trigger := utils.GetStrUUID()
 	common.SendPackUUID(modules.Packet{Act: act, Event: trigger}, connUUID)
-	ok := common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
+	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
@@ -262,6 +154,29 @@ func callDevice(ctx *gin.Context) {
 		//So we take this as a success.
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 	}
+}
+
+// checkForm checks if the form contains the required fields.
+// Every request must contain connection UUID or device ID.
+func checkForm(ctx *gin.Context, form interface{}) (string, bool) {
+	var base struct {
+		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
+		Device string `json:"device" yaml:"device" form:"device"`
+	}
+	if form != nil && ctx.ShouldBind(form) != nil {
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return ``, false
+	}
+	if ctx.ShouldBind(&base) != nil || (len(base.Conn) == 0 && len(base.Device) == 0) {
+		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return ``, false
+	}
+	connUUID, ok := common.CheckDevice(base.Device, base.Conn)
+	if !ok {
+		ctx.JSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
+		return ``, false
+	}
+	return connUUID, true
 }
 
 // WSDevice handles events about device info.

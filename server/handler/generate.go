@@ -175,9 +175,13 @@ func genConfig(cfg clientCfg) ([]byte, error) {
 		return nil, errTooLargeEntity
 	}
 
+	// Get the length of encrypted buffer as a 2-byte big-endian integer.
+	// And append encrypted buffer to the end of the data length.
 	dataLen := big.NewInt(int64(len(final))).Bytes()
 	dataLen = append(bytes.Repeat([]byte{'\x00'}, 2-len(dataLen)), dataLen...)
 
+	// If the length of encrypted buffer is less than 384,
+	// append the remaining bytes with random bytes.
 	final = append(dataLen, final...)
 	for len(final) < 384 {
 		final = append(final, utils.GetUUID()...)

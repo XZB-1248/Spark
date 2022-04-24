@@ -44,6 +44,7 @@
 	"deleteConfirm": "Are you sure to delete this {0}?",
 	"deleteSuccess": "File or folder deleted",
 	"dateTimeFormat": "MMM D, YYYY h:mm A",
+	"fileOrDirNotExist": "File or folder does not exist",
 
 	"host": "Host",
 	"port": "Port",

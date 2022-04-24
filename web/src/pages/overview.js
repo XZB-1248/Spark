@@ -95,7 +95,7 @@ function overview(props) {
         },
         {
             key: 'mac',
-            title: 'Mac',
+            title: 'MAC',
             dataIndex: 'mac',
             ellipsis: true,
             width: 100
@@ -193,6 +193,16 @@ function overview(props) {
     }
 
     function renderOperation(device) {
+        let menus = [
+            {key: 'screenshot', name: i18n.t('screenshot')},
+            {key: 'lock', name: i18n.t('lock')},
+            {key: 'logoff', name: i18n.t('logoff')},
+            {key: 'hibernate', name: i18n.t('hibernate')},
+            {key: 'suspend', name: i18n.t('suspend')},
+            {key: 'restart', name: i18n.t('restart')},
+            {key: 'shutdown', name: i18n.t('shutdown')},
+            {key: 'offline', name: i18n.t('offline')},
+        ];
         return [
             <a key='terminal' onClick={setTerminal.bind(null, device)}>{i18n.t('terminal')}</a>,
             <a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>{i18n.t('procMgr')}</a>,
@@ -202,24 +212,15 @@ function overview(props) {
             }}>{i18n.t('fileMgr')}</a>,
             <TableDropdown
                 key='more'
-                onSelect={(key) => callDevice(key, device.id)}
-                menus={[
-                    {key: 'screenshot', name: i18n.t('screenshot')},
-                    {key: 'lock', name: i18n.t('lock')},
-                    {key: 'logoff', name: i18n.t('logoff')},
-                    {key: 'hibernate', name: i18n.t('hibernate')},
-                    {key: 'suspend', name: i18n.t('suspend')},
-                    {key: 'restart', name: i18n.t('restart')},
-                    {key: 'shutdown', name: i18n.t('shutdown')},
-                    {key: 'offline', name: i18n.t('offline')},
-                ]}
+                onSelect={(key) => callDevice(key, device)}
+                menus={menus}
             />,
         ]
     }
 
     function callDevice(act, device) {
         if (act === 'screenshot') {
-            request('/api/device/screenshot/get', {device: device}, {}, {
+            request('/api/device/screenshot/get', {device: device.id}, {}, {
                 responseType: 'blob'
             }).then((res) => {
                 if ((res.data.type ?? '').substring(0, 16) === 'application/json') {
@@ -244,7 +245,7 @@ function overview(props) {
             title: i18n.t('operationConfirm').replace('{0}', i18n.t(act).toUpperCase()),
             icon: <QuestionCircleOutlined/>,
             onOk() {
-                request('/api/device/' + act, {device: device}).then(res => {
+                request('/api/device/' + act, {device: device.id}).then(res => {
                     let data = res.data;
                     if (data.code === 0) {
                         message.success(i18n.t('operationSuccess'));

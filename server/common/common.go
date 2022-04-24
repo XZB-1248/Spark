@@ -141,17 +141,24 @@ func CheckClientReq(ctx *gin.Context, cb func(*melody.Session)) bool {
 	return find
 }
 
-func CheckDevice(deviceID string) (string, bool) {
-	connUUID := ``
-	Devices.IterCb(func(uuid string, v interface{}) bool {
-		device := v.(*modules.Device)
-		if device.ID == deviceID {
-			connUUID = uuid
-			return false
+func CheckDevice(deviceID, connUUID string) (string, bool) {
+	if len(connUUID) > 0 {
+		if !Devices.Has(connUUID) {
+			return connUUID, true
 		}
-		return true
-	})
-	return connUUID, len(connUUID) > 0
+	} else {
+		tempConnUUID := ``
+		Devices.IterCb(func(uuid string, v interface{}) bool {
+			device := v.(*modules.Device)
+			if device.ID == deviceID {
+				tempConnUUID = uuid
+				return false
+			}
+			return true
+		})
+		return tempConnUUID, len(tempConnUUID) > 0
+	}
+	return ``, false
 }
 
 func EncAES(data []byte, key []byte) ([]byte, error) {

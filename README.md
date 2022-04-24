@@ -5,7 +5,7 @@ that allow you to control all your devices via browser anywhere.
 
 We **won't** collect any data, thus the server will never self-upgrade. Your clients will only communicate with your server forever.
 
-### [English] [[中文]](./README.ZH.md)
+### [English] [[中文]](./README.ZH.md) [[API Document]](./API.md) [[API文档]](./API.ZH.md)
 
 ---
 
@@ -23,7 +23,7 @@ Only local installation are available yet.
 
 ### Local installation
 * Get prebuilt executable file from [Releases](https://github.com/XZB-1248/Spark/releases) page.
-* Create a configuration file named "Config.json" and set your own salt.
+* Create a configuration file named `Config.json` and set your own salt.
 
   ```json
   {
@@ -47,6 +47,7 @@ Only local installation are available yet.
 |-----------------|---------|-------|-------|
 | Process manager | ✔       | ✔     | ✔     |
 | Kill process    | ✔       | ✔     | ✔     |
+| Network Status  | ✔       | ✔     | ✔     |
 | File explorer   | ✔       | ✔     | ✔     |
 | File transfer   | ✔       | ✔     | ✔     |
 | Delete file     | ✔       | ✔     | ✔     |
