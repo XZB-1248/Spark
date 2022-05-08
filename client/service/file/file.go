@@ -13,7 +13,7 @@ import (
 
 type file struct {
 	Name string `json:"name"`
-	Size int64  `json:"size"`
+	Size uint64 `json:"size"`
 	Time int64  `json:"time"`
 	Type int    `json:"type"` // 0: file, 1: folder, 2: volume
 }
@@ -32,7 +32,7 @@ func listFiles(path string) ([]file, error) {
 		}
 		result = append(result, file{
 			Name: files[i].Name(),
-			Size: files[i].Size(),
+			Size: uint64(files[i].Size()),
 			Time: files[i].ModTime().Unix(),
 			Type: itemType,
 		})

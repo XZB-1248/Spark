@@ -132,7 +132,7 @@ func GetCPUInfo() (modules.CPU, error) {
 	return result, nil
 }
 
-func GetMemInfo() (modules.IO, error) {
+func GetRAMInfo() (modules.IO, error) {
 	result := modules.IO{}
 	stat, err := mem.VirtualMemory()
 	if err != nil {
@@ -194,9 +194,9 @@ func GetDevice() (*modules.Device, error) {
 			Recv: 0,
 		}
 	}
-	memInfo, err := GetMemInfo()
+	ramInfo, err := GetRAMInfo()
 	if err != nil {
-		memInfo = modules.IO{
+		ramInfo = modules.IO{
 			Total: 0,
 			Used:  0,
 			Usage: 0,
@@ -234,8 +234,8 @@ func GetDevice() (*modules.Device, error) {
 		LAN:      localIP,
 		Mac:      macAddr,
 		CPU:      cpuInfo,
+		RAM:      ramInfo,
 		Net:      netInfo,
-		Mem:      memInfo,
 		Disk:     diskInfo,
 		Uptime:   uptime,
 		Hostname: hostname,
@@ -258,7 +258,7 @@ func GetPartialInfo(getDisk bool) (modules.Device, error) {
 			Sent: 0,
 		}
 	}
-	memInfo, err := GetMemInfo()
+	memInfo, err := GetRAMInfo()
 	if err != nil {
 		memInfo = modules.IO{
 			Total: 0,
@@ -279,9 +279,9 @@ func GetPartialInfo(getDisk bool) (modules.Device, error) {
 		uptime = 0
 	}
 	return modules.Device{
-		CPU:    cpuInfo,
 		Net:    netInfo,
-		Mem:    memInfo,
+		CPU:    cpuInfo,
+		RAM:    memInfo,
 		Disk:   diskInfo,
 		Uptime: uptime,
 	}, nil

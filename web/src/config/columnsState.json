@@ -1,11 +1,11 @@
 {
 	"mac": {
-		"show": false
+		"show": true
 	},
-	"mem_total": {
-		"show": false
+	"ram_total": {
+		"show": true
 	},
 	"disk_usage": {
-		"show": false
+		"show": true
 	}
 }

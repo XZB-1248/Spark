@@ -217,13 +217,13 @@ func heartbeat(wsConn *common.Conn) error {
 	for range time.NewTicker(2 * time.Second).C {
 		t++
 		// GetPartialInfo always costs more than 1 second.
-		// So it is actually get disk info every 200*3 seconds (10 minutes).
-		device, err := GetPartialInfo(t >= 200)
+		// So it is actually get disk info every 20*3 seconds (1 minute).
+		device, err := GetPartialInfo(t >= 20)
 		if err != nil {
 			golog.Error(err)
 			continue
 		}
-		if t >= 200 {
+		if t >= 20 {
 			t = 0
 		}
 		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: device}, wsConn)

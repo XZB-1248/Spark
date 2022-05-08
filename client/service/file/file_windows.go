@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package file
@@ -15,7 +16,14 @@ func ListFiles(path string) ([]file, error) {
 			return nil, err
 		}
 		for i := 0; i < len(partitions); i++ {
-			result = append(result, file{Name: partitions[i].Mountpoint, Type: 2})
+			size := uint64(0)
+			stat, err := disk.Usage(partitions[i].Mountpoint)
+			if err != nil || stat == nil {
+				size = 0
+			} else {
+				size = stat.Total
+			}
+			result = append(result, file{Name: partitions[i].Mountpoint, Type: 2, Size: size})
 		}
 		return result, nil
 	}

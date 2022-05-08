@@ -25,7 +25,7 @@ type Device struct {
 	Mac      string `json:"mac"`
 	Net      Net    `json:"net"`
 	CPU      CPU    `json:"cpu"`
-	Mem      IO     `json:"mem"`
+	RAM      IO     `json:"ram"`
 	Disk     IO     `json:"disk"`
 	Uptime   uint64 `json:"uptime"`
 	Latency  uint   `json:"latency"`

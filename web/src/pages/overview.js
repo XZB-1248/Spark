@@ -56,11 +56,11 @@ function overview(props) {
             width: 100
         },
         {
-            key: 'mem_usage',
-            title: i18n.t('memUsage'),
-            dataIndex: 'mem_usage',
+            key: 'ram_usage',
+            title: i18n.t('ramUsage'),
+            dataIndex: 'ram_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.mem_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
+            render: (_, v) => <Progress percent={v.ram_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
             width: 100
         },
         {
@@ -70,14 +70,6 @@ function overview(props) {
             ellipsis: true,
             render: (_, v) => <Progress percent={v.disk_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
             width: 100
-        },
-        {
-            key: 'mem_total',
-            title: i18n.t('memTotal'),
-            dataIndex: 'mem_total',
-            ellipsis: true,
-            renderText: formatSize,
-            width: 70
         },
         {
             key: 'os',
@@ -91,6 +83,14 @@ function overview(props) {
             title: i18n.t('arch'),
             dataIndex: 'arch',
             ellipsis: true,
+            width: 70
+        },
+        {
+            key: 'ram_total',
+            title: i18n.t('ram'),
+            dataIndex: 'ram_total',
+            ellipsis: true,
+            renderText: formatSize,
             width: 70
         },
         {

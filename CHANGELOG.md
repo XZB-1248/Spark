@@ -1,3 +1,13 @@
+## v0.0.6
+
+* Update: i18n.
+* Remove: initial columns state.
+
+* 更新：国际化。
+* 移除：默认隐藏部分信息。
+
+
+
 ## v0.0.5
 
 * Add: server and client now support macOS.

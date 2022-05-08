@@ -232,8 +232,8 @@ func WSDevice(data []byte, session *melody.Session) error {
 			deviceInfo, ok := val.(*modules.Device)
 			if ok {
 				deviceInfo.CPU = pack.Device.CPU
+				deviceInfo.RAM = pack.Device.RAM
 				deviceInfo.Net = pack.Device.Net
-				deviceInfo.Mem = pack.Device.Mem
 				if pack.Device.Disk.Total > 0 {
 					deviceInfo.Disk = pack.Device.Disk
 				}
