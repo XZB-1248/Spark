@@ -7,13 +7,18 @@
 	"hostname": "Hostname",
 	"username": "Username",
 	"cpuUsage": "CPU Usage",
+	"cpuLogicalCores": "Logical Processors",
+	"cpuPhysicalCores": "Physical Processors",
 	"ramUsage": "RAM Usage",
 	"diskUsage": "Disk Usage",
+	"free": "Free",
+	"used": "Used",
+	"total": "Total",
 	"ram": "RAM",
 	"os": "OS",
 	"arch": "Arch",
 	"uptime": "Uptime",
-	"netStat": "Network IO",
+	"netStat": "Traffic",
 	"operations": "Operations",
 	"hours": "h",
 	"minutes": "m",
@@ -73,5 +78,7 @@
 	"screenshotObtainFailed": "Failed to obtain screenshot",
 	"invalidFileRange": "Invalid file range",
 	"operationNotSupported": "Operation is not supported",
-	"noDisplayFound": "No display found"
+	"noDisplayFound": "No display found",
+
+	"colon": ": "
 }

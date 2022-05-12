@@ -24,7 +24,7 @@ function waitTime(time) {
 };
 
 function formatSize(size) {
-    if (size === 0) return 'Unknown';
+    if (size === 0) return '0 B';
     let k = 1024,
         i = Math.floor(Math.log(size) / Math.log(k)),
         units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];

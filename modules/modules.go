@@ -22,7 +22,7 @@ type Device struct {
 	Arch     string `json:"arch"`
 	LAN      string `json:"lan"`
 	WAN      string `json:"wan"`
-	Mac      string `json:"mac"`
+	MAC      string `json:"mac"`
 	Net      Net    `json:"net"`
 	CPU      CPU    `json:"cpu"`
 	RAM      IO     `json:"ram"`
@@ -42,6 +42,10 @@ type IO struct {
 type CPU struct {
 	Model string  `json:"model"`
 	Usage float64 `json:"usage"`
+	Cores struct {
+		Logical  int `json:"logical"`
+		Physical int `json:"physical"`
+	} `json:"cores"`
 }
 
 type Net struct {
