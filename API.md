@@ -74,9 +74,13 @@ The key of the device object is its connection UUID, it's random and temporary.
             },
             "cpu": {
                 "model": "Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz",
-                "usage": 8.658854166666668
+                "usage": 8.658854166666668,
+                "cores": {
+                    "logical": 8,
+                    "physical": 4
+                }
             },
-            "mem": {
+            "ram": {
                 "total": 8432967680,
                 "used": 5109829632,
                 "usage": 60.593492420452385

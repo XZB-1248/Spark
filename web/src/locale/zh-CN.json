@@ -7,8 +7,13 @@
 	"hostname": "主机名",
 	"username": "用户名",
 	"cpuUsage": "CPU使用率",
+	"cpuLogicalCores": "逻辑核心数量",
+	"cpuPhysicalCores": "物理核心数量",
 	"ramUsage": "内存使用率",
 	"diskUsage": "磁盘使用率",
+	"free": "剩余",
+	"used": "已用",
+	"total": "总大小",
 	"ram": "RAM",
 	"os": "操作系统",
 	"arch": "架构",
@@ -81,5 +86,7 @@
 	"screenshotObtainFailed": "截屏读取失败",
 	"invalidFileRange": "文件范围错误",
 	"operationNotSupported": "不支持该操作",
-	"noDisplayFound": "设备未连接显示器"
+	"noDisplayFound": "设备未连接显示器",
+
+	"colon": "："
 }

@@ -24,7 +24,7 @@ function FileBrowser(props) {
             ellipsis: true,
             width: 60,
             // only display file size when it is a file or disk
-            renderText: (size, file) => file.type !== 1 ? formatSize(size) : '-'
+            renderText: (size, file) => file.type === 0 || file.type === 2 ? formatSize(size) : '-'
         },
         {
             key: 'Time',

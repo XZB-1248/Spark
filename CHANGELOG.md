@@ -1,3 +1,11 @@
+## v0.0.7
+
+* Add: detail info tooltip of cpu, ram and disk.
+
+* 新增：CPU、内存、磁盘的详细信息的提示。
+
+
+
 ## v0.0.6
 
 * Update: i18n.

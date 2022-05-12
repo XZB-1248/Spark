@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import ProTable, {TableDropdown} from '@ant-design/pro-table';
-import {Button, Image, message, Modal, Progress} from 'antd';
+import {Button, Image, message, Modal, Progress, Tooltip} from 'antd';
 import {formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
 import Terminal from "../components/terminal";
 import Processes from "../components/processes";
@@ -13,6 +13,28 @@ import defaultColumnsState from "../config/columnsState.json";
 
 // DO NOT EDIT OR DELETE THIS COPYRIGHT MESSAGE.
 console.log("%c By XZB %c https://github.com/XZB-1248/Spark", 'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:64px;color:#00bbee;-webkit-text-fill-color:#00bbee;-webkit-text-stroke:1px#00bbee;', 'font-size:12px;');
+
+function UsageBar(props) {
+    let {usage} = props;
+    usage = usage || 0;
+    usage = Math.round(usage * 100) / 100;
+
+    return (
+        <Tooltip
+            title={props.title??`${usage}%`}
+            overlayInnerStyle={{
+                whiteSpace: 'nowrap',
+                wordBreak: 'keep-all',
+                maxWidth: '300px',
+            }}
+            overlayStyle={{
+                maxWidth: '300px',
+            }}
+        >
+            <Progress percent={usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>
+        </Tooltip>
+    );
+}
 
 function overview(props) {
     const [procMgr, setProcMgr] = useState(false);
@@ -52,7 +74,7 @@ function overview(props) {
             title: i18n.t('cpuUsage'),
             dataIndex: 'cpu_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.cpu_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
+            render: (_, v) => <UsageBar title={renderCPUStat(v.cpu)} {...v.cpu} />,
             width: 100
         },
         {
@@ -60,7 +82,7 @@ function overview(props) {
             title: i18n.t('ramUsage'),
             dataIndex: 'ram_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.ram_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
+            render: (_, v) => <UsageBar title={renderRAMStat(v.ram)} {...v.ram} />,
             width: 100
         },
         {
@@ -68,7 +90,7 @@ function overview(props) {
             title: i18n.t('diskUsage'),
             dataIndex: 'disk_usage',
             ellipsis: true,
-            render: (_, v) => <Progress percent={v.disk_usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>,
+            render: (_, v) => <UsageBar title={renderDiskStat(v.disk)} {...v.disk} />,
             width: 100
         },
         {
@@ -176,6 +198,60 @@ function overview(props) {
         localStorage.setItem(`columnsState`, JSON.stringify(stateMap));
     }
 
+    function renderCPUStat(cpu) {
+        let { model, usage, cores } = cpu;
+        usage = Math.round(usage * 100) / 100;
+        cores = {
+            physical: Math.max(cores.physical, 1),
+            logical: Math.max(cores.logical, 1),
+        }
+        return (
+            <div>
+                <div
+                    style={{
+                        fontSize: '10px',
+                    }}
+                >
+                    {model}
+                </div>
+                {i18n.t('cpuUsage') + i18n.t('colon') + usage + '%'}
+                <br />
+                {i18n.t('cpuLogicalCores') + i18n.t('colon') + cores.logical}
+                <br />
+                {i18n.t('cpuPhysicalCores') + i18n.t('colon') + cores.physical}
+            </div>
+        );
+    }
+    function renderRAMStat(info) {
+        let { usage, total, used } = info;
+        usage = Math.round(usage * 100) / 100;
+        return (
+            <div>
+                {i18n.t('ramUsage') + i18n.t('colon') + usage + '%'}
+                <br />
+                {i18n.t('free') + i18n.t('colon') + formatSize(total - used)}
+                <br />
+                {i18n.t('used') + i18n.t('colon') + formatSize(used)}
+                <br />
+                {i18n.t('total') + i18n.t('colon') + formatSize(total)}
+            </div>
+        );
+    }
+    function renderDiskStat(info) {
+        let { usage, total, used } = info;
+        usage = Math.round(usage * 100) / 100;
+        return (
+            <div>
+                {i18n.t('diskUsage') + i18n.t('colon') + usage + '%'}
+                <br />
+                {i18n.t('free') + i18n.t('colon') + formatSize(total - used)}
+                <br />
+                {i18n.t('used') + i18n.t('colon') + formatSize(used)}
+                <br />
+                {i18n.t('total') + i18n.t('colon') + formatSize(total)}
+            </div>
+        );
+    }
     function renderNetworkIO(device) {
         // Make unit starts with Kbps.
         let sent = device.net_sent * 8 / 1024;
@@ -191,7 +267,6 @@ function overview(props) {
             return (size / Math.pow(k, i)).toFixed(1) + ' ' + units[i];
         }
     }
-
     function renderOperation(device) {
         let menus = [
             {key: 'screenshot', name: i18n.t('screenshot')},
@@ -280,7 +355,6 @@ function overview(props) {
                         for (const key in result[i][k]) {
                             result[i][k + '_' + key] = result[i][k][key];
                         }
-                        delete result[i][k];
                     }
                 }
             }

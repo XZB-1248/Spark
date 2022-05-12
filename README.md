@@ -47,7 +47,7 @@ Only local installation are available yet.
 |-----------------|---------|-------|-------|
 | Process manager | ✔       | ✔     | ✔     |
 | Kill process    | ✔       | ✔     | ✔     |
-| Network Status  | ✔       | ✔     | ✔     |
+| Network Traffic | ✔       | ✔     | ✔     |
 | File explorer   | ✔       | ✔     | ✔     |
 | File transfer   | ✔       | ✔     | ✔     |
 | Delete file     | ✔       | ✔     | ✔     |

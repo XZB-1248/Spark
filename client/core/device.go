@@ -121,6 +121,8 @@ func GetCPUInfo() (modules.CPU, error) {
 		return result, errors.New(`failed to read cpu info`)
 	}
 	result.Model = info[0].ModelName
+	result.Cores.Logical, _ = cpu.Counts(true)
+	result.Cores.Physical, _ = cpu.Counts(false)
 	stat, err := cpu.Percent(3*time.Second, false)
 	if err != nil {
 		return result, nil
@@ -232,7 +234,7 @@ func GetDevice() (*modules.Device, error) {
 		OS:       runtime.GOOS,
 		Arch:     runtime.GOARCH,
 		LAN:      localIP,
-		Mac:      macAddr,
+		MAC:      macAddr,
 		CPU:      cpuInfo,
 		RAM:      ramInfo,
 		Net:      netInfo,
