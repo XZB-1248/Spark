@@ -7,10 +7,8 @@ import (
 	"Spark/server/handler"
 	"bytes"
 	"context"
-	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -61,19 +59,21 @@ func main() {
 		return
 	}
 	app := gin.New()
-	auth := gin.BasicAuth(config.Config.Auth)
-	handler.APIRouter(app.Group(`/api`), auth)
-	app.Any(`/ws`, wsHandshake)
-	app.NoRoute(auth, func(ctx *gin.Context) {
-		http.FileServer(webFS).ServeHTTP(ctx.Writer, ctx.Request)
-	})
+	{
+		auth := gin.BasicAuth(config.Config.Auth)
+		handler.InitRouter(app.Group(`/api`), auth)
+		app.Any(`/ws`, wsHandshake)
+		app.NoRoute(auth, func(ctx *gin.Context) {
+			http.FileServer(webFS).ServeHTTP(ctx.Writer, ctx.Request)
+		})
+	}
 
 	common.Melody.Config.MaxMessageSize = 1024
 	common.Melody.HandleConnect(wsOnConnect)
 	common.Melody.HandleMessage(wsOnMessage)
 	common.Melody.HandleMessageBinary(wsOnMessageBinary)
 	common.Melody.HandleDisconnect(wsOnDisconnect)
-	go common.WSHealthCheck(common.Melody)
+	go common.HealthCheckWS(90, common.Melody)
 
 	srv := &http.Server{Addr: config.Config.Listen, Handler: app}
 	go func() {
@@ -114,7 +114,7 @@ func wsHandshake(ctx *gin.Context) {
 		}, gin.H{
 			`Secret`:   secret,
 			`LastPack`: time.Now().Unix(),
-			`Address`:  getRemoteAddr(ctx),
+			`Address`:  common.GetRemoteAddr(ctx),
 		})
 		if err != nil {
 			golog.Error(err)
@@ -134,12 +134,12 @@ func wsHandshake(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, modules.Packet{Code: 1})
 			return
 		}
-		auth := common.CheckClientReq(ctx, func(s *melody.Session) {
-			wsOnMessageBinary(s, body)
-		})
-		if !auth {
+		session := common.CheckClientReq(ctx)
+		if session == nil {
 			ctx.JSON(http.StatusUnauthorized, modules.Packet{Code: 1})
+			return
 		}
+		wsOnMessageBinary(session, body)
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 	}
 }
@@ -161,71 +161,22 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 	}
 	if pack.Act == `report` || pack.Act == `setDevice` {
 		session.Set(`LastPack`, time.Now().Unix())
-		handler.WSDevice(data, session)
+		handler.OnDevicePack(data, session)
 		return
 	}
 	if !common.Devices.Has(session.UUID) {
 		session.Close()
 		return
 	}
-	handler.WSRouter(pack, session)
+	common.CallEvent(pack, session)
 	session.Set(`LastPack`, time.Now().Unix())
 }
 
 func wsOnDisconnect(session *melody.Session) {
 	if val, ok := common.Devices.Get(session.UUID); ok {
-		if deviceInfo, ok := val.(*modules.Device); ok {
-			handler.CloseSessionsByDevice(deviceInfo.ID)
-		}
+		deviceInfo := val.(*modules.Device)
+		handler.CloseSessionsByDevice(deviceInfo.ID)
 	}
 	common.Devices.Remove(session.UUID)
 
-}
-
-func getRemoteAddr(ctx *gin.Context) string {
-	if remote, ok := ctx.RemoteIP(); ok {
-		if remote.IsLoopback() {
-			forwarded := ctx.GetHeader(`X-Forwarded-For`)
-			if len(forwarded) > 0 {
-				return forwarded
-			}
-			realIP := ctx.GetHeader(`X-Real-IP`)
-			if len(realIP) > 0 {
-				return realIP
-			}
-		} else {
-			if ip := remote.To4(); ip != nil {
-				return ip.String()
-			}
-			if ip := remote.To16(); ip != nil {
-				return ip.String()
-			}
-		}
-	}
-
-	remote := net.ParseIP(ctx.Request.RemoteAddr)
-	if remote != nil {
-		if remote.IsLoopback() {
-			forwarded := ctx.GetHeader(`X-Forwarded-For`)
-			if len(forwarded) > 0 {
-				return forwarded
-			}
-			realIP := ctx.GetHeader(`X-Real-IP`)
-			if len(realIP) > 0 {
-				return realIP
-			}
-		} else {
-			if ip := remote.To4(); ip != nil {
-				return ip.String()
-			}
-			if ip := remote.To16(); ip != nil {
-				return ip.String()
-			}
-		}
-	}
-	addr := ctx.Request.RemoteAddr
-	if pos := strings.LastIndex(addr, `:`); pos > -1 {
-		return strings.Trim(addr[:pos], `[]`)
-	}
-	return addr
 }

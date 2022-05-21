@@ -1,3 +1,13 @@
+## v0.0.8
+
+* Add: file upload.
+* Optimize: project structure.
+
+* 新增: 文件上传功能。
+* 优化: 项目结构。
+
+
+
 ## v0.0.7
 
 * Add: detail info tooltip of cpu, ram and disk.

@@ -8,8 +8,8 @@ import "github.com/shirou/gopsutil/v3/disk"
 // ListFiles will only be called when path is root and
 // current system is Windows.
 // It will return mount points of all volumes.
-func ListFiles(path string) ([]file, error) {
-	result := make([]file, 0)
+func ListFiles(path string) ([]File, error) {
+	result := make([]File, 0)
 	if len(path) == 0 || path == `\` || path == `/` {
 		partitions, err := disk.Partitions(true)
 		if err != nil {
@@ -23,7 +23,7 @@ func ListFiles(path string) ([]file, error) {
 			} else {
 				size = stat.Total
 			}
-			result = append(result, file{Name: partitions[i].Mountpoint, Type: 2, Size: size})
+			result = append(result, File{Name: partitions[i].Mountpoint, Type: 2, Size: size})
 		}
 		return result, nil
 	}

@@ -15,18 +15,18 @@ import (
 )
 
 type terminal struct {
+	uuid       string
+	event      string
+	device     string
 	session    *melody.Session
 	deviceConn *melody.Session
-	device     string
-	termUUID   string
-	eventUUID  string
 }
 
 var terminals = cmap.New()
-var wsTerminals = melody.New()
+var wsSessions = melody.New()
 
 func init() {
-	wsTerminals.HandleConnect(func(session *melody.Session) {
+	wsSessions.HandleConnect(func(session *melody.Session) {
 		device, ok := session.Get(`Device`)
 		if !ok {
 			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
@@ -59,11 +59,11 @@ func init() {
 		}
 		eventUUID := utils.GetStrUUID()
 		terminal := &terminal{
+			uuid:       termUUID,
+			event:      eventUUID,
+			device:     device.(string),
 			session:    session,
 			deviceConn: deviceConn,
-			device:     device.(string),
-			termUUID:   termUUID,
-			eventUUID:  eventUUID,
 		}
 		terminals.Set(termUUID, terminal)
 		common.AddEvent(eventWrapper(terminal), connUUID, eventUUID)
@@ -71,9 +71,9 @@ func init() {
 			`terminal`: termUUID,
 		}, Event: eventUUID}, deviceConn)
 	})
-	wsTerminals.HandleMessage(onMessage)
-	wsTerminals.HandleMessageBinary(onMessage)
-	wsTerminals.HandleDisconnect(func(session *melody.Session) {
+	wsSessions.HandleMessage(onMessage)
+	wsSessions.HandleMessageBinary(onMessage)
+	wsSessions.HandleDisconnect(func(session *melody.Session) {
 		val, ok := session.Get(`Terminal`)
 		if !ok {
 			return
@@ -86,17 +86,14 @@ func init() {
 		if !ok {
 			return
 		}
-		terminal, ok := val.(*terminal)
-		if !ok {
-			return
-		}
+		terminal := val.(*terminal)
 		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
-			`terminal`: terminal.termUUID,
-		}, Event: terminal.eventUUID}, terminal.deviceConn)
+			`terminal`: termUUID,
+		}, Event: terminal.event}, terminal.deviceConn)
 		terminals.Remove(termUUID)
-		common.RemoveEvent(terminal.eventUUID)
+		common.RemoveEvent(terminal.event)
 	})
-	go common.WSHealthCheck(wsTerminals)
+	go common.HealthCheckWS(300, wsSessions)
 }
 
 // initTerminal handles terminal websocket handshake event
@@ -125,7 +122,7 @@ func initTerminal(ctx *gin.Context) {
 		return
 	}
 
-	wsTerminals.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
+	wsSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
 		`Secret`:   secret,
 		`Device`:   device,
 		`LastPack`: time.Now().Unix(),
@@ -146,8 +143,8 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 					msg += `${i18n|unknownError}`
 				}
 				simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
-				terminals.Remove(terminal.termUUID)
-				common.RemoveEvent(terminal.eventUUID)
+				terminals.Remove(terminal.uuid)
+				common.RemoveEvent(terminal.event)
 				terminal.session.Close()
 			}
 			return
@@ -158,8 +155,8 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 				msg = pack.Msg
 			}
 			simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
-			terminals.Remove(terminal.termUUID)
-			common.RemoveEvent(terminal.eventUUID)
+			terminals.Remove(terminal.uuid)
+			common.RemoveEvent(terminal.event)
 			terminal.session.Close()
 			return
 		}
@@ -246,18 +243,15 @@ func onMessage(session *melody.Session, data []byte) {
 		if !ok {
 			return
 		}
-		terminal, ok := val.(*terminal)
-		if !ok {
-			return
-		}
+		terminal := val.(*terminal)
 		if pack.Data == nil {
 			return
 		}
 		if input, ok := pack.Data[`input`]; ok {
 			common.SendPack(modules.Packet{Act: `inputTerminal`, Data: gin.H{
 				`input`:    input,
-				`terminal`: terminal.termUUID,
-			}, Event: terminal.eventUUID}, terminal.deviceConn)
+				`terminal`: terminal.uuid,
+			}, Event: terminal.event}, terminal.deviceConn)
 		}
 	}
 	if pack.Act == `resizeTerminal` {
@@ -273,10 +267,7 @@ func onMessage(session *melody.Session, data []byte) {
 		if !ok {
 			return
 		}
-		terminal, ok := val.(*terminal)
-		if !ok {
-			return
-		}
+		terminal := val.(*terminal)
 		if pack.Data == nil {
 			return
 		}
@@ -285,26 +276,44 @@ func onMessage(session *melody.Session, data []byte) {
 				common.SendPack(modules.Packet{Act: `resizeTerminal`, Data: gin.H{
 					`width`:    width,
 					`height`:   height,
-					`terminal`: terminal.termUUID,
-				}, Event: terminal.eventUUID}, terminal.deviceConn)
+					`terminal`: terminal.uuid,
+				}, Event: terminal.event}, terminal.deviceConn)
 			}
 		}
+	}
+	if pack.Act == `killTerminal` {
+		val, ok := session.Get(`Terminal`)
+		if !ok {
+			return
+		}
+		termUUID, ok := val.(string)
+		if !ok {
+			return
+		}
+		val, ok = terminals.Get(termUUID)
+		if !ok {
+			return
+		}
+		terminal := val.(*terminal)
+		if pack.Data == nil {
+			return
+		}
+		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
+			`terminal`: termUUID,
+		}, Event: terminal.event}, terminal.deviceConn)
 	}
 }
 
 func CloseSessionsByDevice(deviceID string) {
 	var queue []string
 	terminals.IterCb(func(key string, val interface{}) bool {
-		terminal, ok := val.(*terminal)
-		if !ok {
-			return false
-		}
+		terminal := val.(*terminal)
 		if terminal.device == deviceID {
-			common.RemoveEvent(terminal.eventUUID)
+			common.RemoveEvent(terminal.event)
 			terminal.session.Close()
 			queue = append(queue, key)
 		}
-		return false
+		return true
 	})
 
 	for _, key := range queue {

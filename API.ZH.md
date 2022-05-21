@@ -5,13 +5,17 @@
 ## 通用
 
 所有请求均为`POST`。
-
+<br />
 每次请求都必须在Header中带上`Authorization`。
-
+<br />
 `Authorization`请求头格式：`Basic <token>`（basic auth）。
 
 ```
 Authorization: Basic <base64('username:password')>
+```
+例如：
+```
+Authorization: Basic WFpCOjEyNDg=
 ```
 
 ---
@@ -19,7 +23,7 @@ Authorization: Basic <base64('username:password')>
 ## 响应
 
 所有响应均是JSON格式。
-
+<br />
 `code` 有三种结果，分别为`-1`，`0`和`1`，含义如下。
 
 | code | meaning    |
@@ -55,9 +59,13 @@ Authorization: Basic <base64('username:password')>
 
 参数：**无**
 
-设备的`id`是一串64位的字符串，每台设备独一无二，一般不会变化。识别设备主要靠这个。下文中提到的设备ID也指的是这个。
-
-每个device对象所对应的key，是它的本次连接的连接ID，这个ID是随机、临时的，每次重连就会变化，不建议使用。
+设备的`id`是一串64位的字符串，每台设备独一无二，一般不会变化。
+<br />
+识别设备主要靠这个。下文中提到的设备ID也指的是这个。
+<br />
+每个device对象所对应的key，是它的本次连接的连接ID。
+<br />
+连接ID是随机、临时的，每次重连就会变化，不建议使用。
 
 ```
 {
@@ -123,7 +131,9 @@ Authorization: Basic <base64('username:password')>
 
 参数：`device`（设备ID）
 
-如果截屏获取成功，则会直接以图片的形式输出。如果截屏失败，如下响应会被输出（错误信息不止这一个）。
+如果截屏获取成功，则会直接以图片的形式输出。
+<br />
+如果截屏失败，如下响应会被输出（错误信息不一定是这一个）。
 
 ```
 {
@@ -138,7 +148,9 @@ Authorization: Basic <base64('username:password')>
 
 参数：`file`（文件路径） 以及 `device`（设备ID）
 
-如果文件存在且可访问，则文件会直接输出。否则，会给出以下响应。
+如果文件存在且可访问，则文件会直接输出。
+<br />
+否则，会给出错误原因。
 
 ```
 {
@@ -169,11 +181,54 @@ Authorization: Basic <base64('username:password')>
 
 ---
 
+### 上传文件到目录：`/device/file/upload`
+
+**GET**参数：`file`（文件名）、`path`（路径）和`device`（设备ID）
+
+文件内容需要作为**请求体body**发送。
+<br />
+**请求体body**中的任何内容都会被写到指定地文件中。
+<br />
+如果存在同名文件，则会被**覆盖**！
+
+Example:
+```http request
+POST http://localhost:8000/api/device/file/upload?path=D%3A%5C&file=Test.txt&device=bc7e49f8f794f80ffb0032a4ba516c86d76041bf2023e1be6c5dda3b1ee0cf4c HTTP/1.1
+Host: localhost:8000
+Content-Length: 12
+Content-Type: application/octet-stream
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47
+Origin: http://localhost:8000
+Referer: http://localhost:8000/
+
+Hello World.
+```
+
+如果文件上传成功，则`code`为`1`。
+<br />
+文件`D:\Test.txt`会写入：`Hello World.`。
+
+```
+{
+    "code": 0
+}
+```
+```
+{
+    "code": 1,
+    "msg": "${i18n|fileOrDirNotExist}"
+}
+```
+
+---
+
 ### 列举设备上的文件和目录：`/device/file/list`
 
 参数：`path`（父目录路径） 以及 `device`（设备ID）
 
-如果`path`为空，windows下会给出磁盘列表，其它系统会默认输出`/`目录下的文件和目录。
+如果`path`为空，windows下会给出磁盘列表。
+<br />
+其它系统会默认输出`/`目录下的文件和目录。
 
 `type`有三种结果：`0`代表文件，`1`代表目录，`2`代表磁盘（windows）。
 

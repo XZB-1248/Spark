@@ -3,30 +3,30 @@
 package screenshot
 
 import (
+	"Spark/client/config"
 	"bytes"
 	"errors"
+	"github.com/imroc/req/v3"
 	"github.com/kbinani/screenshot"
 	"image/png"
 )
 
-func GetScreenshot(trigger string) error {
+func GetScreenshot(bridge string) error {
 	writer := new(bytes.Buffer)
 	num := screenshot.NumActiveDisplays()
 	if num == 0 {
 		err := errors.New(`${i18n|noDisplayFound}`)
-		putScreenshot(trigger, err.Error(), nil)
 		return err
 	}
 	img, err := screenshot.CaptureDisplay(0)
 	if err != nil {
-		putScreenshot(trigger, err.Error(), nil)
 		return err
 	}
 	err = png.Encode(writer, img)
 	if err != nil {
-		putScreenshot(trigger, err.Error(), nil)
 		return err
 	}
-	_, err = putScreenshot(trigger, ``, writer)
+	url := config.GetBaseURL(false) + `/api/bridge/push`
+	_, err = req.R().SetBody(writer.Bytes()).SetQueryParam(`bridge`, bridge).Put(url)
 	return err
 }

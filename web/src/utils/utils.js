@@ -24,11 +24,13 @@ function waitTime(time) {
 };
 
 function formatSize(size) {
-    if (size === 0) return '0 B';
+    size = isNaN(size) ? 0 : (size??0);
+    size = Math.max(size, 0);
     let k = 1024,
-        i = Math.floor(Math.log(size) / Math.log(k)),
-        units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    return (size / Math.pow(k, i)).toFixed(2) + ' ' + units[i];
+        i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(k)),
+        units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+        result = size / Math.pow(k, i);
+    return (Math.round(result * 100) / 100) + ' ' + units[i];
 }
 
 function tsToTime(ts) {
@@ -37,6 +39,15 @@ function tsToTime(ts) {
     ts %= 3600;
     let minutes = Math.floor(ts / 60);
     return `${String(hours) + i18n.t('hours') + ' ' + String(minutes) + i18n.t('minutes')}`;
+}
+
+function getBaseURL(ws) {
+    if (location.protocol === 'https:') {
+        let scheme = ws ? 'wss' : 'https';
+        return scheme + `://${location.host}${location.pathname}api/device/terminal`;
+    }
+    let scheme = ws ? 'ws' : 'http';
+    return scheme + `://${location.host}${location.pathname}api/device/terminal`;
 }
 
 function post(url, data, ext) {
@@ -65,4 +76,4 @@ function translate(text) {
     });
 }
 
-export {post, request, waitTime, formatSize, tsToTime, translate};
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate};

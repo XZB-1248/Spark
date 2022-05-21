@@ -1,5 +1,7 @@
 package modules
 
+import "reflect"
+
 type Packet struct {
 	Code  int                    `json:"code"`
 	Act   string                 `json:"act,omitempty"`
@@ -51,4 +53,42 @@ type CPU struct {
 type Net struct {
 	Sent uint64 `json:"sent"`
 	Recv uint64 `json:"recv"`
+}
+
+func (p *Packet) GetData(key string, t reflect.Kind) (interface{}, bool) {
+	if p.Data == nil {
+		return nil, false
+	}
+	data, ok := p.Data[key]
+	if !ok {
+		return nil, false
+	}
+	switch t {
+	case reflect.String:
+		val, ok := data.(string)
+		return val, ok
+	case reflect.Uint:
+		val, ok := data.(uint)
+		return val, ok
+	case reflect.Uint32:
+		val, ok := data.(uint32)
+		return val, ok
+	case reflect.Uint64:
+		val, ok := data.(uint64)
+		return val, ok
+	case reflect.Int:
+		val, ok := data.(int)
+		return val, ok
+	case reflect.Int64:
+		val, ok := data.(int64)
+		return val, ok
+	case reflect.Bool:
+		val, ok := data.(bool)
+		return val, ok
+	case reflect.Float64:
+		val, ok := data.(float64)
+		return val, ok
+	default:
+		return nil, false
+	}
 }

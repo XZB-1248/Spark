@@ -40,6 +40,7 @@ var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
 	`resizeTerminal`: resizeTerminal,
 	`killTerminal`:   killTerminal,
 	`listFiles`:      listFiles,
+	`fetchFile`:      fetchFile,
 	`removeFile`:     removeFile,
 	`uploadFile`:     uploadFile,
 	`listProcesses`:  listProcesses,
@@ -54,14 +55,14 @@ func Start() {
 		}
 		common.WSConn, err = connectWS()
 		if err != nil && !stop {
-			golog.Error(err)
+			golog.Error(`Connection error: `, err)
 			<-time.After(3 * time.Second)
 			continue
 		}
 
 		err = reportWS(common.WSConn)
 		if err != nil && !stop {
-			golog.Error(err)
+			golog.Error(`Register error: `, err)
 			<-time.After(3 * time.Second)
 			continue
 		}
@@ -72,7 +73,7 @@ func Start() {
 
 		err = handleWS(common.WSConn)
 		if err != nil && !stop {
-			golog.Error(err)
+			golog.Error(`Execution error: `, err)
 			<-time.After(3 * time.Second)
 			continue
 		}
@@ -103,7 +104,7 @@ func reportWS(wsConn *common.Conn) error {
 	if err != nil {
 		return err
 	}
-	pack := modules.CommonPack{Act: `report`, Data: device}
+	pack := modules.CommonPack{Act: `report`, Data: *device}
 	err = common.SendPack(pack, wsConn)
 	common.WSConn.SetWriteDeadline(time.Time{})
 	if err != nil {
@@ -226,7 +227,7 @@ func heartbeat(wsConn *common.Conn) error {
 		if t >= 20 {
 			t = 0
 		}
-		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: device}, wsConn)
+		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: *device}, wsConn)
 		if err != nil {
 			return err
 		}

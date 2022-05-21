@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"reflect"
 	"runtime"
 	"time"
 
@@ -18,11 +19,11 @@ import (
 
 type terminal struct {
 	lastPack int64
-	event     string
-	cmd       *exec.Cmd
-	stdout    *io.ReadCloser
-	stderr    *io.ReadCloser
-	stdin     *io.WriteCloser
+	event    string
+	cmd      *exec.Cmd
+	stdout   *io.ReadCloser
+	stderr   *io.ReadCloser
+	stdin    *io.WriteCloser
 }
 
 func init() {
@@ -47,11 +48,11 @@ func InitTerminal(pack modules.Packet) error {
 		return err
 	}
 	termSession := &terminal{
-		cmd:       cmd,
-		event:     pack.Event,
-		stdout:    &stdout,
-		stderr:    &stderr,
-		stdin:     &stdin,
+		cmd:      cmd,
+		event:    pack.Event,
+		stdout:   &stdout,
+		stderr:   &stderr,
+		stdin:    &stdin,
 		lastPack: time.Now().Unix(),
 	}
 	terminals.Set(pack.Data[`terminal`].(string), termSession)
@@ -86,41 +87,26 @@ func InitTerminal(pack modules.Packet) error {
 }
 
 func InputTerminal(pack modules.Packet) error {
-	if pack.Data == nil {
-		return errDataNotFound
-	}
-	val, ok := pack.Data[`input`]
+	val, ok := pack.GetData(`input`, reflect.String)
 	if !ok {
 		return errDataNotFound
 	}
-	hexStr, ok := val.(string)
-	if !ok {
-		return errDataNotFound
-	}
-	data, err := hex.DecodeString(hexStr)
+	data, err := hex.DecodeString(val.(string))
 	if err != nil {
 		return errDataInvalid
 	}
 
-	val, ok = pack.Data[`terminal`]
+	val, ok = pack.GetData(`terminal`, reflect.String)
 	if !ok {
 		return errUUIDNotFound
 	}
-	termUUID, ok := val.(string)
-	if !ok {
-		return errUUIDNotFound
-	}
+	termUUID := val.(string)
 	val, ok = terminals.Get(termUUID)
 	if !ok {
 		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
 		return nil
 	}
-	terminal, ok := val.(*terminal)
-	if !ok {
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
-		return nil
-	}
-
+	terminal := val.(*terminal)
 	terminal.lastPack = time.Now().Unix()
 	if len(data) == 1 && data[0] == '\x03' {
 		terminal.cmd.Process.Signal(os.Interrupt)
@@ -136,28 +122,17 @@ func ResizeTerminal(pack modules.Packet) error {
 }
 
 func KillTerminal(pack modules.Packet) error {
-	if pack.Data == nil {
-		return errUUIDNotFound
-	}
-	val, ok := pack.Data[`terminal`]
+	val, ok := pack.GetData(`terminal`, reflect.String)
 	if !ok {
 		return errUUIDNotFound
 	}
-	termUUID, ok := val.(string)
-	if !ok {
-		return errUUIDNotFound
-	}
+	termUUID := val.(string)
 	val, ok = terminals.Get(termUUID)
 	if !ok {
 		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
 		return nil
 	}
-	terminal, ok := val.(*terminal)
-	if !ok {
-		terminals.Remove(termUUID)
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
-		return nil
-	}
+	terminal := val.(*terminal)
 	doKillTerminal(terminal)
 	return nil
 }
@@ -210,17 +185,13 @@ func utf8ToGbk(s []byte) ([]byte, error) {
 }
 
 func healthCheck() {
-	const MaxInterval = 180
+	const MaxInterval = 300
 	for now := range time.NewTicker(30 * time.Second).C {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		queue := make([]string, 0)
 		terminals.IterCb(func(uuid string, t interface{}) bool {
-			termSession, ok := t.(*terminal)
-			if !ok {
-				queue = append(queue, uuid)
-				return true
-			}
+			termSession := t.(*terminal)
 			if timestamp-termSession.lastPack > MaxInterval {
 				queue = append(queue, uuid)
 				doKillTerminal(termSession)

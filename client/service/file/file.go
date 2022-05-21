@@ -6,12 +6,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/imroc/req/v3"
 )
 
-type file struct {
+type File struct {
 	Name string `json:"name"`
 	Size uint64 `json:"size"`
 	Time int64  `json:"time"`
@@ -19,8 +20,8 @@ type file struct {
 }
 
 // listFiles returns files and directories find in path.
-func listFiles(path string) ([]file, error) {
-	result := make([]file, 0)
+func listFiles(path string) ([]File, error) {
+	result := make([]File, 0)
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
@@ -30,7 +31,7 @@ func listFiles(path string) ([]file, error) {
 		if files[i].IsDir() {
 			itemType = 1
 		}
-		result = append(result, file{
+		result = append(result, File{
 			Name: files[i].Name(),
 			Size: uint64(files[i].Size()),
 			Time: files[i].ModTime().Unix(),
@@ -38,6 +39,62 @@ func listFiles(path string) ([]file, error) {
 		})
 	}
 	return result, nil
+}
+
+// FetchFile saves file from bridge to local.
+// Save body as temp file and when done, rename it to file.
+func FetchFile(dir, file, bridge string) error {
+	url := config.GetBaseURL(false) + `/api/bridge/pull`
+	client := req.C().DisableAutoReadResponse()
+	resp, err := client.R().SetQueryParam(`bridge`, bridge).Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// If dest file exists, write to temp file first.
+	dest := path.Join(dir, file)
+	tmpFile := dest
+	destExists := false
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		tmpFile = getTempFileName(dir, file)
+		destExists = true
+	}
+
+	fh, err := os.Create(tmpFile)
+	if err != nil {
+		return err
+	}
+	for {
+		buf := make([]byte, 1024)
+		n, err := resp.Body.Read(buf)
+		if err != nil && err != io.EOF {
+			fh.Truncate(0)
+			fh.Close()
+			os.Remove(tmpFile)
+			return err
+		}
+		if n == 0 {
+			break
+		}
+		_, err = fh.Write(buf[:n])
+		if err != nil {
+			fh.Truncate(0)
+			fh.Close()
+			os.Remove(tmpFile)
+			return err
+		}
+		fh.Sync()
+	}
+	fh.Close()
+
+	// Delete old file if exists.
+	// Then rename temp file to file.
+	if destExists {
+		os.Remove(dest)
+		err = os.Rename(tmpFile, dest)
+	}
+	return err
 }
 
 func RemoveFile(path string) error {
@@ -51,7 +108,7 @@ func RemoveFile(path string) error {
 	return nil
 }
 
-func UploadFile(path, trigger string, start, end int64) error {
+func UploadFile(path, bridge string, start, end int64) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -65,7 +122,6 @@ func UploadFile(path, trigger string, start, end int64) error {
 	}
 	size := stat.Size()
 	headers := map[string]string{
-		`Trigger`:  trigger,
 		`FileName`: stat.Name(),
 		`FileSize`: strconv.FormatInt(size, 10),
 	}
@@ -96,8 +152,25 @@ func UploadFile(path, trigger string, start, end int64) error {
 		}
 		writer.Close()
 	}()
-	url := config.GetBaseURL(false) + `/api/device/file/put`
-	_, err = uploadReq.SetBody(reader).SetHeaders(headers).Send(`PUT`, url)
+	url := config.GetBaseURL(false) + `/api/bridge/push`
+	_, err = uploadReq.
+		SetBody(reader).
+		SetHeaders(headers).
+		SetQueryParam(`bridge`, bridge).
+		Send(`PUT`, url)
 	reader.Close()
 	return err
+}
+
+func getTempFileName(dir, file string) string {
+	exists := true
+	tempFile := ``
+	for i := 0; exists; i++ {
+		tempFile = path.Join(dir, file+`.tmp.`+strconv.Itoa(i))
+		_, err := os.Stat(tempFile)
+		if os.IsNotExist(err) {
+			exists = false
+		}
+	}
+	return tempFile
 }

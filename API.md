@@ -5,13 +5,17 @@
 ## Common
 
 Only `POST` requests are allowed.
-
+<br />
 For every request, you should have `Authorization` on its header.
-
+<br />
 Authorization header is a string like `Basic <token>`(basic auth).
 
 ```
 Authorization: Basic <base64('username:password')>
+```
+Example:
+```
+Authorization: Basic WFpCOjEyNDg=
 ```
 
 ---
@@ -53,8 +57,12 @@ All responses are JSON encoded.
 
 Parameters: **None**
 
-The `id` of device is persistent, its length always equals 64. It's unique for every device and won't change, so you should identify every device by this.
-
+The `id` of device is persistent, its length always equals 64.
+<br />
+It's unique for every device and won't change.
+<br />
+You're recommend to recognize your device by device ID.
+<br />
 The key of the device object is its connection UUID, it's random and temporary.
 
 ```
@@ -151,6 +159,47 @@ If file exists and is accessible, then the file is given directly. If failed, th
 Parameters: `file` (path to file) and `device` (device ID)
 
 If file exists and is deleted successfully, then `code` will be `0`.
+
+```
+{
+    "code": 0
+}
+```
+```
+{
+    "code": 1,
+    "msg": "${i18n|fileOrDirNotExist}"
+}
+```
+
+---
+
+### Upload file: `/device/file/upload`
+
+**Query Parameters**: `file` (file name), `path` and `device` (device ID)
+
+File itself should be sent in the request **body**.
+<br />
+**Anything** represented in the request **body** will be saved to the device.
+<br />
+If same file exists, then it will be **overwritten**.
+
+Example:
+```http request
+POST http://localhost:8000/api/device/file/upload?path=D%3A%5C&file=Test.txt&device=bc7e49f8f794f80ffb0032a4ba516c86d76041bf2023e1be6c5dda3b1ee0cf4c HTTP/1.1
+Host: localhost:8000
+Content-Length: 12
+Content-Type: application/octet-stream
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47
+Origin: http://localhost:8000
+Referer: http://localhost:8000/
+
+Hello World.
+```
+
+If file uploaded successfully, then `code` will be `0`.
+<br />
+And `D:\Test.txt` will be created with the content of `Hello World.`.
 
 ```
 {

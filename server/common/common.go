@@ -10,7 +10,9 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"github.com/gin-gonic/gin"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -18,7 +20,7 @@ var Melody = melody.New()
 var Devices = cmap.New()
 var BuiltFS http.FileSystem
 
-func SendPackUUID(pack modules.Packet, uuid string) bool {
+func SendPackByUUID(pack modules.Packet, uuid string) bool {
 	session, ok := Melody.GetSessionByUUID(uuid)
 	if !ok {
 		return false
@@ -68,8 +70,7 @@ func Decrypt(data []byte, session *melody.Session) ([]byte, bool) {
 	return dec, true
 }
 
-func WSHealthCheck(container *melody.Melody) {
-	const MaxInterval = 90
+func HealthCheckWS(maxIdleSeconds int64, container *melody.Melody) {
 	go func() {
 		// ping client and update latency every 3 seconds
 		ping := func(uuid string, s *melody.Session) {
@@ -79,10 +80,8 @@ func WSHealthCheck(container *melody.Melody) {
 			AddEventOnce(func(packet modules.Packet, session *melody.Session) {
 				val, ok := Devices.Get(uuid)
 				if ok {
-					deviceInfo, ok := val.(*modules.Device)
-					if ok {
-						deviceInfo.Latency = uint(time.Now().UnixMilli()-t) / 2
-					}
+					deviceInfo := val.(*modules.Device)
+					deviceInfo.Latency = uint(time.Now().UnixMilli()-t) / 2
 				}
 			}, uuid, trigger, 3*time.Second)
 		}
@@ -108,7 +107,7 @@ func WSHealthCheck(container *melody.Melody) {
 				queue = append(queue, s)
 				return true
 			}
-			if timestamp-lastPack > MaxInterval {
+			if timestamp-lastPack > maxIdleSeconds {
 				queue = append(queue, s)
 			}
 			return true
@@ -119,26 +118,71 @@ func WSHealthCheck(container *melody.Melody) {
 	}
 }
 
-func CheckClientReq(ctx *gin.Context, cb func(*melody.Session)) bool {
+func GetRemoteAddr(ctx *gin.Context) string {
+	if remote, ok := ctx.RemoteIP(); ok {
+		if remote.IsLoopback() {
+			forwarded := ctx.GetHeader(`X-Forwarded-For`)
+			if len(forwarded) > 0 {
+				return forwarded
+			}
+			realIP := ctx.GetHeader(`X-Real-IP`)
+			if len(realIP) > 0 {
+				return realIP
+			}
+		} else {
+			if ip := remote.To4(); ip != nil {
+				return ip.String()
+			}
+			if ip := remote.To16(); ip != nil {
+				return ip.String()
+			}
+		}
+	}
+
+	remote := net.ParseIP(ctx.Request.RemoteAddr)
+	if remote != nil {
+		if remote.IsLoopback() {
+			forwarded := ctx.GetHeader(`X-Forwarded-For`)
+			if len(forwarded) > 0 {
+				return forwarded
+			}
+			realIP := ctx.GetHeader(`X-Real-IP`)
+			if len(realIP) > 0 {
+				return realIP
+			}
+		} else {
+			if ip := remote.To4(); ip != nil {
+				return ip.String()
+			}
+			if ip := remote.To16(); ip != nil {
+				return ip.String()
+			}
+		}
+	}
+	addr := ctx.Request.RemoteAddr
+	if pos := strings.LastIndex(addr, `:`); pos > -1 {
+		return strings.Trim(addr[:pos], `[]`)
+	}
+	return addr
+}
+
+func CheckClientReq(ctx *gin.Context) *melody.Session {
 	secret, err := hex.DecodeString(ctx.GetHeader(`Secret`))
 	if err != nil || len(secret) != 32 {
-		return false
+		return nil
 	}
-	find := false
+	var result *melody.Session = nil
 	Melody.IterSessions(func(uuid string, s *melody.Session) bool {
 		if val, ok := s.Get(`Secret`); ok {
 			// Check if there's a connection matches this secret.
 			if b, ok := val.([]byte); ok && bytes.Equal(b, secret) {
-				find = true
-				if cb != nil {
-					cb(s)
-				}
+				result = s
 				return false
 			}
 		}
 		return true
 	})
-	return find
+	return result
 }
 
 func CheckDevice(deviceID, connUUID string) (string, bool) {

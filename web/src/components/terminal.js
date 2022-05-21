@@ -8,7 +8,7 @@ import CryptoJS from 'crypto-js';
 import wcwidth from 'wcwidth';
 import "xterm/css/xterm.css";
 import i18n from "../locale/locale";
-import {translate} from "../utils/utils";
+import {getBaseURL, translate} from "../utils/utils";
 
 function hex2buf(hex) {
     if (typeof hex !== 'string') {
@@ -57,13 +57,6 @@ function ab2str(buffer) {
         }
     }
     return out;
-}
-
-function getBaseURL() {
-    if (location.protocol === 'https:') {
-        return `wss://${location.host}${location.pathname}api/device/terminal`;
-    }
-    return `ws://${location.host}${location.pathname}api/device/terminal`;
 }
 
 function genRandHex(length) {
@@ -120,7 +113,7 @@ class TerminalModal extends React.Component {
         ev?.dispose();
         let buffer = '';
         let termEv = null;
-        // Windows don't support pty, so we still use traditional way.
+        // Windows doesn't support pty, so we still use traditional way.
         if (this.props.device.os === 'windows') {
             let cmd = '';
             termEv = this.term.onData((e) => {
@@ -173,7 +166,7 @@ class TerminalModal extends React.Component {
             });
         }
 
-        this.ws = new WebSocket(`${getBaseURL()}?device=${this.props.device.id}&secret=${this.secret}`);
+        this.ws = new WebSocket(`${getBaseURL(true)}?device=${this.props.device.id}&secret=${this.secret}`);
         this.ws.binaryType = 'arraybuffer';
         this.ws.onopen = () => {
             this.conn = true;
@@ -192,7 +185,6 @@ class TerminalModal extends React.Component {
                             data = data.substring(buffer.length);
                             buffer = '';
                         }
-                        return;
                     }
                     this.term.write(data);
                     return;
@@ -263,6 +255,9 @@ class TerminalModal extends React.Component {
         if (prevProps.visible) {
             clearInterval(this.ticker);
             if (this.conn) {
+                this.sendData({
+                    act: 'killTerminal'
+                });
                 this.ws.close();
             }
             this?.termEv?.dispose();

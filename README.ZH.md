@@ -66,6 +66,20 @@
 
 ---
 
+## 截图
+
+![overview](./screenshots/overview.ZH.png)
+
+![terminal](./screenshots/terminal.ZH.png)
+
+![procmgr](./screenshots/procmgr.ZH.png)
+
+![explorer](./screenshots/explorer.ZH.png)
+
+![overview.cpu](./screenshots/overview.cpu.ZH.png)
+
+---
+
 ## **开发**
 
 ### 注意
@@ -118,18 +132,6 @@ $ ./build.server.sh
 ```
 
 然后打开`releases`目录，放入上文提到的配置文件，选择对应平台的服务端运行即可。
-
----
-
-## 截图
-
-![overview](./screenshots/overview.ZH.png)
-
-![terminal](./screenshots/terminal.ZH.png)
-
-![procmgr](./screenshots/procmgr.ZH.png)
-
-![explorer](./screenshots/explorer.ZH.png)
 
 ---
 

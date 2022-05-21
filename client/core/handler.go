@@ -13,41 +13,6 @@ import (
 	"strconv"
 )
 
-func getPackData(pack modules.Packet, key string, t reflect.Kind) (interface{}, bool) {
-	data, ok := pack.Data[key]
-	if !ok {
-		return nil, false
-	}
-	switch t {
-	case reflect.String:
-		val, ok := data.(string)
-		return val, ok
-	case reflect.Uint:
-		val, ok := data.(uint)
-		return val, ok
-	case reflect.Uint32:
-		val, ok := data.(uint32)
-		return val, ok
-	case reflect.Uint64:
-		val, ok := data.(uint64)
-		return val, ok
-	case reflect.Int:
-		val, ok := data.(int)
-		return val, ok
-	case reflect.Int64:
-		val, ok := data.(int64)
-		return val, ok
-	case reflect.Bool:
-		val, ok := data.(bool)
-		return val, ok
-	case reflect.Float64:
-		val, ok := data.(float64)
-		return val, ok
-	default:
-		return nil, false
-	}
-}
-
 func offline(pack modules.Packet, wsConn *common.Conn) {
 	common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 	stop = true
@@ -110,8 +75,16 @@ func shutdown(pack modules.Packet, wsConn *common.Conn) {
 }
 
 func screenshot(pack modules.Packet, wsConn *common.Conn) {
-	if len(pack.Event) > 0 {
-		Screenshot.GetScreenshot(pack.Event)
+	var bridge string
+	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		return
+	} else {
+		bridge = val.(string)
+	}
+	err := Screenshot.GetScreenshot(bridge)
+	if err != nil {
+		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 	}
 }
 
@@ -136,7 +109,7 @@ func killTerminal(pack modules.Packet, wsConn *common.Conn) {
 
 func listFiles(pack modules.Packet, wsConn *common.Conn) {
 	path := `/`
-	if val, ok := getPackData(pack, `path`, reflect.String); ok {
+	if val, ok := pack.GetData(`path`, reflect.String); ok {
 		path = val.(string)
 	}
 	files, err := file.ListFiles(path)
@@ -147,9 +120,35 @@ func listFiles(pack modules.Packet, wsConn *common.Conn) {
 	}
 }
 
+func fetchFile(pack modules.Packet, wsConn *common.Conn) {
+	var path, filename, bridge string
+	if val, ok := pack.GetData(`path`, reflect.String); !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+		return
+	} else {
+		path = val.(string)
+	}
+	if val, ok := pack.GetData(`file`, reflect.String); !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		return
+	} else {
+		filename = val.(string)
+	}
+	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		return
+	} else {
+		bridge = val.(string)
+	}
+	err := file.FetchFile(path, filename, bridge)
+	if err != nil {
+		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+	}
+}
+
 func removeFile(pack modules.Packet, wsConn *common.Conn) {
 	var path string
-	if val, ok := getPackData(pack, `file`, reflect.String); !ok {
+	if val, ok := pack.GetData(`file`, reflect.String); !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
 		return
 	} else {
@@ -165,18 +164,24 @@ func removeFile(pack modules.Packet, wsConn *common.Conn) {
 
 func uploadFile(pack modules.Packet, wsConn *common.Conn) {
 	var start, end int64
-	var path string
-	if val, ok := getPackData(pack, `file`, reflect.String); !ok {
+	var path, bridge string
+	if val, ok := pack.GetData(`file`, reflect.String); !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
 		return
 	} else {
 		path = val.(string)
 	}
+	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		return
+	} else {
+		bridge = val.(string)
+	}
 	{
-		if val, ok := getPackData(pack, `start`, reflect.Float64); ok {
+		if val, ok := pack.GetData(`start`, reflect.Float64); ok {
 			start = int64(val.(float64))
 		}
-		if val, ok := getPackData(pack, `end`, reflect.Float64); ok {
+		if val, ok := pack.GetData(`end`, reflect.Float64); ok {
 			end = int64(val.(float64))
 			if end > 0 {
 				end++
@@ -187,7 +192,7 @@ func uploadFile(pack modules.Packet, wsConn *common.Conn) {
 			return
 		}
 	}
-	err := file.UploadFile(path, pack.Event, start, end)
+	err := file.UploadFile(path, bridge, start, end)
 	if err != nil {
 		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 	}
@@ -207,7 +212,7 @@ func killProcess(pack modules.Packet, wsConn *common.Conn) {
 		pid int64
 		err error
 	)
-	if val, ok := getPackData(pack, `pid`, reflect.String); ok {
+	if val, ok := pack.GetData(`pid`, reflect.String); ok {
 		pid, err = strconv.ParseInt(val.(string), 10, 32)
 		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 		return

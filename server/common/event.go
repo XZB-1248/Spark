@@ -7,14 +7,15 @@ import (
 	"time"
 )
 
+type EventCallback func(modules.Packet, *melody.Session)
 type event struct {
 	connection string
 	callback   EventCallback
-	channel    chan bool
+	finish     chan bool
+	remove     chan bool
 }
-type EventCallback func(modules.Packet, *melody.Session)
 
-var eventTable = cmap.New()
+var events = cmap.New()
 
 // CallEvent tries to call the callback with the given uuid
 // after that, it will notify the caller via the channel
@@ -22,7 +23,7 @@ func CallEvent(pack modules.Packet, session *melody.Session) {
 	if len(pack.Event) == 0 {
 		return
 	}
-	v, ok := eventTable.Get(pack.Event)
+	v, ok := events.Get(pack.Event)
 	if !ok {
 		return
 	}
@@ -31,12 +32,8 @@ func CallEvent(pack modules.Packet, session *melody.Session) {
 		return
 	}
 	ev.callback(pack, session)
-	if ev.channel != nil {
-		defer close(ev.channel)
-		select {
-		case ev.channel <- true:
-		default:
-		}
+	if ev.finish != nil {
+		ev.finish <- true
 	}
 }
 
@@ -44,17 +41,21 @@ func CallEvent(pack modules.Packet, session *melody.Session) {
 // can call back the event with the given event trigger.
 // Event trigger should be uuid to make every event unique.
 func AddEventOnce(fn EventCallback, connUUID, trigger string, timeout time.Duration) bool {
-	done := make(chan bool)
 	ev := &event{
 		connection: connUUID,
 		callback:   fn,
-		channel:    done,
+		finish:     make(chan bool),
+		remove:     make(chan bool),
 	}
-	eventTable.Set(trigger, ev)
-	defer eventTable.Remove(trigger)
+	events.Set(trigger, ev)
+	defer events.Remove(trigger)
+	defer close(ev.finish)
+	defer close(ev.remove)
 	select {
-	case <-done:
-		return true
+	case ok := <-ev.finish:
+		return ok
+	case ok := <-ev.remove:
+		return ok
 	case <-time.After(timeout):
 		return false
 	}
@@ -66,17 +67,26 @@ func AddEvent(fn EventCallback, connUUID, trigger string) {
 	ev := &event{
 		connection: connUUID,
 		callback:   fn,
-		channel:    nil,
 	}
-	eventTable.Set(trigger, ev)
+	events.Set(trigger, ev)
 }
 
 // RemoveEvent deletes the event with the given event trigger.
-func RemoveEvent(trigger string) {
-	eventTable.Remove(trigger)
+// The ok will be returned to caller if the event is temp (only once).
+func RemoveEvent(trigger string, ok ...bool) {
+	v, found := events.Get(trigger)
+	if !found {
+		return
+	}
+	events.Remove(trigger)
+	if ev := v.(*event); ev.remove != nil {
+		if len(ok) > 0 {
+			ev.remove <- ok[0]
+		}
+	}
 }
 
 // HasEvent returns if the event exists.
 func HasEvent(trigger string) bool {
-	return eventTable.Has(trigger)
+	return events.Has(trigger)
 }

@@ -36,6 +36,7 @@ func GetMD5(data []byte) ([]byte, string) {
 	hash := md5.New()
 	hash.Write(data)
 	result := hash.Sum(nil)
+	hash.Reset()
 	return result, hex.EncodeToString(result)
 }
 
@@ -73,9 +74,13 @@ func Decrypt(data []byte, key []byte) ([]byte, error) {
 
 	hash, _ := GetMD5(decBuffer)
 	if !bytes.Equal(hash, data[:16]) {
+		data = nil
+		decBuffer = nil
 		return nil, ErrFailedVerification
 	}
+	data = nil
+	decBuffer = decBuffer[:dataLen-16-64]
 
 	//fmt.Println(`Recv: `, string(decBuffer[:dataLen-16-64]))
-	return decBuffer[:dataLen-16-64], nil
+	return decBuffer, nil
 }

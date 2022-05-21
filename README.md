@@ -47,7 +47,7 @@ Only local installation are available yet.
 |-----------------|---------|-------|-------|
 | Process manager | ✔       | ✔     | ✔     |
 | Kill process    | ✔       | ✔     | ✔     |
-| Network Traffic | ✔       | ✔     | ✔     |
+| Network traffic | ✔       | ✔     | ✔     |
 | File explorer   | ✔       | ✔     | ✔     |
 | File transfer   | ✔       | ✔     | ✔     |
 | Delete file     | ✔       | ✔     | ✔     |
@@ -63,6 +63,20 @@ Only local installation are available yet.
 
 * Blank cell means the situation is not tested yet.
 * The Star symbol means the function may need administration or root privilege.
+
+---
+
+## Screenshots
+
+![overview](./screenshots/overview.png)
+
+![terminal](./screenshots/terminal.png)
+
+![procmgr](./screenshots/procmgr.png)
+
+![explorer](./screenshots/explorer.png)
+
+![overview.cpu](./screenshots/overview.cpu.png)
 
 ---
 
@@ -120,18 +134,6 @@ $ ./build.server.sh
 Then you can find executable files in `releases` directory.
 
 Copy configuration file mentioned above into this dir, and then you can execute server.
-
----
-
-## Screenshots
-
-![overview](./screenshots/overview.png)
-
-![terminal](./screenshots/terminal.png)
-
-![procmgr](./screenshots/procmgr.png)
-
-![explorer](./screenshots/explorer.png)
 
 ---
 

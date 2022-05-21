@@ -48,6 +48,11 @@ func init() {
 }
 
 func main() {
+	update()
+	core.Start()
+}
+
+func update() {
 	if len(os.Args) > 1 && os.Args[1] == `--update` {
 		thisPath := os.Args[0]
 		destPath := thisPath[:len(thisPath)-4]
@@ -69,7 +74,6 @@ func main() {
 		<-time.After(time.Second)
 		os.Remove(os.Args[0] + `.tmp`)
 	}
-	core.Start()
 }
 
 func decrypt(data []byte, key []byte) ([]byte, error) {

@@ -7,3 +7,7 @@
     max-height: 300px;
     min-height: 300px;
 }
+
+.upload-progress-square > .ant-progress-outer > .ant-progress-inner {
+    border-radius: 0 !important;
+}

@@ -2,9 +2,6 @@
 
 package screenshot
 
-import "Spark/utils"
-
-func GetScreenshot(trigger string) error {
-	_, err := putScreenshot(trigger, utils.ErrUnsupported.Error(), nil)
-	return err
+func GetScreenshot(bridge string) error {
+	return utils.ErrUnsupported
 }

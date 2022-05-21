@@ -245,7 +245,7 @@ func GetDevice() (*modules.Device, error) {
 	}, nil
 }
 
-func GetPartialInfo(getDisk bool) (modules.Device, error) {
+func GetPartialInfo(getDisk bool) (*modules.Device, error) {
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{
@@ -280,7 +280,7 @@ func GetPartialInfo(getDisk bool) (modules.Device, error) {
 	if err != nil {
 		uptime = 0
 	}
-	return modules.Device{
+	return &modules.Device{
 		Net:    netInfo,
 		CPU:    cpuInfo,
 		RAM:    memInfo,
