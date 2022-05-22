@@ -114,12 +114,14 @@ func (m ConcurrentMap) Has(key string) bool {
 }
 
 // Remove removes an element from the map.
-func (m ConcurrentMap) Remove(key string) {
+func (m ConcurrentMap) Remove(key ...string) {
 	// Try to get shard.
-	shard := m.GetShard(key)
-	shard.Lock()
-	delete(shard.items, key)
-	shard.Unlock()
+	for _, k := range key {
+		shard := m.GetShard(k)
+		shard.Lock()
+		delete(shard.items, k)
+		shard.Unlock()
+	}
 }
 
 // RemoveCb is a callback executed in a map.RemoveCb() call, while Lock is held
@@ -260,7 +262,7 @@ type IterCb func(key string, v interface{}) bool
 // IterCb callback based iterator, the cheapest way to read
 // all elements in a map.
 func (m ConcurrentMap) IterCb(fn IterCb) {
-	escape:=false
+	escape := false
 	for idx := range m {
 		shard := (m)[idx]
 		shard.RLock()

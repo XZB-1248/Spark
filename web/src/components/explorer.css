@@ -8,6 +8,20 @@
     min-height: 300px;
 }
 
+.ant-breadcrumb {
+    overflow-x: hidden;
+    white-space: nowrap;
+}
+
+.ant-pro-table-list-toolbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.ant-pro-table-list-toolbar::-webkit-scrollbar {
+    display: none;
+}
+
 .upload-progress-square > .ant-progress-outer > .ant-progress-inner {
     border-radius: 0 !important;
 }

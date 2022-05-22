@@ -8,6 +8,18 @@
 
 ---
 
+<div align="center">
+
+|![GitHub repo size](https://img.shields.io/github/repo-size/DGP-Studio/Snap.Genshin?style=flat-square)|![GitHub issues](https://img.shields.io/github/issues/XZB-1248/Spark?style=flat-square)|![GitHub closed issues](https://img.shields.io/github/issues-closed/XZB-1248/Spark?style=flat-square)|
+|-|-|-|
+
+|[![GitHub downloads](https://img.shields.io/github/downloads/XZB-1248/Spark/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases)|[![GitHub release (latest by date)](https://img.shields.io/github/downloads/XZB-1248/Spark/latest/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases/latest)|
+|-|-|
+
+</div>
+
+---
+
 ### **免责声明**
 
 **本项目及其源代码和发行版，旨在用于学习和交流。使用本项目所带来的风险由使用者本人承担。作者和开发者不会对你的错误使用而造成的损害承担任何责任。**
@@ -123,12 +135,12 @@ $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 # 在使用类Unix系统时，运行以下命令。
 $ go mod tidy
 $ go mod download
-$ ./build.client.sh
+$ ./scripts/build.client.sh
 $ statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
 
 
 # 最终开始编译服务端。
-$ ./build.server.sh
+$ ./scripts/build.server.sh
 ```
 
 然后打开`releases`目录，放入上文提到的配置文件，选择对应平台的服务端运行即可。

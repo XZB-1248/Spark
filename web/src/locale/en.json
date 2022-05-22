@@ -60,6 +60,8 @@
 	"fileOrDirNotExist": "File or folder does not exist",
 	"fileOverwriteConfirm": "File [ {0} ] already exists, overwrite?",
 	"fileOverwrite": "Overwrite",
+	"fileTooLarge": "File is too large to read",
+	"fileEncodingUnsupported": "File encoding is not supported",
 
 	"host": "Host",
 	"port": "Port",

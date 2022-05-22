@@ -29,13 +29,13 @@ func removeDeviceFile(ctx *gin.Context) {
 	common.SendPackByUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`file`: form.File}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
-			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 
@@ -52,13 +52,13 @@ func listDeviceFiles(ctx *gin.Context) {
 	common.SendPackByUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
-			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0, Data: p.Data})
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
 
@@ -66,7 +66,8 @@ func listDeviceFiles(ctx *gin.Context) {
 // client and let it upload the file specified.
 func getDeviceFile(ctx *gin.Context) {
 	var form struct {
-		File string `json:"file" yaml:"file" form:"file" binding:"required"`
+		File    string `json:"file" yaml:"file" form:"file" binding:"required"`
+		Preview bool   `json:"preview" yaml:"preview" form:"preview"`
 	}
 	target, ok := checkForm(ctx, &form)
 	if !ok {
@@ -82,29 +83,29 @@ func getDeviceFile(ctx *gin.Context) {
 		rangeHeader := ctx.GetHeader(`Range`)
 		if len(rangeHeader) > 6 {
 			if rangeHeader[:6] != `bytes=` {
-				ctx.Status(http.StatusRequestedRangeNotSatisfiable)
+				ctx.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
 				return
 			}
 			rangeHeader = strings.TrimSpace(rangeHeader[6:])
 			rangesList := strings.Split(rangeHeader, `,`)
 			if len(rangesList) > 1 {
-				ctx.Status(http.StatusRequestedRangeNotSatisfiable)
+				ctx.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
 				return
 			}
 			r := strings.Split(rangesList[0], `-`)
 			rangeStart, err = strconv.ParseInt(r[0], 10, 64)
 			if err != nil {
-				ctx.Status(http.StatusRequestedRangeNotSatisfiable)
+				ctx.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
 				return
 			}
 			if len(r[1]) > 0 {
 				rangeEnd, err = strconv.ParseInt(r[1], 10, 64)
 				if err != nil {
-					ctx.Status(http.StatusRequestedRangeNotSatisfiable)
+					ctx.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
 					return
 				}
 				if rangeEnd < rangeStart {
-					ctx.Status(http.StatusRequestedRangeNotSatisfiable)
+					ctx.AbortWithStatus(http.StatusRequestedRangeNotSatisfiable)
 					return
 				}
 				command[`end`] = rangeEnd
@@ -121,25 +122,32 @@ func getDeviceFile(ctx *gin.Context) {
 		called = true
 		removeBridge(bridgeID)
 		common.RemoveEvent(trigger)
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 	}, target, trigger)
 	instance := addBridgeWithDest(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge) {
 		called = true
 		common.RemoveEvent(trigger)
 		src := bridge.src
+		for k, v := range src.Request.Header {
+			if strings.HasPrefix(k, `File`) {
+				ctx.Header(k, v[0])
+			}
+		}
 		if src.Request.ContentLength > 0 {
 			ctx.Header(`Content-Length`, strconv.FormatInt(src.Request.ContentLength, 10))
 		}
-		ctx.Header(`Accept-Ranges`, `bytes`)
-		ctx.Header(`Content-Transfer-Encoding`, `binary`)
-		ctx.Header(`Content-Type`, `application/octet-stream`)
-		filename := src.GetHeader(`FileName`)
-		if len(filename) == 0 {
-			filename = path.Base(strings.ReplaceAll(form.File, `\`, `/`))
+		if !form.Preview {
+			ctx.Header(`Accept-Ranges`, `bytes`)
+			ctx.Header(`Content-Transfer-Encoding`, `binary`)
+			ctx.Header(`Content-Type`, `application/octet-stream`)
+			filename := src.GetHeader(`FileName`)
+			if len(filename) == 0 {
+				filename = path.Base(strings.ReplaceAll(form.File, `\`, `/`))
+			}
+			filename = url.PathEscape(filename)
+			ctx.Header(`Content-Disposition`, `attachment; filename* = UTF-8''`+filename+`;`)
 		}
-		filename = url.PathEscape(filename)
-		ctx.Header(`Content-Disposition`, `attachment; filename* = UTF-8''`+filename+`;`)
 
 		if partial {
 			if rangeEnd == 0 {
@@ -164,11 +172,12 @@ func getDeviceFile(ctx *gin.Context) {
 		if !called {
 			removeBridge(bridgeID)
 			common.RemoveEvent(trigger)
-			ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {
 			<-wait
 		}
 	}
+	close(wait)
 }
 
 // uploadToDevice handles file from browser
@@ -191,7 +200,7 @@ func uploadToDevice(ctx *gin.Context) {
 		called = true
 		removeBridge(bridgeID)
 		common.RemoveEvent(trigger)
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 	}, target, trigger)
 	instance := addBridgeWithSrc(nil, bridgeID, ctx)
 	instance.OnPull = func(bridge *bridge) {
@@ -223,10 +232,11 @@ func uploadToDevice(ctx *gin.Context) {
 		if !called {
 			removeBridge(bridgeID)
 			common.RemoveEvent(trigger)
-			ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {
 			<-wait
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
 	}
+	close(wait)
 }

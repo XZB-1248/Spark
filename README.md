@@ -3,15 +3,30 @@
 **Spark** is a free, safe, open-source, web-based, cross-platform and full-featured RAT (Remote Administration Tool)
 that allow you to control all your devices via browser anywhere.
 
-We **won't** collect any data, thus the server will never self-upgrade. Your clients will only communicate with your server forever.
+We **won't** collect any data, thus the server will never self-upgrade. Your clients will only communicate with your
+server forever.
 
 ### [English] [[中文]](./README.ZH.md) [[API Document]](./API.md) [[API文档]](./API.ZH.md)
 
 ---
 
+<div align="center">
+
+|![GitHub repo size](https://img.shields.io/github/repo-size/DGP-Studio/Snap.Genshin?style=flat-square)|![GitHub issues](https://img.shields.io/github/issues/XZB-1248/Spark?style=flat-square)|![GitHub closed issues](https://img.shields.io/github/issues-closed/XZB-1248/Spark?style=flat-square)|
+|-|-|-|
+
+|[![GitHub downloads](https://img.shields.io/github/downloads/XZB-1248/Spark/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases)|[![GitHub release (latest by date)](https://img.shields.io/github/downloads/XZB-1248/Spark/latest/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases/latest)|
+|-|-|
+
+</div>
+
+---
+
 ## **Disclaimer**
 
-**THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.YOU SHALL USE THIS PROJECT AT YOUR OWN RISK.THE AUTHORS AND DEVELOPERS ARE NOT RESPONSIBLE FOR ANY DAMAGE CAUSED BY YOUR MISUSE OF THIS PROJECT.**
+**THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.YOU SHALL USE THIS
+PROJECT AT YOUR OWN RISK.THE AUTHORS AND DEVELOPERS ARE NOT RESPONSIBLE FOR ANY DAMAGE CAUSED BY YOUR MISUSE OF THIS
+PROJECT.**
 
 **YOUR DATA IS PRICELESS. THINK TWICE BEFORE YOU CLICK ANY BUTTON OR ENTER ANY COMMAND.**
 
@@ -123,12 +138,12 @@ $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 # When you're using unix-like OS, you can use this.
 $ go mod tidy
 $ go mod download
-$ ./build.client.sh
+$ ./scripts/build.client.sh
 $ statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
 
 
 # Finally we're compiling the server side.
-$ ./build.server.sh
+$ ./scripts/build.server.sh
 ```
 
 Then you can find executable files in `releases` directory.

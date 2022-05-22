@@ -27,6 +27,7 @@ var (
 	errNoSecretHeader = errors.New(`can not find secret header`)
 )
 var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
+	`ping`:           ping,
 	`offline`:        offline,
 	`lock`:           lock,
 	`logoff`:         logoff,
@@ -68,8 +69,6 @@ func Start() {
 		}
 
 		checkUpdate(common.WSConn)
-
-		go heartbeat(common.WSConn)
 
 		err = handleWS(common.WSConn)
 		if err != nil && !stop {
@@ -211,26 +210,4 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	} else {
 		act(pack, wsConn)
 	}
-}
-
-func heartbeat(wsConn *common.Conn) error {
-	t := 0
-	for range time.NewTicker(2 * time.Second).C {
-		t++
-		// GetPartialInfo always costs more than 1 second.
-		// So it is actually get disk info every 20*3 seconds (1 minute).
-		device, err := GetPartialInfo(t >= 20)
-		if err != nil {
-			golog.Error(err)
-			continue
-		}
-		if t >= 20 {
-			t = 0
-		}
-		err = common.SendPack(modules.CommonPack{Act: `setDevice`, Data: *device}, wsConn)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

@@ -1,17 +1,20 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {message, Modal, Popconfirm, Progress} from "antd";
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {Breadcrumb, Card, Image, message, Modal, Popconfirm, Progress} from "antd";
 import ProTable from '@ant-design/pro-table';
-import {formatSize, post, request, waitTime} from "../utils/utils";
+import {formatSize, post, request, translate, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import './explorer.css';
-import {ReloadOutlined, UploadOutlined} from "@ant-design/icons";
+import { VList } from "virtuallist-antd";
+import {HomeOutlined, ReloadOutlined, UploadOutlined} from "@ant-design/icons";
 import axios from "axios";
 import Qs from "qs";
 
+let position = '';
 let fileList = [];
 function FileBrowser(props) {
     const [path, setPath] = useState(`/`);
+    const [preview, setPreview] = useState('');
     const [loading, setLoading] = useState(false);
     const [upload, setUpload] = useState(false);
     const columns = [
@@ -55,7 +58,13 @@ function FileBrowser(props) {
         setting: false,
     };
     const tableRef = useRef();
+    const virtualTable = useMemo(() => {
+        return VList({
+            height: 300
+        })
+    }, []);
     useEffect(() => {
+        position = '/';
         setPath(`/`);
         if (props.visible) {
             setLoading(false);
@@ -81,7 +90,7 @@ function FileBrowser(props) {
                 return [
                     <a
                         key='download'
-                        onClick={downloadFile.bind(null, file.name)}
+                        onClick={downloadFile.bind(null, file)}
                     >{i18n.t('download')}</a>,
                     remove,
                 ];
@@ -96,7 +105,7 @@ function FileBrowser(props) {
     function onRowClick(file) {
         let separator = props.isWindows ? '\\' : '/';
         if (file.name === '..') {
-            listFiles(getParentPath());
+            listFiles(getParentPath(position));
             return;
         }
         if (file.type !== 0) {
@@ -107,15 +116,56 @@ function FileBrowser(props) {
                 }
             }
             listFiles(path + file.name + separator);
+            return;
         }
+        let ext = file.name.split('.').pop();
+        if (ext === 'jpg' || ext === 'png' || ext === 'bmp' || ext === 'gif' || ext === 'jpeg') {
+            imgPreview(file);
+            return;
+        }
+        downloadFile(file);
+    }
+
+    function imgPreview(file) {
+        // Only preview image file smaller than 8MB.
+        if (file.size > 2 << 22) {
+            return;
+        }
+        setLoading(true);
+        request('/api/device/file/get', {device: props.device, file: path + file.name}, {}, {
+            responseType: 'blob',
+            timeout: 10000
+        }).then((res) => {
+            if ((res.data.type ?? '').substring(0, 16) === 'application/json') {
+                res.data.text().then((str) => {
+                    let data = {};
+                    try {
+                        data = JSON.parse(str);
+                    } catch (e) {
+                    }
+                    message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
+                });
+            } else {
+                if (preview.length > 0) {
+                    URL.revokeObjectURL(preview);
+                }
+                setPreview(URL.createObjectURL(res.data));
+            }
+        }).finally(() => {
+            setLoading(false);
+        });
     }
 
     function listFiles(newPath) {
+        if (loading) {
+            return;
+        }
+        position = newPath;
         setPath(newPath);
         tableRef.current.reload();
     }
 
-    function getParentPath() {
+    function getParentPath(path) {
         let separator = props.isWindows ? '\\' : '/';
         // remove the last separator
         // or there'll be an empty element after split
@@ -159,6 +209,7 @@ function FileBrowser(props) {
             }
         }
     }
+
     function uploadFile() {
         if (path === '/' || path === '\\' || path.length === 0) {
             if (props.isWindows) {
@@ -168,17 +219,19 @@ function FileBrowser(props) {
         }
         document.getElementById('uploader').click();
     }
+
     function onUploadSuccess() {
         tableRef.current.reload();
         setUpload(false);
     }
+
     function onUploadCancel() {
         setUpload(false);
     }
 
     function downloadFile(file) {
         post(location.origin + location.pathname + 'api/device/file/get', {
-            file: path + file,
+            file: path + file.name,
             device: props.device
         });
     }
@@ -195,7 +248,7 @@ function FileBrowser(props) {
 
     async function getData(form) {
         await waitTime(300);
-        let res = await request('/api/device/file/list', {path: path, device: props.device});
+        let res = await request('/api/device/file/list', {path: position, device: props.device});
         setLoading(false);
         let data = res.data;
         if (data.code === 0) {
@@ -211,13 +264,14 @@ function FileBrowser(props) {
                     modTime: 0
                 });
             }
+            setPath(position);
             return ({
                 data: data.data.files,
                 success: true,
                 total: data.data.files.length - (addParentShortcut ? 1 : 0)
             });
         }
-        setPath(getParentPath());
+        setPath(getParentPath(position));
         return ({data: [], success: false, total: 0});
     }
 
@@ -242,7 +296,7 @@ function FileBrowser(props) {
                 toolbar={{
                     settings: [
                         {
-                            icon: <UploadOutlined />,
+                            icon: <UploadOutlined/>,
                             tooltip: i18n.t('upload'),
                             key: 'upload',
                             onClick: uploadFile
@@ -268,12 +322,13 @@ function FileBrowser(props) {
                 request={getData}
                 pagination={false}
                 actionRef={tableRef}
+                components={virtualTable}
             >
             </ProTable>
             <input
                 id='uploader'
                 type='file'
-                style={{ display: 'none' }}
+                style={{display: 'none'}}
                 onChange={onFileChange}
             />
             <UploadModal
@@ -283,7 +338,78 @@ function FileBrowser(props) {
                 onSuccess={onUploadSuccess}
                 onCanel={onUploadCancel}
             />
+            <Image
+                preview={{
+                    visible: preview,
+                    src: preview,
+                    onVisibleChange: () => {
+                        URL.revokeObjectURL(preview);
+                        setPreview('');
+                    }
+                }}
+            />
         </Modal>
+    )
+}
+
+function Navigator(props) {
+    let separator = props.isWindows ? '\\' : '/';
+    let path = [];
+    let pathItems = [];
+    let tempPath = props.path;
+    if (tempPath.endsWith(separator)) {
+        tempPath = tempPath.substring(0, tempPath.length - 1);
+    }
+    if (tempPath.length > 0 && tempPath !== '/' && tempPath !== '\\') {
+        path = tempPath.split(separator);
+    }
+    for (let i = 0; i < path.length; i++) {
+        let name = path[i];
+        if (i === 0 && props.isWindows) {
+            if (name.endsWith(':')) {
+                name = name.substring(0, name.length - 1);
+            }
+        }
+        pathItems.push({
+            name: name,
+            path: path.slice(0, i + 1).join(separator) + separator
+        });
+    }
+    if (path.length > 0 && props.isWindows) {
+        let first = path[0];
+        if (first.endsWith(':')) {
+            first = first.substring(0, first.length - 1);
+        }
+        path[0] = first;
+    }
+    pathItems.pop();
+
+    return (
+        <Breadcrumb
+            style={{marginLeft: '10px', marginRight: '10px'}}
+            disabled={props.loading}
+        >
+            <Breadcrumb.Item
+                style={{cursor: 'pointer'}}
+                onClick={props.onClick.bind(null, '/')}
+            >
+                <HomeOutlined/>
+            </Breadcrumb.Item>
+            {pathItems.map(item => (
+                <Breadcrumb.Item
+                    key={item.path}
+                    style={{cursor: 'pointer'}}
+                    onClick={props.onClick.bind(null, item.path)}
+                >
+                    {item.name}
+                </Breadcrumb.Item>
+            ))}
+            {path.length > 0 ? (
+                <Breadcrumb.Item>
+                    {path[path.length - 1]}
+                </Breadcrumb.Item>
+            ) : null}
+        </Breadcrumb>
     )
 }
 
@@ -364,6 +490,7 @@ function UploadModal(props) {
             }, 1500);
         });
     }
+
     function onCancel() {
         if (status === 0) {
             setVisible(false);
@@ -413,7 +540,7 @@ function UploadModal(props) {
             maskClosable={false}
             destroyOnClose={true}
             confirmLoading={status === 1}
-            okText={i18n.t(status===1?'uploading':'upload')}
+            okText={i18n.t(status === 1 ? 'uploading' : 'upload')}
             onOk={onConfirm}
             onCancel={onCancel}
             okButtonProps={{disabled: status !== 0}}

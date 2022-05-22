@@ -245,7 +245,7 @@ func GetDevice() (*modules.Device, error) {
 	}, nil
 }
 
-func GetPartialInfo(getDisk bool) (*modules.Device, error) {
+func GetPartialInfo() (*modules.Device, error) {
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{

@@ -8,10 +8,21 @@ import (
 	Screenshot "Spark/client/service/screenshot"
 	"Spark/client/service/terminal"
 	"Spark/modules"
+	"github.com/kataras/golog"
 	"os"
 	"reflect"
 	"strconv"
 )
+
+func ping(pack modules.Packet, wsConn *common.Conn) {
+	common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+	device, err := GetPartialInfo()
+	if err != nil {
+		golog.Error(err)
+		return
+	}
+	common.SendPack(modules.CommonPack{Act: `setDevice`, Data: *device}, wsConn)
+}
 
 func offline(pack modules.Packet, wsConn *common.Conn) {
 	common.SendCb(modules.Packet{Code: 0}, pack, wsConn)

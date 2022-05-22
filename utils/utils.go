@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	ErrUnsupported        = errors.New(`unsupported operation`)
 	ErrEntityInvalid      = errors.New(`entity is not valid`)
 	ErrFailedVerification = errors.New(`failed to verify entity`)
 	JSON                  = jsoniter.ConfigCompatibleWithStandardLibrary

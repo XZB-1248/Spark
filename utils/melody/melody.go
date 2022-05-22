@@ -316,9 +316,7 @@ func (m *Melody) IterSessions(fn func(uuid string, s *Session) bool) {
 			return fn(uuid, s)
 		}
 	})
-	for i := range invalid {
-		m.hub.sessions.Remove(invalid[i])
-	}
+	m.hub.sessions.Remove(invalid...)
 }
 
 // Close closes the melody instance and all connected sessions.

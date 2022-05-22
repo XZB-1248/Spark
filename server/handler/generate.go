@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"math/big"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -29,25 +30,6 @@ var (
 	errTooLargeEntity = errors.New(`length of data can not excess buffer size`)
 )
 
-//func init() {
-//	clientUUID := utils.GetUUID()
-//	clientKey, _ := common.EncAES(clientUUID, append([]byte("XZB_Spark"), bytes.Repeat([]byte{25}, 24-9)...))
-//	cfg, _ := genConfig(clientCfg{
-//		Secure: false,
-//		Host:   "47.102.136.182",
-//		Port:   1025,
-//		Path:   "/",
-//		UUID:   hex.EncodeToString(clientUUID),
-//		Key:    hex.EncodeToString(clientKey),
-//	})
-//	output := ``
-//	temp := hex.EncodeToString(cfg)
-//	for i := 0; i < len(temp); i += 2 {
-//		output += `\x` + temp[i:i+2]
-//	}
-//	ioutil.WriteFile(`./Client.cfg`, []byte(output), 0755)
-//}
-
 func checkClient(ctx *gin.Context) {
 	var form struct {
 		OS     string `json:"os" yaml:"os" form:"os" binding:"required"`
@@ -58,12 +40,12 @@ func checkClient(ctx *gin.Context) {
 		Secure string `json:"secure" yaml:"secure" form:"secure"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
-	_, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
+	_, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return
 	}
 	_, err = genConfig(clientCfg{
@@ -76,10 +58,10 @@ func checkClient(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == errTooLargeEntity {
-			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
+			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return
 	}
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
@@ -95,18 +77,18 @@ func generateClient(ctx *gin.Context) {
 		Secure string `json:"secure" yaml:"secure" form:"secure"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
-	tpl, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
+	tpl, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return
 	}
 	clientUUID := utils.GetUUID()
 	clientKey, err := common.EncAES(clientUUID, config.Config.StdSalt)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return
 	}
 	cfgBytes, err := genConfig(clientCfg{
@@ -119,10 +101,10 @@ func generateClient(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == errTooLargeEntity {
-			ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
+			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return
 	}
 	ctx.Header(`Accept-Ranges`, `none`)

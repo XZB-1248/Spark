@@ -4,7 +4,6 @@ import (
 	"Spark/modules"
 	"Spark/server/common"
 	"Spark/utils"
-	"Spark/utils/cmap"
 	"Spark/utils/melody"
 	"crypto/aes"
 	"crypto/cipher"
@@ -22,111 +21,46 @@ type terminal struct {
 	deviceConn *melody.Session
 }
 
-var terminals = cmap.New()
 var wsSessions = melody.New()
 
 func init() {
-	wsSessions.HandleConnect(func(session *melody.Session) {
-		device, ok := session.Get(`Device`)
-		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
-			session.Close()
-			return
-		}
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
-			session.Close()
-			return
-		}
-		termUUID, ok := val.(string)
-		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
-			session.Close()
-			return
-		}
-		connUUID, ok := common.CheckDevice(device.(string), ``)
-		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
-			session.Close()
-			return
-		}
-		deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
-		if !ok {
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
-			session.Close()
-			return
-		}
-		eventUUID := utils.GetStrUUID()
-		terminal := &terminal{
-			uuid:       termUUID,
-			event:      eventUUID,
-			device:     device.(string),
-			session:    session,
-			deviceConn: deviceConn,
-		}
-		terminals.Set(termUUID, terminal)
-		common.AddEvent(eventWrapper(terminal), connUUID, eventUUID)
-		common.SendPack(modules.Packet{Act: `initTerminal`, Data: gin.H{
-			`terminal`: termUUID,
-		}, Event: eventUUID}, deviceConn)
-	})
+	wsSessions.HandleConnect(onConnect)
 	wsSessions.HandleMessage(onMessage)
 	wsSessions.HandleMessageBinary(onMessage)
-	wsSessions.HandleDisconnect(func(session *melody.Session) {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		termUUID, ok := val.(string)
-		if !ok {
-			return
-		}
-		val, ok = terminals.Get(termUUID)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
-		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
-			`terminal`: termUUID,
-		}, Event: terminal.event}, terminal.deviceConn)
-		terminals.Remove(termUUID)
-		common.RemoveEvent(terminal.event)
-	})
-	go common.HealthCheckWS(300, wsSessions)
+	wsSessions.HandleDisconnect(onDisconnect)
+	go wsHealthCheck(wsSessions)
 }
 
 // initTerminal handles terminal websocket handshake event
 func initTerminal(ctx *gin.Context) {
 	if !ctx.IsWebsocket() {
-		ctx.Status(http.StatusUpgradeRequired)
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	secretStr, ok := ctx.GetQuery(`secret`)
 	if !ok || len(secretStr) != 32 {
-		ctx.Status(http.StatusBadRequest)
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	secret, err := hex.DecodeString(secretStr)
 	if err != nil {
-		ctx.Status(http.StatusBadRequest)
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	device, ok := ctx.GetQuery(`device`)
 	if !ok {
-		ctx.Status(http.StatusBadRequest)
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	if _, ok := common.CheckDevice(device, ``); !ok {
-		ctx.Status(http.StatusBadRequest)
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
 	wsSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
 		`Secret`:   secret,
 		`Device`:   device,
-		`LastPack`: time.Now().Unix(),
-		`Terminal`: utils.GetStrUUID(),
+		`LastPack`: common.Unix,
 	})
 }
 
@@ -143,7 +77,6 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 					msg += `${i18n|unknownError}`
 				}
 				simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
-				terminals.Remove(terminal.uuid)
 				common.RemoveEvent(terminal.event)
 				terminal.session.Close()
 			}
@@ -155,7 +88,6 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 				msg = pack.Msg
 			}
 			simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
-			terminals.Remove(terminal.uuid)
 			common.RemoveEvent(terminal.event)
 			terminal.session.Close()
 			return
@@ -171,6 +103,158 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 			}
 		}
 	}
+}
+
+func wsHealthCheck(container *melody.Melody) {
+	const MaxIdleSeconds = 300
+	ping := func(uuid string, s *melody.Session) {
+		if !simpleSendPack(modules.Packet{Act: `ping`}, s) {
+			s.Close()
+		}
+	}
+	for now := range time.NewTicker(60 * time.Second).C {
+		timestamp := now.Unix()
+		// stores sessions to be disconnected
+		queue := make([]*melody.Session, 0)
+		container.IterSessions(func(uuid string, s *melody.Session) bool {
+			go ping(uuid, s)
+			val, ok := s.Get(`LastPack`)
+			if !ok {
+				queue = append(queue, s)
+				return true
+			}
+			lastPack, ok := val.(int64)
+			if !ok {
+				queue = append(queue, s)
+				return true
+			}
+			if timestamp-lastPack > MaxIdleSeconds {
+				queue = append(queue, s)
+			}
+			return true
+		})
+		for i := 0; i < len(queue); i++ {
+			queue[i].Close()
+		}
+	}
+}
+
+func onConnect(session *melody.Session) {
+	device, ok := session.Get(`Device`)
+	if !ok {
+		simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
+		session.Close()
+		return
+	}
+	connUUID, ok := common.CheckDevice(device.(string), ``)
+	if !ok {
+		simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		session.Close()
+		return
+	}
+	deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
+	if !ok {
+		simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		session.Close()
+		return
+	}
+	termUUID := utils.GetStrUUID()
+	eventUUID := utils.GetStrUUID()
+	terminal := &terminal{
+		uuid:       termUUID,
+		event:      eventUUID,
+		device:     device.(string),
+		session:    session,
+		deviceConn: deviceConn,
+	}
+	session.Set(`Terminal`, terminal)
+	common.AddEvent(eventWrapper(terminal), connUUID, eventUUID)
+	common.SendPack(modules.Packet{Act: `initTerminal`, Data: gin.H{
+		`terminal`: termUUID,
+	}, Event: eventUUID}, deviceConn)
+}
+
+func onMessage(session *melody.Session, data []byte) {
+	var pack modules.Packet
+	data, ok := simpleDecrypt(data, session)
+	if !(ok && utils.JSON.Unmarshal(data, &pack) == nil) {
+		simpleSendPack(modules.Packet{Code: -1}, session)
+		session.Close()
+		return
+	}
+	session.Set(`LastPack`, common.Unix)
+	if pack.Act == `inputTerminal` {
+		val, ok := session.Get(`Terminal`)
+		if !ok {
+			return
+		}
+		terminal := val.(*terminal)
+		if pack.Data == nil {
+			return
+		}
+		if input, ok := pack.Data[`input`]; ok {
+			common.SendPack(modules.Packet{Act: `inputTerminal`, Data: gin.H{
+				`input`:    input,
+				`terminal`: terminal.uuid,
+			}, Event: terminal.event}, terminal.deviceConn)
+		}
+		return
+	}
+	if pack.Act == `resizeTerminal` {
+		val, ok := session.Get(`Terminal`)
+		if !ok {
+			return
+		}
+		terminal := val.(*terminal)
+		if pack.Data == nil {
+			return
+		}
+		if width, ok := pack.Data[`width`]; ok {
+			if height, ok := pack.Data[`height`]; ok {
+				common.SendPack(modules.Packet{Act: `resizeTerminal`, Data: gin.H{
+					`width`:    width,
+					`height`:   height,
+					`terminal`: terminal.uuid,
+				}, Event: terminal.event}, terminal.deviceConn)
+			}
+		}
+		return
+	}
+	if pack.Act == `killTerminal` {
+		val, ok := session.Get(`Terminal`)
+		if !ok {
+			return
+		}
+		terminal := val.(*terminal)
+		if pack.Data == nil {
+			return
+		}
+		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
+			`terminal`: terminal.uuid,
+		}, Event: terminal.event}, terminal.deviceConn)
+		return
+	}
+	if pack.Act == `pong` {
+		return
+	}
+	session.Close()
+}
+
+func onDisconnect(session *melody.Session) {
+	val, ok := session.Get(`Terminal`)
+	if !ok {
+		return
+	}
+	terminal, ok := val.(*terminal)
+	if !ok {
+		return
+	}
+	common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
+		`terminal`: terminal.uuid,
+	}, Event: terminal.event}, terminal.deviceConn)
+	common.RemoveEvent(terminal.event)
+	session.Set(`Terminal`, nil)
+	terminal = nil
 }
 
 func simpleEncrypt(data []byte, session *melody.Session) ([]byte, bool) {
@@ -221,102 +305,24 @@ func simpleSendPack(pack modules.Packet, session *melody.Session) bool {
 	return err == nil
 }
 
-func onMessage(session *melody.Session, data []byte) {
-	var pack modules.Packet
-	data, ok := simpleDecrypt(data, session)
-	if !(ok && utils.JSON.Unmarshal(data, &pack) == nil) {
-		simpleSendPack(modules.Packet{Code: -1}, session)
-		session.Close()
-		return
-	}
-	session.Set(`LastPack`, time.Now().Unix())
-	if pack.Act == `inputTerminal` {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		termUUID, ok := val.(string)
-		if !ok {
-			return
-		}
-		val, ok = terminals.Get(termUUID)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
-		if pack.Data == nil {
-			return
-		}
-		if input, ok := pack.Data[`input`]; ok {
-			common.SendPack(modules.Packet{Act: `inputTerminal`, Data: gin.H{
-				`input`:    input,
-				`terminal`: terminal.uuid,
-			}, Event: terminal.event}, terminal.deviceConn)
-		}
-	}
-	if pack.Act == `resizeTerminal` {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		termUUID, ok := val.(string)
-		if !ok {
-			return
-		}
-		val, ok = terminals.Get(termUUID)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
-		if pack.Data == nil {
-			return
-		}
-		if width, ok := pack.Data[`width`]; ok {
-			if height, ok := pack.Data[`height`]; ok {
-				common.SendPack(modules.Packet{Act: `resizeTerminal`, Data: gin.H{
-					`width`:    width,
-					`height`:   height,
-					`terminal`: terminal.uuid,
-				}, Event: terminal.event}, terminal.deviceConn)
-			}
-		}
-	}
-	if pack.Act == `killTerminal` {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		termUUID, ok := val.(string)
-		if !ok {
-			return
-		}
-		val, ok = terminals.Get(termUUID)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
-		if pack.Data == nil {
-			return
-		}
-		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
-			`terminal`: termUUID,
-		}, Event: terminal.event}, terminal.deviceConn)
-	}
-}
-
 func CloseSessionsByDevice(deviceID string) {
-	var queue []string
-	terminals.IterCb(func(key string, val interface{}) bool {
-		terminal := val.(*terminal)
+	var queue []*melody.Session
+	wsSessions.IterSessions(func(_ string, session *melody.Session) bool {
+		val, ok := session.Get(`Terminal`)
+		if !ok {
+			return true
+		}
+		terminal, ok := val.(*terminal)
+		if !ok {
+			return true
+		}
 		if terminal.device == deviceID {
-			common.RemoveEvent(terminal.event)
-			terminal.session.Close()
-			queue = append(queue, key)
+			queue = append(queue, session)
+			return false
 		}
 		return true
 	})
-
-	for _, key := range queue {
-		terminals.Remove(key)
+	for _, session := range queue {
+		session.Close()
 	}
 }

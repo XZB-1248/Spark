@@ -11,14 +11,11 @@ import (
 	"encoding/hex"
 	"github.com/gin-gonic/gin"
 	"net"
-	"net/http"
 	"strings"
-	"time"
 )
 
 var Melody = melody.New()
 var Devices = cmap.New()
-var BuiltFS http.FileSystem
 
 func SendPackByUUID(pack modules.Packet, uuid string) bool {
 	session, ok := Melody.GetSessionByUUID(uuid)
@@ -68,54 +65,6 @@ func Decrypt(data []byte, session *melody.Session) ([]byte, bool) {
 		return nil, false
 	}
 	return dec, true
-}
-
-func HealthCheckWS(maxIdleSeconds int64, container *melody.Melody) {
-	go func() {
-		// ping client and update latency every 3 seconds
-		ping := func(uuid string, s *melody.Session) {
-			t := time.Now().UnixMilli()
-			trigger := utils.GetStrUUID()
-			SendPack(modules.Packet{Act: `ping`, Event: trigger}, s)
-			AddEventOnce(func(packet modules.Packet, session *melody.Session) {
-				val, ok := Devices.Get(uuid)
-				if ok {
-					deviceInfo := val.(*modules.Device)
-					deviceInfo.Latency = uint(time.Now().UnixMilli()-t) / 2
-				}
-			}, uuid, trigger, 3*time.Second)
-		}
-		for range time.NewTicker(3 * time.Second).C {
-			container.IterSessions(func(uuid string, s *melody.Session) bool {
-				go ping(uuid, s)
-				return true
-			})
-		}
-	}()
-	for now := range time.NewTicker(30 * time.Second).C {
-		timestamp := now.Unix()
-		// stores sessions to be disconnected
-		queue := make([]*melody.Session, 0)
-		container.IterSessions(func(uuid string, s *melody.Session) bool {
-			val, ok := s.Get(`LastPack`)
-			if !ok {
-				queue = append(queue, s)
-				return true
-			}
-			lastPack, ok := val.(int64)
-			if !ok {
-				queue = append(queue, s)
-				return true
-			}
-			if timestamp-lastPack > maxIdleSeconds {
-				queue = append(queue, s)
-			}
-			return true
-		})
-		for i := 0; i < len(queue); i++ {
-			queue[i].Close()
-		}
-	}
 }
 
 func GetRemoteAddr(ctx *gin.Context) string {

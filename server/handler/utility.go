@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -59,24 +60,19 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 		if len(exSession) > 0 {
 			common.Devices.Remove(exSession)
 		}
-	}
-	common.SendPack(modules.Packet{Code: 0}, session)
-
-	{
+		common.Devices.Set(session.UUID, &pack.Device)
+	} else {
 		val, ok := common.Devices.Get(session.UUID)
 		if ok {
 			deviceInfo := val.(*modules.Device)
 			deviceInfo.CPU = pack.Device.CPU
 			deviceInfo.RAM = pack.Device.RAM
 			deviceInfo.Net = pack.Device.Net
-			if pack.Device.Disk.Total > 0 {
-				deviceInfo.Disk = pack.Device.Disk
-			}
+			deviceInfo.Disk = pack.Device.Disk
 			deviceInfo.Uptime = pack.Device.Uptime
-			return nil
 		}
-		common.Devices.Set(session.UUID, &pack.Device)
 	}
+	common.SendPack(modules.Packet{Code: 0}, session)
 	return nil
 }
 
@@ -89,32 +85,32 @@ func checkUpdate(ctx *gin.Context) {
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
 		golog.Error(err)
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	if form.Commit == config.COMMIT {
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		return
 	}
-	tpl, err := common.BuiltFS.Open(fmt.Sprintf(`/%v_%v`, form.OS, form.Arch))
+	tpl, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return
 	}
 
 	const MaxBodySize = 384 // This is size of client config buffer.
 	if ctx.Request.ContentLength > MaxBodySize {
-		ctx.JSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1})
+		ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1})
 		return
 	}
 	body, err := ctx.GetRawData()
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: 1})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1})
 		return
 	}
 	session := common.CheckClientReq(ctx)
 	if session == nil {
-		ctx.JSON(http.StatusUnauthorized, modules.Packet{Code: 1})
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, modules.Packet{Code: 1})
 		return
 	}
 
@@ -162,7 +158,7 @@ func getDevices(ctx *gin.Context) {
 func callDevice(ctx *gin.Context) {
 	act := ctx.Param(`act`)
 	if len(act) == 0 {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	{
@@ -175,7 +171,7 @@ func callDevice(ctx *gin.Context) {
 			}
 		}
 		if !ok {
-			ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 			return
 		}
 	}
@@ -187,7 +183,7 @@ func callDevice(ctx *gin.Context) {
 	common.SendPackByUUID(modules.Packet{Act: act, Event: trigger}, connUUID)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
-			ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}

@@ -2,6 +2,8 @@
 
 package screenshot
 
+import "errors"
+
 func GetScreenshot(bridge string) error {
-	return utils.ErrUnsupported
+	return errors.New(`${i18n|operationNotSupported}`)
 }

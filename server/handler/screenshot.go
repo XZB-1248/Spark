@@ -26,7 +26,7 @@ func getScreenshot(ctx *gin.Context) {
 		called = true
 		removeBridge(bridgeID)
 		common.RemoveEvent(trigger)
-		ctx.JSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 	}, target, trigger)
 	instance := addBridgeWithDest(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge) {
@@ -43,9 +43,10 @@ func getScreenshot(ctx *gin.Context) {
 		if !called {
 			removeBridge(bridgeID)
 			common.RemoveEvent(trigger)
-			ctx.JSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {
 			<-wait
 		}
 	}
+	close(wait)
 }

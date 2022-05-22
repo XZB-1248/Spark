@@ -192,6 +192,9 @@ class TerminalModal extends React.Component {
                 if (data?.act === 'warn') {
                     message.warn(data.msg ? translate(data.msg) : i18n.t('unknownError'));
                 }
+                if (data?.act === 'ping') {
+                    this.sendData({act: 'pong'});
+                }
             }
         }
         this.ws.onclose = (e) => {

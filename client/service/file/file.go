@@ -3,13 +3,13 @@ package file
 import (
 	"Spark/client/config"
 	"errors"
+	"github.com/imroc/req/v3"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
-
-	"github.com/imroc/req/v3"
+	"unicode/utf8"
 )
 
 type File struct {
@@ -39,6 +39,53 @@ func listFiles(path string) ([]File, error) {
 		})
 	}
 	return result, nil
+}
+
+func ReadText(path, bridge string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	uploadReq := req.R()
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	size := stat.Size()
+	// Check if size larger than 2MB.
+	if size > 2<<20 {
+		return errors.New(`${i18n|fileTooLarge}`)
+	}
+	headers := map[string]string{
+		`FileName`: stat.Name(),
+		`FileSize`: strconv.FormatInt(size, 10),
+	}
+	uploadReq.RawRequest.ContentLength = size
+
+	// Check file if is a text file.
+	// UTF-8 and GBK are only supported yet.
+	buf := make([]byte, size)
+	_, err = file.Read(buf)
+	if err != nil {
+		return err
+	}
+	if utf8.Valid(buf) {
+		headers[`FileEncoding`] = `utf-8`
+	} else if gbkValidate(buf) {
+		headers[`FileEncoding`] = `gbk`
+	} else {
+		return errors.New(`${i18n|fileEncodingUnsupported}`)
+	}
+
+	file.Seek(0, 0)
+	url := config.GetBaseURL(false) + `/api/bridge/push`
+	_, err = uploadReq.
+		SetBody(file).
+		SetHeaders(headers).
+		SetQueryParam(`bridge`, bridge).
+		Send(`PUT`, url)
+	return err
 }
 
 // FetchFile saves file from bridge to local.
@@ -160,6 +207,26 @@ func UploadFile(path, bridge string, start, end int64) error {
 		Send(`PUT`, url)
 	reader.Close()
 	return err
+}
+
+func gbkValidate(b []byte) bool {
+	length := len(b)
+	var i int = 0
+	for i < length {
+		if b[i] <= 0x7f {
+			i++
+			continue
+		} else {
+			if i+1 < length {
+				if b[i] >= 0x81 && b[i] <= 0xfe && b[i+1] >= 0x40 && b[i+1] <= 0xfe && b[i+1] != 0xf7 {
+					i += 2
+					continue
+				}
+			}
+			return false
+		}
+	}
+	return true
 }
 
 func getTempFileName(dir, file string) string {

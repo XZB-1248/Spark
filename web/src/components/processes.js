@@ -1,8 +1,9 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {message, Modal, Popconfirm} from "antd";
 import ProTable from '@ant-design/pro-table';
 import {request, waitTime} from "../utils/utils";
 import i18n from "../locale/locale";
+import {VList} from "virtuallist-antd";
 
 function ProcessMgr(props) {
     const [loading, setLoading] = useState(false);
@@ -37,6 +38,11 @@ function ProcessMgr(props) {
         setting: false,
     };
     const tableRef = useRef();
+    const virtualTable = useMemo(() => {
+        return VList({
+            height: 300
+        })
+    }, []);
     useEffect(() => {
         if (props.visible) {
             setLoading(false);
@@ -113,6 +119,7 @@ function ProcessMgr(props) {
                 request={getData}
                 pagination={false}
                 actionRef={tableRef}
+                components={virtualTable}
             >
             </ProTable>
         </Modal>

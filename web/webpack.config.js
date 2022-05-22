@@ -103,11 +103,11 @@ module.exports = (env, args) => {
             hot: true,
             proxy: {
                 '/api/': {
-                    target: 'http://localhost:8000/',
+                    target: 'http://localhost:8001/',
                     secure: false
                 },
                 '/api/device/terminal': {
-                    target: 'ws://localhost:8000/',
+                    target: 'ws://localhost:8001/',
                     ws: true
                 },
             }

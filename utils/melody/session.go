@@ -62,6 +62,7 @@ func (s *Session) close() {
 		s.open = false
 		s.conn.Close()
 		close(s.output)
+		s.Keys = nil
 		s.rwmutex.Unlock()
 	}
 }
@@ -185,19 +186,25 @@ func (s *Session) CloseWithMsg(msg []byte) error {
 	return nil
 }
 
-// Set is used to store a new key/value pair exclusivelly for this session.
-// It also lazy initializes s.Keys if it was not used previously.
-func (s *Session) Set(key string, value interface{}) {
+// Set is used to store a new key/value pair exclusively for this session.
+func (s *Session) Set(key string, value interface{}) bool {
+	if s.closed() {
+		return false
+	}
 	if s.Keys == nil {
 		s.Keys = make(map[string]interface{})
 	}
 
 	s.Keys[key] = value
+	return true
 }
 
 // Get returns the value for the given key, ie: (value, true).
-// If the value does not exists it returns (nil, false)
+// If the key does not exist, it returns (nil, false)
 func (s *Session) Get(key string) (value interface{}, exists bool) {
+	if s.closed() {
+		return
+	}
 	if s.Keys != nil {
 		value, exists = s.Keys[key]
 	}
@@ -207,6 +214,9 @@ func (s *Session) Get(key string) (value interface{}, exists bool) {
 
 // MustGet returns the value for the given key if it exists, otherwise it panics.
 func (s *Session) MustGet(key string) interface{} {
+	if s.closed() {
+		panic("session is closed")
+	}
 	if value, exists := s.Get(key); exists {
 		return value
 	}

@@ -5,7 +5,9 @@
 ## Common
 
 Only `POST` requests are allowed.
-<br />
+
+### Authenticate
+
 For every request, you should have `Authorization` on its header.
 <br />
 Authorization header is a string like `Basic <token>`(basic auth).
@@ -17,6 +19,10 @@ Example:
 ```
 Authorization: Basic WFpCOjEyNDg=
 ```
+
+After basic authentication, server will assign you a `Authorization` cookie.
+<br />
+You can use this token cookie to authenticate rest of your requests.
 
 ---
 

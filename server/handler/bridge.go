@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Spark/modules"
+	"Spark/server/common"
 	"Spark/utils/cmap"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
@@ -31,26 +32,25 @@ var bridges = cmap.New()
 
 func init() {
 	go func() {
-		for now := range time.NewTicker(10 * time.Second).C {
-			var queue []*bridge
+		for now := range time.NewTicker(15 * time.Second).C {
+			var queue []string
+			timestamp := now.Unix()
 			bridges.IterCb(func(k string, v interface{}) bool {
 				b := v.(*bridge)
-				if b.creation < now.Unix()-60 && !b.using {
-					queue = append(queue, b)
+				if timestamp-b.creation > 60 && !b.using {
+					b.lock.Lock()
+					if b.src != nil && b.src.Request.Body != nil {
+						b.src.Request.Body.Close()
+					}
+					b.src = nil
+					b.dest = nil
+					b.lock.Unlock()
+					b = nil
+					queue = append(queue, b.uuid)
 				}
 				return true
 			})
-			for _, b := range queue {
-				bridges.Remove(b.uuid)
-				b.lock.Lock()
-				if b.src != nil && b.src.Request.Body != nil {
-					b.src.Request.Body.Close()
-				}
-				b.src = nil
-				b.dest = nil
-				b.lock.Unlock()
-				b = nil
-			}
+			bridges.Remove(queue...)
 		}
 	}()
 }
@@ -61,12 +61,12 @@ func checkBridge(ctx *gin.Context) *bridge {
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
 		golog.Error(err)
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return nil
 	}
 	val, ok := bridges.Get(form.Bridge)
 	if !ok {
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidBridgeID}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidBridgeID}`})
 		return nil
 	}
 	return val.(*bridge)
@@ -80,7 +80,7 @@ func bridgePush(ctx *gin.Context) {
 	bridge.lock.Lock()
 	if bridge.using || (bridge.src != nil && bridge.dest != nil) {
 		bridge.lock.Unlock()
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
 		return
 	}
 	bridge.src = ctx
@@ -108,7 +108,7 @@ func bridgePull(ctx *gin.Context) {
 	bridge.lock.Lock()
 	if bridge.using || (bridge.src != nil && bridge.dest != nil) {
 		bridge.lock.Unlock()
-		ctx.JSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
 		return
 	}
 	bridge.dest = ctx
@@ -130,7 +130,7 @@ func bridgePull(ctx *gin.Context) {
 
 func addBridge(ext interface{}, uuid string) *bridge {
 	bridge := &bridge{
-		creation: time.Now().Unix(),
+		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
@@ -142,7 +142,7 @@ func addBridge(ext interface{}, uuid string) *bridge {
 
 func addBridgeWithSrc(ext interface{}, uuid string, src *gin.Context) *bridge {
 	bridge := &bridge{
-		creation: time.Now().Unix(),
+		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
@@ -155,7 +155,7 @@ func addBridgeWithSrc(ext interface{}, uuid string, src *gin.Context) *bridge {
 
 func addBridgeWithDest(ext interface{}, uuid string, dest *gin.Context) *bridge {
 	bridge := &bridge{
-		creation: time.Now().Unix(),
+		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},

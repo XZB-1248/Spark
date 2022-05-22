@@ -5,7 +5,9 @@
 ## 通用
 
 所有请求均为`POST`。
-<br />
+
+### 鉴权
+
 每次请求都必须在Header中带上`Authorization`。
 <br />
 `Authorization`请求头格式：`Basic <token>`（basic auth）。
@@ -17,6 +19,10 @@ Authorization: Basic <base64('username:password')>
 ```
 Authorization: Basic WFpCOjEyNDg=
 ```
+
+在最初的Basic Authentication之后，服务端会分配一个`Authorization`的Cookie。
+<br />
+该Cookie可用于请求的后续鉴权，可以不再附带Authorization头。
 
 ---
 

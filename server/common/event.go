@@ -48,9 +48,9 @@ func AddEventOnce(fn EventCallback, connUUID, trigger string, timeout time.Durat
 		remove:     make(chan bool),
 	}
 	events.Set(trigger, ev)
-	defer events.Remove(trigger)
-	defer close(ev.finish)
 	defer close(ev.remove)
+	defer close(ev.finish)
+	defer events.Remove(trigger)
 	select {
 	case ok := <-ev.finish:
 		return ok
@@ -79,11 +79,16 @@ func RemoveEvent(trigger string, ok ...bool) {
 		return
 	}
 	events.Remove(trigger)
-	if ev := v.(*event); ev.remove != nil {
+	ev := v.(*event)
+	if ev.remove != nil {
 		if len(ok) > 0 {
 			ev.remove <- ok[0]
+		} else {
+			ev.remove <- false
 		}
 	}
+	v = nil
+	ev = nil
 }
 
 // HasEvent returns if the event exists.
