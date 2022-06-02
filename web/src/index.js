@@ -27,14 +27,14 @@ axios.interceptors.response.use(async (res) => {
     }
     return Promise.resolve(res);
 }, (err) => {
-    console.error(err);
+    // console.error(err);
     if (err.code === 'ECONNABORTED') {
         message.error(i18n.t('requestTimeout'));
         return Promise.reject(err);
     }
     let res = err.response;
     let data = res?.data ?? {};
-    if (data.hasOwnProperty('code')) {
+    if (data.hasOwnProperty('code') && data.hasOwnProperty('msg')) {
         if (data.code !== 0){
             message.warn(translate(data.msg));
             return Promise.resolve(res);

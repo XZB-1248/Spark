@@ -1,3 +1,13 @@
+## v0.1.0
+
+* fix: don't refresh after file upload
+* fix: don't display error when screenshot fails
+
+* 修复：文件上传成功后文件管理器不会自动刷新
+* 修复：截图失败时不会显示错误提示
+
+
+
 ## v0.0.9
 
 * Optimize: performance of front-end and back-end.

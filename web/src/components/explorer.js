@@ -1,11 +1,11 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Breadcrumb, Card, Image, message, Modal, Popconfirm, Progress} from "antd";
+import {Breadcrumb, Image, message, Modal, Popconfirm, Progress} from "antd";
 import ProTable from '@ant-design/pro-table';
 import {formatSize, post, request, translate, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import './explorer.css';
-import { VList } from "virtuallist-antd";
+import {VList} from "virtuallist-antd";
 import {HomeOutlined, ReloadOutlined, UploadOutlined} from "@ant-design/icons";
 import axios from "axios";
 import Qs from "qs";
@@ -141,8 +141,7 @@ function FileBrowser(props) {
                     let data = {};
                     try {
                         data = JSON.parse(str);
-                    } catch (e) {
-                    }
+                    } catch (e) { }
                     message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
                 });
             } else {
@@ -421,10 +420,10 @@ function UploadModal(props) {
     // 0: ready, 1: uploading, 2: success, 3: fail, 4: cancel
 
     useEffect(() => {
+        setStatus(0);
         if (props.file) {
             setVisible(true);
             setPercent(0);
-            setStatus(0);
         }
     }, [props.file]);
 
@@ -444,6 +443,7 @@ function UploadModal(props) {
             path: props.path,
             file: props.file.name
         });
+        let uploadStatus = 1;
         setStatus(1);
         window.onbeforeunload = onPageUnload;
         abortController = new AbortController();
@@ -464,16 +464,20 @@ function UploadModal(props) {
         ).then(res => {
             let data = res.data;
             if (data.code === 0) {
+                uploadStatus = 2;
                 setStatus(2);
                 message.success(i18n.t('uploadSuccess'));
             } else {
+                uploadStatus = 3;
                 setStatus(3);
             }
         }).catch((err) => {
             if (axios.isCancel(err)) {
+                uploadStatus = 4;
                 setStatus(4);
                 message.error(i18n.t('uploadAborted'));
             } else {
+                uploadStatus = 3;
                 setStatus(3);
                 message.error(i18n.t('uploadFailed') + i18n.t('colon') + err.message);
             }
@@ -482,7 +486,7 @@ function UploadModal(props) {
             window.onbeforeunload = null;
             setTimeout(() => {
                 setVisible(false);
-                if (status === 2) {
+                if (uploadStatus === 2) {
                     props.onSuccess();
                 } else {
                     props.onCanel();

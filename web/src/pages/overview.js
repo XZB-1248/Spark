@@ -298,20 +298,24 @@ function overview(props) {
             request('/api/device/screenshot/get', {device: device.id}, {}, {
                 responseType: 'blob'
             }).then((res) => {
-                if ((res.data.type ?? '').substring(0, 16) === 'application/json') {
-                    res.data.text().then((str) => {
-                        let data = {};
-                        try {
-                            data = JSON.parse(str);
-                        } catch (e) {
-                        }
-                        message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
-                    });
-                } else {
+                console.log(res.data.type);
+                if ((res.data.type ?? '').substring(0, 5) === 'image') {
                     if (screenBlob.length > 0) {
                         URL.revokeObjectURL(screenBlob);
                     }
                     setScreenBlob(URL.createObjectURL(res.data));
+                }
+            }).catch((e) => {
+                let res = e.response;
+                if ((res?.data?.type ?? '').substring(0, 16) === 'application/json') {
+                    let data = res?.data ?? {};
+                    data.text().then((str) => {
+                        let data = {};
+                        try {
+                            data = JSON.parse(str);
+                        } catch (e) { }
+                        message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
+                    });
                 }
             });
             return;
