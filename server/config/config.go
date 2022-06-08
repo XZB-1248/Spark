@@ -1,5 +1,10 @@
 package config
 
+import (
+	"os"
+	"path/filepath"
+)
+
 type Cfg struct {
 	Debug struct {
 		Pprof bool `json:"pprof"`
@@ -12,7 +17,15 @@ type Cfg struct {
 }
 
 var Config Cfg
-var BuiltPath = `./built/%v_%v`
+var BuiltPath = getBuiltPath()
 
-// COMMIT means this commit hash, for auto upgrade.
+// COMMIT is hash of this commit, for auto upgrade.
 var COMMIT = ``
+
+func getBuiltPath() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return `./built/%v_%v`
+	}
+	return filepath.Join(dir, `built/%v_%v`)
+}

@@ -114,9 +114,9 @@ func generateClient(ctx *gin.Context) {
 		ctx.Header(`Content-Length`, strconv.FormatInt(stat.Size(), 10))
 	}
 	if form.OS == `windows` {
-		ctx.Header(`Content-Disposition`, `attachment; filename=client.exe;`)
+		ctx.Header(`Content-Disposition`, `attachment; filename=client.exe; filename*=UTF-8''client.exe`)
 	} else {
-		ctx.Header(`Content-Disposition`, `attachment; filename=client;`)
+		ctx.Header(`Content-Disposition`, `attachment; filename=client; filename*=UTF-8''client`)
 	}
 	// Find and replace plain buffer with encrypted configuration.
 	cfgBuffer := bytes.Repeat([]byte{'\x19'}, 384)

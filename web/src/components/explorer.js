@@ -118,7 +118,7 @@ function FileBrowser(props) {
             listFiles(path + file.name + separator);
             return;
         }
-        let ext = file.name.split('.').pop();
+        let ext = file.name.split('.').pop().toLowerCase();
         if (ext === 'jpg' || ext === 'png' || ext === 'bmp' || ext === 'gif' || ext === 'jpeg') {
             imgPreview(file);
             return;

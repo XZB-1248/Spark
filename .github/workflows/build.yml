@@ -116,8 +116,8 @@ jobs:
 
     - name: Prepare release note
       run: |
-        wget -q https://1248.ink/Tools/release.mjs
-        node release.mjs ${{ github.ref_name }}
+        wget -q https://1248.ink/Tools/release.js
+        node release.js ${{ github.ref_name }}
 
     - name: Pack releases
       run: |

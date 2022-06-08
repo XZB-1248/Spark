@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -145,8 +144,7 @@ func getDeviceFile(ctx *gin.Context) {
 			if len(filename) == 0 {
 				filename = path.Base(strings.ReplaceAll(form.File, `\`, `/`))
 			}
-			filename = url.PathEscape(filename)
-			ctx.Header(`Content-Disposition`, `attachment; filename* = UTF-8''`+filename+`;`)
+			ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, filename))
 		}
 
 		if partial {
@@ -213,9 +211,7 @@ func uploadToDevice(ctx *gin.Context) {
 		dest.Header(`Accept-Ranges`, `none`)
 		dest.Header(`Content-Transfer-Encoding`, `binary`)
 		dest.Header(`Content-Type`, `application/octet-stream`)
-		filename := form.File
-		filename = url.PathEscape(filename)
-		dest.Header(`Content-Disposition`, `attachment; filename* = UTF-8''`+filename+`;`)
+		dest.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, form.File, form.File))
 	}
 	instance.OnFinish = func(bridge *bridge) {
 		wait <- false

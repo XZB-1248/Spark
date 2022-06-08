@@ -187,6 +187,11 @@ Spark使用了许多第三方的开源项目。
 
 ---
 
+### Star趋势
+
+[![Stargazers over time](https://starchart.cc/XZB-1248/Spark.svg)](https://starchart.cc/XZB-1248/Spark)
+
+---
 ## 开源协议
 
 本项目基于 [BSD-2 协议](./LICENSE) 。

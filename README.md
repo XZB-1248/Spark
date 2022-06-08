@@ -190,6 +190,12 @@ Some major dependencies are listed below.
 
 ---
 
+### Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/XZB-1248/Spark.svg)](https://starchart.cc/XZB-1248/Spark)
+
+---
+
 ## License
 
 [BSD-2 License](./LICENSE)
