@@ -120,10 +120,8 @@ For example, to support android, you have to install [Android NDK](https://devel
 ### tutorial
 
 ```bash
-# Clone this repository
+# Clone this repository.
 $ git clone https://github.com/XZB-1248/Spark
-
-
 $ cd ./Spark
 
 
@@ -142,19 +140,26 @@ $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 
 # Now we should build client.
 # When you're using unix-like OS, you can use this.
+$ mkdir ./built
 $ go mod tidy
 $ go mod download
 $ ./scripts/build.client.sh
-$ statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
 
 
 # Finally we're compiling the server side.
+$ mkdir ./releases
 $ ./scripts/build.server.sh
 ```
 
-Then you can find executable files in `releases` directory.
-
-Copy configuration file mentioned above into this dir, and then you can execute server.
+Then create a new directory with a name you like.
+<br />
+Copy executable file inside `releases` to that directory.
+<br />
+Copy the whole `built` directory to that new directory.
+<br />
+Copy configuration file mentioned above to that new directory.
+<br />
+Finally, run the executable file in that directory.
 
 ---
 

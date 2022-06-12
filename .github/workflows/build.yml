@@ -108,10 +108,9 @@ jobs:
       run: |
         chmod +x ./scripts/build.client.sh
         ./scripts/build.client.sh
-        statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
         
-        chmod +x ./scripts/build.server.sh
         mkdir ./releases
+        chmod +x ./scripts/build.server.sh
         ./scripts/build.server.sh
 
     - name: Prepare release note

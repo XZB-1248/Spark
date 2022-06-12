@@ -119,14 +119,12 @@
 ### 指南
 
 ```bash
-# Clone该项目
+# Clone该项目。
 $ git clone https://github.com/XZB-1248/Spark
-
-
 $ cd ./Spark
 
 
-# 开始编译前端页面
+# 开始编译前端页面。
 $ cd ./web
 # 安装所有的依赖，然后编译。
 $ npm install
@@ -141,17 +139,22 @@ $ statik -m -src="./web/dist" -f -dest="./server/embed" -p web -ns web
 
 # 开始编译客户端。
 # 在使用类Unix系统时，运行以下命令。
+$ mkdir ./built
 $ go mod tidy
 $ go mod download
 $ ./scripts/build.client.sh
-$ statik -m -src="./built" -f -dest="./server/embed" -include=* -p built -ns built
 
 
 # 最终开始编译服务端。
+$ mkdir ./releases
 $ ./scripts/build.server.sh
 ```
 
-然后打开`releases`目录，放入上文提到的配置文件，选择对应平台的服务端运行即可。
+另外新建一个目录，将`releases`目录中对应的服务端版本复制进去。
+<br />
+回到项目目录，把整个`built`目录复制到新建的目录中。
+<br />
+最后，把开头提到的配置文件也复制进去，即可运行服务端。
 
 ---
 
