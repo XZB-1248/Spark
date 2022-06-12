@@ -1,6 +1,14 @@
-import axios from 'axios';
-import Qs from 'qs';
-import i18n from "../locale/locale";
+import axios from "axios";
+import Qs from "qs";
+import i18n, {getLang} from "../locale/locale";
+
+let orderCompare;
+try {
+    let collator = new Intl.Collator(getLang(), {numeric: true, sensitivity: 'base'});
+    orderCompare = collator.compare.bind(collator);
+} catch (e) {
+    orderCompare = (a, b) => a - b;
+}
 
 function request(url, data, headers, ext, noTrans) {
     let _headers = headers ?? {};
@@ -91,4 +99,4 @@ function preventClose(e) {
     return '';
 }
 
-export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate, preventClose};
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate, preventClose, orderCompare};

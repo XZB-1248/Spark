@@ -1,7 +1,20 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
-import {Alert, Breadcrumb, Button, Dropdown, Image, Menu, message, Modal, Popconfirm, Progress, Space, Spin} from "antd";
+import {
+    Alert,
+    Breadcrumb,
+    Button,
+    Dropdown,
+    Image,
+    Menu,
+    message,
+    Modal,
+    Popconfirm,
+    Progress,
+    Space,
+    Spin
+} from "antd";
 import ProTable from "@ant-design/pro-table";
-import {formatSize, post, preventClose, request, translate, waitTime} from "../utils/utils";
+import {formatSize, orderCompare, post, preventClose, request, translate, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
@@ -377,6 +390,7 @@ function FileBrowser(props) {
                     return regexp.test(file.name);
                 });
             }
+            data.data.files = data.data.files.sort((a, b) => orderCompare(a.name, b.name));
             data.data.files = data.data.files.sort((a, b) => (b.type - a.type));
             if (path.length > 0 && path !== '/' && path !== '\\') {
                 addParentShortcut = true;
