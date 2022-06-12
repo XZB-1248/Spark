@@ -24,9 +24,11 @@ server forever.
 
 ## **Disclaimer**
 
-**THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.YOU SHALL USE THIS
-PROJECT AT YOUR OWN RISK.THE AUTHORS AND DEVELOPERS ARE NOT RESPONSIBLE FOR ANY DAMAGE CAUSED BY YOUR MISUSE OF THIS
-PROJECT.**
+**THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.**
+<br />
+**YOU SHALL USE THIS PROJECT AT YOUR OWN RISK.**
+<br />
+**THE AUTHORS AND DEVELOPERS ARE NOT RESPONSIBLE FOR ANY DAMAGE CAUSED BY YOUR MISUSE OF THIS PROJECT.**
 
 **YOUR DATA IS PRICELESS. THINK TWICE BEFORE YOU CLICK ANY BUTTON OR ENTER ANY COMMAND.**
 
@@ -65,6 +67,8 @@ Only local installation are available yet.
 | Network traffic | ✔       | ✔     | ✔     |
 | File explorer   | ✔       | ✔     | ✔     |
 | File transfer   | ✔       | ✔     | ✔     |
+| File editor     | ✔       | ✔     | ✔     |
+| Code highlight  | ✔       | ✔     | ✔     |
 | Delete file     | ✔       | ✔     | ✔     |
 | OS info         | ✔       | ✔     | ✔     |
 | Terminal        | ✔       | ✔     | ✔     |
@@ -92,6 +96,8 @@ Only local installation are available yet.
 ![explorer](./screenshots/explorer.png)
 
 ![overview.cpu](./screenshots/overview.cpu.png)
+
+![explorer.editor](./screenshots/explorer.editor.png)
 
 ---
 

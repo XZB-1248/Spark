@@ -134,7 +134,9 @@ For example, when you call `/device/restart`, your device will restart.
 
 Parameters: `device` (device ID)
 
-If screenshot is captured successfully, it gives you the image directly. If failed, then the following response are given.
+If screenshot is captured successfully, it gives you the image directly.
+<br />
+If failed, then the following response are given.
 
 ```
 {
@@ -145,11 +147,15 @@ If screenshot is captured successfully, it gives you the image directly. If fail
 
 ---
 
-### Get a file: `/device/file/get`
+### Get files: `/device/file/get`
 
-Parameters: `file` (path to file) and `device` (device ID)
+Parameters: `files` (array of files) and `device` (device ID)
 
-If file exists and is accessible, then the file is given directly. If failed, then the following response are given.
+If files exist and are accessible, then the archive file or file itself is given directly.
+<br />
+If unable to read files, then the following response are given.
+<br />
+A zip file is given if multiple files (including directory) are given.
 
 ```
 {
@@ -160,11 +166,11 @@ If file exists and is accessible, then the file is given directly. If failed, th
 
 ---
 
-### Delete a file: `/device/file/remove`
+### Delete files: `/device/file/remove`
 
-Parameters: `file` (path to file) and `device` (device ID)
+Parameters: `files` (array of files) and `device` (device ID)
 
-If file exists and is deleted successfully, then `code` will be `0`.
+If files exist and are deleted successfully, then `code` will be `0`.
 
 ```
 {

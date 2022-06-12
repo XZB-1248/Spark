@@ -152,11 +152,13 @@ Authorization: Basic WFpCOjEyNDg=
 
 ### 读取设备上的文件：`/device/file/get`
 
-参数：`file`（文件路径） 以及 `device`（设备ID）
+参数：`files`（文件数组） 以及 `device`（设备ID）
 
 如果文件存在且可访问，则文件会直接输出。
 <br />
 否则，会给出错误原因。
+<br />
+如果`files`为文件数组或者目录，则会输出一个zip文件。
 
 ```
 {
@@ -169,7 +171,7 @@ Authorization: Basic WFpCOjEyNDg=
 
 ### 删除设备上的文件：`/device/file/remove`
 
-参数：`file`（文件路径） 以及 `device`（设备ID）
+参数：`files`（文件数组） 以及 `device`（设备ID）
 
 如果文件存在且被成功删除，则`code`为`0`。
 

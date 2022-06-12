@@ -1,10 +1,28 @@
+## v0.1.1
+
+* Add: text file editor.
+* Add: explorer multi-select.
+* Add: explorer search.
+* Fix: some potential bugs.
+* BREAKING-CHANGE: API `/device/file/get` parameter `file` changed to `files`.
+* BREAKING-CHANGE: API `/device/file/remove` parameter `file` changed to `files`.
+
+* 新增: 文本文件编辑器。
+* 新增: 文件管理器多选。
+* 新增: 文件管理器过滤。
+* 修复: 一些潜在的bug。
+* 破坏性变动：API `/device/file/get` 参数 `file` 变为 `files`。
+* 破坏性变动：API `/device/file/remove` 参数 `file` 变为 `files`。
+
+
+
 ## v0.1.0
 
-* fix: don't refresh after file upload
-* fix: don't display error when screenshot fails
+* fix: don't refresh after file upload.
+* fix: don't display error when screenshot fails.
 
-* 修复：文件上传成功后文件管理器不会自动刷新
-* 修复：截图失败时不会显示错误提示
+* 修复：文件上传成功后文件管理器不会自动刷新。
+* 修复：截图失败时不会显示错误提示。
 
 
 

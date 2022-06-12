@@ -42,8 +42,9 @@ var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
 	`killTerminal`:   killTerminal,
 	`listFiles`:      listFiles,
 	`fetchFile`:      fetchFile,
-	`removeFile`:     removeFile,
-	`uploadFile`:     uploadFile,
+	`removeFiles`:    removeFiles,
+	`uploadFiles`:    uploadFiles,
+	`uploadTextFile`: uploadTextFile,
 	`listProcesses`:  listProcesses,
 	`killProcess`:    killProcess,
 }
@@ -206,7 +207,7 @@ func handleWS(wsConn *common.Conn) error {
 
 func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	if act, ok := handlers[pack.Act]; !ok {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|actionNotImplemented}`}, pack, wsConn)
 	} else {
 		act(pack, wsConn)
 	}

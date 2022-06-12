@@ -1,13 +1,14 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
 
 module.exports = (env, args) => {
     let mode = args.mode;
     return {
-        entry: './src/index.js',
+        entry: path.join(__dirname, 'src/index.js'),
         output: {
             publicPath: mode === 'development' ? undefined : './',
             path: path.resolve(__dirname, 'dist'),
@@ -54,12 +55,22 @@ module.exports = (env, args) => {
         plugins: [
             new HtmlWebpackPlugin({
                 appMountId: 'root',
-                template: './public/index.html',
+                template:  path.resolve(__dirname, 'public/index.html'),
                 filename: 'index.html',
                 inject: true
             }),
             new CleanWebpackPlugin(),
-            new AntdDayjsWebpackPlugin()
+            new AntdDayjsWebpackPlugin(),
+            new CopyWebpackPlugin({
+                patterns: [
+                    {
+                        from: path.resolve(__dirname, 'public/ace.js'),
+                    },
+                    {
+                        from: path.resolve(__dirname, 'public/ext-modelist.js'),
+                    }
+                ]
+            })
         ],
         optimization: {
             minimize: mode === 'production',
@@ -69,7 +80,7 @@ module.exports = (env, args) => {
                     extractComments: false,
                     terserOptions: {
                         compress: {
-                            drop_console: false, //mode === 'production'
+                            drop_console: false,
                             collapse_vars: true,
                             reduce_vars: true,
                         }

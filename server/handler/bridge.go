@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ type bridge struct {
 	using    bool
 	uuid     string
 	lock     *sync.Mutex
-	dest     *gin.Context
+	dst      *gin.Context
 	src      *gin.Context
 	ext      interface{}
 	OnPull   func(bridge *bridge)
@@ -43,7 +44,7 @@ func init() {
 						b.src.Request.Body.Close()
 					}
 					b.src = nil
-					b.dest = nil
+					b.dst = nil
 					b.lock.Unlock()
 					b = nil
 					queue = append(queue, b.uuid)
@@ -78,7 +79,7 @@ func bridgePush(ctx *gin.Context) {
 		return
 	}
 	bridge.lock.Lock()
-	if bridge.using || (bridge.src != nil && bridge.dest != nil) {
+	if bridge.using || (bridge.src != nil && bridge.dst != nil) {
 		bridge.lock.Unlock()
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
 		return
@@ -89,8 +90,34 @@ func bridgePush(ctx *gin.Context) {
 	if bridge.OnPush != nil {
 		bridge.OnPush(bridge)
 	}
-	if bridge.dest != nil && bridge.dest.Writer != nil {
-		io.Copy(bridge.dest.Writer, bridge.src.Request.Body)
+	if bridge.dst != nil && bridge.dst.Writer != nil {
+		// Get net.Conn to set deadline manually.
+		srcConn, srcOK := bridge.src.Request.Context().Value(`Conn`).(net.Conn)
+		dstConn, dstOK := bridge.dst.Request.Context().Value(`Conn`).(net.Conn)
+		if srcOK && dstOK {
+			for {
+				eof := false
+				buf := make([]byte, 2<<14)
+				srcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+				n, err := bridge.src.Request.Body.Read(buf)
+				if err != nil {
+					eof = err == io.EOF
+					if !eof {
+						break
+					}
+				}
+				if n == 0 {
+					break
+				}
+				dstConn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				_, err = bridge.dst.Writer.Write(buf[:n])
+				if eof || err != nil {
+					break
+				}
+			}
+		}
+		srcConn.SetReadDeadline(time.Time{})
+		dstConn.SetWriteDeadline(time.Time{})
 		bridge.src.Status(http.StatusOK)
 		if bridge.OnFinish != nil {
 			bridge.OnFinish(bridge)
@@ -106,19 +133,45 @@ func bridgePull(ctx *gin.Context) {
 		return
 	}
 	bridge.lock.Lock()
-	if bridge.using || (bridge.src != nil && bridge.dest != nil) {
+	if bridge.using || (bridge.src != nil && bridge.dst != nil) {
 		bridge.lock.Unlock()
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
 		return
 	}
-	bridge.dest = ctx
+	bridge.dst = ctx
 	bridge.using = true
 	bridge.lock.Unlock()
 	if bridge.OnPull != nil {
 		bridge.OnPull(bridge)
 	}
 	if bridge.src != nil && bridge.src.Request.Body != nil {
-		io.Copy(bridge.dest.Writer, bridge.src.Request.Body)
+		// Get net.Conn to set deadline manually.
+		srcConn, srcOK := bridge.src.Request.Context().Value(`Conn`).(net.Conn)
+		dstConn, dstOK := bridge.dst.Request.Context().Value(`Conn`).(net.Conn)
+		if srcOK && dstOK {
+			for {
+				eof := false
+				buf := make([]byte, 2<<14)
+				srcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+				n, err := bridge.src.Request.Body.Read(buf)
+				if err != nil {
+					eof = err == io.EOF
+					if !eof {
+						break
+					}
+				}
+				if n == 0 {
+					break
+				}
+				dstConn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				_, err = bridge.dst.Writer.Write(buf[:n])
+				if eof || err != nil {
+					break
+				}
+			}
+		}
+		srcConn.SetReadDeadline(time.Time{})
+		dstConn.SetWriteDeadline(time.Time{})
 		bridge.src.Status(http.StatusOK)
 		if bridge.OnFinish != nil {
 			bridge.OnFinish(bridge)
@@ -153,14 +206,14 @@ func addBridgeWithSrc(ext interface{}, uuid string, src *gin.Context) *bridge {
 	return bridge
 }
 
-func addBridgeWithDest(ext interface{}, uuid string, dest *gin.Context) *bridge {
+func addBridgeWithDst(ext interface{}, uuid string, dst *gin.Context) *bridge {
 	bridge := &bridge{
 		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
 		ext:      ext,
-		dest:     dest,
+		dst:      dst,
 	}
 	bridges.Set(uuid, bridge)
 	return bridge
@@ -177,6 +230,6 @@ func removeBridge(uuid string) {
 		b.src.Request.Body.Close()
 	}
 	b.src = nil
-	b.dest = nil
+	b.dst = nil
 	b = nil
 }
