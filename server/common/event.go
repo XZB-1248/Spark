@@ -50,13 +50,15 @@ func AddEventOnce(fn EventCallback, connUUID, trigger string, timeout time.Durat
 	events.Set(trigger, ev)
 	defer close(ev.remove)
 	defer close(ev.finish)
-	defer events.Remove(trigger)
 	select {
 	case ok := <-ev.finish:
+		events.Remove(trigger)
 		return ok
 	case ok := <-ev.remove:
+		events.Remove(trigger)
 		return ok
 	case <-time.After(timeout):
+		events.Remove(trigger)
 		return false
 	}
 }

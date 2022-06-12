@@ -14,18 +14,18 @@ import (
 	"time"
 )
 
-// removeDeviceFile will try to get send a packet to
+// removeDeviceFiles will try to get send a packet to
 // client and let it upload the file specified.
-func removeDeviceFile(ctx *gin.Context) {
+func removeDeviceFiles(ctx *gin.Context) {
 	var form struct {
-		File string `json:"file" yaml:"file" form:"file" binding:"required"`
+		Files []string `json:"files" yaml:"files" form:"files" binding:"required"`
 	}
 	target, ok := checkForm(ctx, &form)
 	if !ok {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `removeFile`, Data: gin.H{`file`: form.File}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Code: 0, Act: `removeFiles`, Data: gin.H{`files`: form.Files}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -61,15 +61,19 @@ func listDeviceFiles(ctx *gin.Context) {
 	}
 }
 
-// getDeviceFile will try to get send a packet to
+// getDeviceFiles will try to get send a packet to
 // client and let it upload the file specified.
-func getDeviceFile(ctx *gin.Context) {
+func getDeviceFiles(ctx *gin.Context) {
 	var form struct {
-		File    string `json:"file" yaml:"file" form:"file" binding:"required"`
-		Preview bool   `json:"preview" yaml:"preview" form:"preview"`
+		Files   []string `json:"files" yaml:"files" form:"files" binding:"required"`
+		Preview bool     `json:"preview" yaml:"preview" form:"preview"`
 	}
 	target, ok := checkForm(ctx, &form)
 	if !ok {
+		return
+	}
+	if len(form.Files) == 0 {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	bridgeID := utils.GetStrUUID()
@@ -78,7 +82,7 @@ func getDeviceFile(ctx *gin.Context) {
 	var err error
 	partial := false
 	{
-		command := gin.H{`file`: form.File, `bridge`: bridgeID}
+		command := gin.H{`files`: form.Files, `bridge`: bridgeID}
 		rangeHeader := ctx.GetHeader(`Range`)
 		if len(rangeHeader) > 6 {
 			if rangeHeader[:6] != `bytes=` {
@@ -112,7 +116,7 @@ func getDeviceFile(ctx *gin.Context) {
 			command[`start`] = rangeStart
 			partial = true
 		}
-		common.SendPackByUUID(modules.Packet{Code: 0, Act: `uploadFile`, Data: command, Event: trigger}, target)
+		common.SendPackByUUID(modules.Packet{Code: 0, Act: `uploadFiles`, Data: command, Event: trigger}, target)
 	}
 	wait := make(chan bool)
 	called := false
@@ -123,7 +127,7 @@ func getDeviceFile(ctx *gin.Context) {
 		common.RemoveEvent(trigger)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 	}, target, trigger)
-	instance := addBridgeWithDest(nil, bridgeID, ctx)
+	instance := addBridgeWithDst(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge) {
 		called = true
 		common.RemoveEvent(trigger)
@@ -133,16 +137,24 @@ func getDeviceFile(ctx *gin.Context) {
 				ctx.Header(k, v[0])
 			}
 		}
-		if src.Request.ContentLength > 0 {
-			ctx.Header(`Content-Length`, strconv.FormatInt(src.Request.ContentLength, 10))
-		}
 		if !form.Preview {
-			ctx.Header(`Accept-Ranges`, `bytes`)
+			if len(form.Files) == 1 {
+				ctx.Header(`Accept-Ranges`, `bytes`)
+				if src.Request.ContentLength > 0 {
+					ctx.Header(`Content-Length`, strconv.FormatInt(src.Request.ContentLength, 10))
+				}
+			} else {
+				ctx.Header(`Accept-Ranges`, `none`)
+			}
 			ctx.Header(`Content-Transfer-Encoding`, `binary`)
 			ctx.Header(`Content-Type`, `application/octet-stream`)
 			filename := src.GetHeader(`FileName`)
 			if len(filename) == 0 {
-				filename = path.Base(strings.ReplaceAll(form.File, `\`, `/`))
+				if len(form.Files) > 1 {
+					filename = `Archive.zip`
+				} else {
+					filename = path.Base(strings.ReplaceAll(form.Files[0], `\`, `/`))
+				}
 			}
 			ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, filename))
 		}
@@ -160,6 +172,68 @@ func getDeviceFile(ctx *gin.Context) {
 		} else {
 			ctx.Status(http.StatusOK)
 		}
+	}
+	instance.OnFinish = func(bridge *bridge) {
+		wait <- false
+	}
+	select {
+	case <-wait:
+	case <-time.After(5 * time.Second):
+		if !called {
+			removeBridge(bridgeID)
+			common.RemoveEvent(trigger)
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		} else {
+			<-wait
+		}
+	}
+	close(wait)
+}
+
+// getDeviceTextFile will try to get send a packet to
+// client and let it upload the text file.
+func getDeviceTextFile(ctx *gin.Context) {
+	var form struct {
+		File string `json:"file" yaml:"file" form:"file" binding:"required"`
+	}
+	target, ok := checkForm(ctx, &form)
+	if !ok {
+		return
+	}
+	bridgeID := utils.GetStrUUID()
+	trigger := utils.GetStrUUID()
+	common.SendPackByUUID(modules.Packet{Code: 0, Act: `uploadTextFile`, Data: gin.H{
+		`file`:   form.File,
+		`bridge`: bridgeID,
+	}, Event: trigger}, target)
+	wait := make(chan bool)
+	called := false
+	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
+		wait <- false
+		called = true
+		removeBridge(bridgeID)
+		common.RemoveEvent(trigger)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+	}, target, trigger)
+	instance := addBridgeWithDst(nil, bridgeID, ctx)
+	instance.OnPush = func(bridge *bridge) {
+		called = true
+		common.RemoveEvent(trigger)
+		src := bridge.src
+		for k, v := range src.Request.Header {
+			if strings.HasPrefix(k, `File`) {
+				ctx.Header(k, v[0])
+			}
+		}
+		ctx.Header(`Accept-Ranges`, `none`)
+		ctx.Header(`Content-Transfer-Encoding`, `binary`)
+		ctx.Header(`Content-Type`, `application/octet-stream`)
+		filename := src.GetHeader(`FileName`)
+		if len(filename) == 0 {
+			filename = path.Base(strings.ReplaceAll(form.File, `\`, `/`))
+		}
+		ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, filename))
+		ctx.Status(http.StatusOK)
 	}
 	instance.OnFinish = func(bridge *bridge) {
 		wait <- false
@@ -204,14 +278,14 @@ func uploadToDevice(ctx *gin.Context) {
 	instance.OnPull = func(bridge *bridge) {
 		called = true
 		common.RemoveEvent(trigger)
-		dest := bridge.dest
+		dst := bridge.dst
 		if ctx.Request.ContentLength > 0 {
-			dest.Header(`Content-Length`, strconv.FormatInt(ctx.Request.ContentLength, 10))
+			dst.Header(`Content-Length`, strconv.FormatInt(ctx.Request.ContentLength, 10))
 		}
-		dest.Header(`Accept-Ranges`, `none`)
-		dest.Header(`Content-Transfer-Encoding`, `binary`)
-		dest.Header(`Content-Type`, `application/octet-stream`)
-		dest.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, form.File, form.File))
+		dst.Header(`Accept-Ranges`, `none`)
+		dst.Header(`Content-Transfer-Encoding`, `binary`)
+		dst.Header(`Content-Type`, `application/octet-stream`)
+		dst.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, form.File, form.File))
 	}
 	instance.OnFinish = func(bridge *bridge) {
 		wait <- false

@@ -3,7 +3,7 @@ import ProTable, {TableDropdown} from '@ant-design/pro-table';
 import {Button, Image, message, Modal, Progress, Tooltip} from 'antd';
 import {formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
 import Terminal from "../components/terminal";
-import Processes from "../components/processes";
+import ProcMgr from "../components/procmgr";
 import Generate from "../components/generate";
 import Explorer from "../components/explorer";
 import {QuestionCircleOutlined} from "@ant-design/icons";
@@ -408,7 +408,7 @@ function overview(props) {
                 device={explorer}
                 onCancel={setExplorer.bind(null, false)}
             />
-            <Processes
+            <ProcMgr
                 visible={procMgr}
                 device={procMgr}
                 onCancel={setProcMgr.bind(null, false)}

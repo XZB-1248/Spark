@@ -4,6 +4,7 @@ import ProTable from '@ant-design/pro-table';
 import {request, waitTime} from "../utils/utils";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
+import DraggableModal from "./modal";
 
 function ProcessMgr(props) {
     const [loading, setLoading] = useState(false);
@@ -88,10 +89,10 @@ function ProcessMgr(props) {
     }
 
     return (
-        <Modal
+        <DraggableModal
             maskClosable={false}
             destroyOnClose={true}
-            title={i18n.t('processManager')}
+            modalTitle={i18n.t('processManager')}
             footer={null}
             height={500}
             width={400}
@@ -122,7 +123,7 @@ function ProcessMgr(props) {
                 components={virtualTable}
             >
             </ProTable>
-        </Modal>
+        </DraggableModal>
     )
 }
 

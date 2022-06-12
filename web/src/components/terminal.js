@@ -9,6 +9,7 @@ import wcwidth from 'wcwidth';
 import "xterm/css/xterm.css";
 import i18n from "../locale/locale";
 import {getBaseURL, translate} from "../utils/utils";
+import DraggableModal from "./modal";
 
 function hex2buf(hex) {
     if (typeof hex !== 'string') {
@@ -323,9 +324,9 @@ class TerminalModal extends React.Component {
 
     render() {
         return (
-            <Modal
+            <DraggableModal
                 maskClosable={false}
-                title={i18n.t('terminal')}
+                modalTitle={i18n.t('terminal')}
                 visible={this.props.visible}
                 onCancel={this.props.onCancel}
                 destroyOnClose={false}
@@ -336,7 +337,7 @@ class TerminalModal extends React.Component {
                 <div
                     ref={this.termRef}
                 />
-            </Modal>
+            </DraggableModal>
         )
     }
 }

@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/rakyll/statik/fs"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -80,7 +81,13 @@ func main() {
 	common.Melody.HandleDisconnect(wsOnDisconnect)
 	go wsHealthCheck(common.Melody)
 
-	srv := &http.Server{Addr: config.Config.Listen, Handler: app}
+	srv := &http.Server{
+		Addr:    config.Config.Listen,
+		Handler: app,
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			return context.WithValue(ctx, `Conn`, c)
+		},
+	}
 	go func() {
 		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			golog.Fatal(`Failed to bind address: `, err)

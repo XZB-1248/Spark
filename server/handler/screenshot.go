@@ -28,7 +28,7 @@ func getScreenshot(ctx *gin.Context) {
 		common.RemoveEvent(trigger)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 	}, target, trigger)
-	instance := addBridgeWithDest(nil, bridgeID, ctx)
+	instance := addBridgeWithDst(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge) {
 		called = true
 		common.RemoveEvent(trigger)

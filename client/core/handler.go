@@ -157,15 +157,25 @@ func fetchFile(pack modules.Packet, wsConn *common.Conn) {
 	}
 }
 
-func removeFile(pack modules.Packet, wsConn *common.Conn) {
-	var path string
-	if val, ok := pack.GetData(`file`, reflect.String); !ok {
+func removeFiles(pack modules.Packet, wsConn *common.Conn) {
+	var files []string
+	if val, ok := pack.Data[`files`]; !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
 		return
 	} else {
-		path = val.(string)
+		slice := val.([]interface{})
+		for i := 0; i < len(slice); i++ {
+			file, ok := slice[i].(string)
+			if ok {
+				files = append(files, file)
+			}
+		}
+		if len(files) == 0 {
+			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+			return
+		}
 	}
-	err := file.RemoveFile(path)
+	err := file.RemoveFiles(files)
 	if err != nil {
 		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 	} else {
@@ -173,14 +183,25 @@ func removeFile(pack modules.Packet, wsConn *common.Conn) {
 	}
 }
 
-func uploadFile(pack modules.Packet, wsConn *common.Conn) {
+func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 	var start, end int64
-	var path, bridge string
-	if val, ok := pack.GetData(`file`, reflect.String); !ok {
+	var files []string
+	var bridge string
+	if val, ok := pack.Data[`files`]; !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
 		return
 	} else {
-		path = val.(string)
+		slice := val.([]interface{})
+		for i := 0; i < len(slice); i++ {
+			file, ok := slice[i].(string)
+			if ok {
+				files = append(files, file)
+			}
+		}
+		if len(files) == 0 {
+			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+			return
+		}
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
@@ -203,8 +224,31 @@ func uploadFile(pack modules.Packet, wsConn *common.Conn) {
 			return
 		}
 	}
-	err := file.UploadFile(path, bridge, start, end)
+	err := file.UploadFiles(files, bridge, start, end)
 	if err != nil {
+		golog.Error(err)
+		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+	}
+}
+
+func uploadTextFile(pack modules.Packet, wsConn *common.Conn) {
+	var path string
+	var bridge string
+	if val, ok := pack.Data[`file`]; !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+		return
+	} else {
+		path = val.(string)
+	}
+	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
+		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		return
+	} else {
+		bridge = val.(string)
+	}
+	err := file.UploadTextFile(path, bridge)
+	if err != nil {
+		golog.Error(err)
 		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
 	}
 }

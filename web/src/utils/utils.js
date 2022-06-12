@@ -12,7 +12,7 @@ function request(url, data, headers, ext, noTrans) {
         headers: _headers,
         transformRequest: noTrans ? [] : [Qs.stringify],
     }, ext??{}));
-};
+}
 
 function waitTime(time) {
     time = (time ?? 100);
@@ -21,7 +21,7 @@ function waitTime(time) {
             resolve(true);
         }, time);
     });
-};
+}
 
 function formatSize(size) {
     size = isNaN(size) ? 0 : (size??0);
@@ -54,12 +54,21 @@ function post(url, data, ext) {
     let form = document.createElement('form');
     form.action = url;
     form.method = 'POST';
-    form.target = '_self';
+    form.target = '_blank';
 
     for (const key in ext) {
         form[key] = ext[key];
     }
     for (const key in data) {
+        if (Array.isArray(data[key])) {
+            for (let i = 0; i < data[key].length; i++) {
+                let input = document.createElement('input');
+                input.name = key;
+                input.value = data[key][i];
+                form.appendChild(input);
+            }
+            continue;
+        }
         let input = document.createElement('input');
         input.name = key;
         input.value = data[key];
@@ -76,4 +85,10 @@ function translate(text) {
     });
 }
 
-export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate};
+function preventClose(e) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+}
+
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate, preventClose};

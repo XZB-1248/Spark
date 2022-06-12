@@ -1,14 +1,35 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Breadcrumb, Image, message, Modal, Popconfirm, Progress} from "antd";
-import ProTable from '@ant-design/pro-table';
-import {formatSize, post, request, translate, waitTime} from "../utils/utils";
+import React, {useEffect, useMemo, useRef, useState} from "react";
+import {
+    Alert,
+    Breadcrumb,
+    Button,
+    Dropdown,
+    Image,
+    Input,
+    Menu,
+    message,
+    Modal,
+    Popconfirm,
+    Progress,
+    Space,
+    Spin
+} from "antd";
+import ProTable from "@ant-design/pro-table";
+import {formatSize, post, preventClose, request, translate, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
-import './explorer.css';
 import {VList} from "virtuallist-antd";
-import {HomeOutlined, ReloadOutlined, UploadOutlined} from "@ant-design/icons";
+import {CloseOutlined, HomeOutlined, LoadingOutlined, ReloadOutlined, UploadOutlined} from "@ant-design/icons";
 import axios from "axios";
 import Qs from "qs";
+import AceEditor from "react-ace";
+import DraggableModal from "./modal";
+import AceBuilds from "ace-builds";
+import "ace-builds/src-min-noconflict/ext-language_tools";
+import "ace-builds/src-min-noconflict/ext-searchbox";
+import "./explorer.css";
+
+const ModeList = AceBuilds.require("ace/ext/modelist");
 
 let position = '';
 let fileList = [];
@@ -16,7 +37,11 @@ function FileBrowser(props) {
     const [path, setPath] = useState(`/`);
     const [preview, setPreview] = useState('');
     const [loading, setLoading] = useState(false);
-    const [upload, setUpload] = useState(false);
+    const [draggable, setDraggable] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [editingFile, setEditingFile] = useState('');
+    const [editingContent, setEditingContent] = useState('');
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const columns = [
         {
             key: 'Name',
@@ -54,8 +79,27 @@ function FileBrowser(props) {
     ];
     const options = {
         show: true,
+        search: true,
         density: false,
         setting: false,
+    };
+    const toolbar = {
+        settings: [
+            {
+                icon: <UploadOutlined/>,
+                tooltip: i18n.t('upload'),
+                key: 'upload',
+                onClick: uploadFile
+            },
+            {
+                icon: <ReloadOutlined/>,
+                tooltip: i18n.t('reload'),
+                key: 'reload',
+                onClick: () => {
+                    tableRef.current.reload();
+                }
+            }
+        ]
     };
     const tableRef = useRef();
     const virtualTable = useMemo(() => {
@@ -63,16 +107,34 @@ function FileBrowser(props) {
             height: 300
         })
     }, []);
+    const alertOptionRenderer = () => (<Space size={16}>
+        <Popconfirm
+            title={i18n.t('downloadMultiConfirm')}
+            onConfirm={() => downloadFiles(selectedRowKeys)}
+        >
+            <a>{i18n.t('download')}</a>
+        </Popconfirm>
+        <Popconfirm
+            title={i18n.t('deleteMultiConfirm')}
+            onConfirm={() => removeFiles(selectedRowKeys)}
+        >
+            <a>{i18n.t('delete')}</a>
+        </Popconfirm>
+
+    </Space>);
     useEffect(() => {
-        position = '/';
-        setPath(`/`);
+        if (props.device) {
+            position = '/';
+            setPath(`/`);
+        }
         if (props.visible) {
+            fileList = [];
             setLoading(false);
         }
     }, [props.device, props.visible]);
 
     function renderOperation(file) {
-        let remove = (
+        const remove = (
             <Popconfirm
                 key='remove'
                 title={
@@ -80,7 +142,7 @@ function FileBrowser(props) {
                         i18n.t(file.type === 0 ? 'file' : 'folder')
                     )
                 }
-                onConfirm={removeFile.bind(null, file.name)}
+                onConfirm={() => removeFiles(file.name)}
             >
                 <a>{i18n.t('delete')}</a>
             </Popconfirm>
@@ -90,7 +152,7 @@ function FileBrowser(props) {
                 return [
                     <a
                         key='download'
-                        onClick={downloadFile.bind(null, file)}
+                        onClick={() => downloadFiles(file.name)}
                     >{i18n.t('download')}</a>,
                     remove,
                 ];
@@ -101,9 +163,8 @@ function FileBrowser(props) {
         }
         return [];
     }
-
     function onRowClick(file) {
-        let separator = props.isWindows ? '\\' : '/';
+        const separator = props.isWindows ? '\\' : '/';
         if (file.name === '..') {
             listFiles(getParentPath(position));
             return;
@@ -118,25 +179,28 @@ function FileBrowser(props) {
             listFiles(path + file.name + separator);
             return;
         }
-        let ext = file.name.split('.').pop().toLowerCase();
-        if (ext === 'jpg' || ext === 'png' || ext === 'bmp' || ext === 'gif' || ext === 'jpeg') {
+        const ext = file.name.split('.').pop().toLowerCase();
+        // Preview image when size is less than 8M.
+        const images = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
+        if (images.includes(ext) && file.size <= 2 << 22) {
             imgPreview(file);
             return;
         }
-        downloadFile(file);
-    }
-
-    function imgPreview(file) {
-        // Only preview image file smaller than 8MB.
-        if (file.size > 2 << 22) {
+        // Open editor when file is a text file and size is less than 2MB.
+        const result = ModeList.getModeForPath(file.name);
+        if (result && result.extRe.test(file.name) && file.size <= 2 << 20) {
+            textEdit(file);
             return;
         }
+        downloadFiles(file.name);
+    }
+    function imgPreview(file) {
         setLoading(true);
-        request('/api/device/file/get', {device: props.device, file: path + file.name}, {}, {
+        request('/api/device/file/get', {device: props.device, files: path + file.name}, {}, {
             responseType: 'blob',
             timeout: 10000
-        }).then((res) => {
-            if ((res.data.type ?? '').substring(0, 16) === 'application/json') {
+        }).then(res => {
+            if (res.status !== 200) {
                 res.data.text().then((str) => {
                     let data = {};
                     try {
@@ -154,16 +218,41 @@ function FileBrowser(props) {
             setLoading(false);
         });
     }
+    function textEdit(file) {
+        // Only edit text file smaller than 2MB.
+        if (file.size > 2 << 20) return;
+        if (editingFile) return;
+        setLoading(true);
+        request('/api/device/file/text', {device: props.device, file: path + file.name}, {}, {
+            responseType: 'blob',
+            timeout: 7000
+        }).then(res => {
+            if (res.status !== 200) {
+                res.data.text().then(str => {
+                    let data = {};
+                    try {
+                        data = JSON.parse(str);
+                    } catch (e) { }
+                    message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
+                });
+            } else {
+                res.data.text().then(str => {
+                    setEditingContent(str);
+                    setDraggable(false);
+                    setEditingFile(file.name);
+                });
+            }
+        }).finally(() => {
+            setLoading(false);
+        });
+    }
 
     function listFiles(newPath) {
-        if (loading) {
-            return;
-        }
+        if (loading) return;
         position = newPath;
         setPath(newPath);
         tableRef.current.reload();
     }
-
     function getParentPath(path) {
         let separator = props.isWindows ? '\\' : '/';
         // remove the last separator
@@ -179,6 +268,15 @@ function FileBrowser(props) {
         return pathArr.join(separator) + separator;
     }
 
+    function uploadFile() {
+        if (path === '/' || path === '\\' || path.length === 0) {
+            if (props.isWindows) {
+                message.error(i18n.t('uploadInvalidPath'));
+                return;
+            }
+        }
+        document.getElementById('uploader').click();
+    }
     function onFileChange(e) {
         let file = e.target.files[0];
         if (file === undefined) return;
@@ -197,46 +295,74 @@ function FileBrowser(props) {
                     content: i18n.t('fileOverwriteConfirm').replace('{0}', file.name),
                     okText: i18n.t('fileOverwrite'),
                     onOk: () => {
-                        setUpload(file);
+                        setUploading(file);
                     },
                     okButtonProps: {
                         danger: true,
                     },
                 });
             } else {
-                setUpload(file);
+                setUploading(file);
+                setDraggable(false);
             }
         }
     }
+    function onUploadSuccess() {
+        tableRef.current.reload();
+        setUploading(false);
+        setDraggable(true);
+    }
+    function onUploadCancel() {
+        setUploading(false);
+        setDraggable(true);
+    }
 
-    function uploadFile() {
+    function downloadFiles(items) {
         if (path === '/' || path === '\\' || path.length === 0) {
             if (props.isWindows) {
-                message.error(i18n.t('uploadInvalidPath'));
+                // It may take an extremely long time to archive volumes.
+                // So we don't allow to download volumes.
+                // Besides, archive volumes may throw an error.
+                message.error(i18n.t('downloadInvalidPath'));
                 return;
             }
         }
-        document.getElementById('uploader').click();
-    }
-
-    function onUploadSuccess() {
-        tableRef.current.reload();
-        setUpload(false);
-    }
-
-    function onUploadCancel() {
-        setUpload(false);
-    }
-
-    function downloadFile(file) {
+        let files = [];
+        if (Array.isArray(items)) {
+            for (let i = 0; i < items.length; i++) {
+                if (items[i] === '..') continue;
+                files.push(path + items[i]);
+            }
+        } else {
+            files = path + items;
+        }
         post(location.origin + location.pathname + 'api/device/file/get', {
-            file: path + file.name,
+            files: files,
             device: props.device
         });
     }
-
-    function removeFile(file) {
-        request(`/api/device/file/remove`, {file: path + file, device: props.device}).then(res => {
+    function removeFiles(items) {
+        if (path === '/' || path === '\\' || path.length === 0) {
+            if (props.isWindows) {
+                message.error(i18n.t('deleteInvalidPath'));
+                return;
+            }
+        }
+        let files = [];
+        if (Array.isArray(items)) {
+            for (let i = 0; i < items.length; i++) {
+                if (items[i] === '..') continue;
+                files.push(path + items[i]);
+            }
+        } else {
+            files = path + items;
+        }
+        request(`/api/device/file/remove`, {
+            files: files,
+            device: props.device
+        }, {}, {
+            transformRequest: [v => Qs.stringify(v, {indices: false})]
+        }).then(res => {
             let data = res.data;
             if (data.code === 0) {
                 message.success(i18n.t('deleteSuccess'));
@@ -248,12 +374,24 @@ function FileBrowser(props) {
     async function getData(form) {
         await waitTime(300);
         let res = await request('/api/device/file/list', {path: position, device: props.device});
+        setSelectedRowKeys([]);
         setLoading(false);
         let data = res.data;
         if (data.code === 0) {
             let addParentShortcut = false;
-            data.data.files = data.data.files.sort((first, second) => (second.type - first.type));
-            fileList = [].concat(data.data.files);
+            form.keyword = form.keyword ?? '';
+            if (form.keyword.length > 0) {
+                let keyword = form.keyword.toLowerCase();
+                let exp = keyword.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+                let regexp = new RegExp(`^${exp.replace(/\*/g,'.*').replace(/\?/g,'.')}$`, 'i');
+                data.data.files = data.data.files.filter(file => {
+                    if (file.name.toLowerCase().includes(keyword)) {
+                        return true;
+                    }
+                    return regexp.test(file.name);
+                });
+            }
+            data.data.files = data.data.files.sort((a, b) => (b.type - a.type));
             if (path.length > 0 && path !== '/' && path !== '\\') {
                 addParentShortcut = true;
                 data.data.files.unshift({
@@ -263,6 +401,7 @@ function FileBrowser(props) {
                     modTime: 0
                 });
             }
+            fileList = [].concat(data.data.files);
             setPath(position);
             return ({
                 data: data.data.files,
@@ -275,13 +414,14 @@ function FileBrowser(props) {
     }
 
     return (
-        <Modal
+        <DraggableModal
+            draggable={draggable}
             maskClosable={false}
             destroyOnClose={true}
-            title={i18n.t('fileExplorer')}
+            modalTitle={i18n.t('fileExplorer')}
             footer={null}
             height={500}
-            width={800}
+            width={830}
             bodyStyle={{
                 padding: 0
             }}
@@ -290,49 +430,54 @@ function FileBrowser(props) {
             <ProTable
                 rowKey='name'
                 onRow={file => ({
-                    onDoubleClick: onRowClick.bind(null, file),
+                    onDoubleClick: onRowClick.bind(null, file)
                 })}
-                toolbar={{
-                    settings: [
-                        {
-                            icon: <UploadOutlined/>,
-                            tooltip: i18n.t('upload'),
-                            key: 'upload',
-                            onClick: uploadFile
-                        },
-                        {
-                            icon: <ReloadOutlined/>,
-                            tooltip: i18n.t('reload'),
-                            key: 'reload',
-                            onClick: () => {
-                                tableRef.current.reload();
-                            }
-                        }
-                    ]
-                }}
+                toolbar={toolbar}
                 scroll={{scrollToFirstRowOnChange: true, y: 300}}
                 search={false}
                 size='small'
                 loading={loading}
                 rowClassName='file-row'
                 onLoadingChange={setLoading}
+                rowSelection={{
+                    selectedRowKeys,
+                    onChange: setSelectedRowKeys,
+                    alwaysShowAlert: true
+                }}
+                tableAlertRender={() =>
+                    i18n.t('fileMultiSelectAlert').
+                    replace('{0}', String(selectedRowKeys.length)).
+                    replace('{1}', String(fileList.length))
+                }
+                tableAlertOptionRender={alertOptionRenderer}
                 options={options}
                 columns={columns}
                 request={getData}
                 pagination={false}
                 actionRef={tableRef}
                 components={virtualTable}
-            >
-            </ProTable>
+            />
             <input
                 id='uploader'
                 type='file'
                 style={{display: 'none'}}
                 onChange={onFileChange}
             />
-            <UploadModal
+            <TextEditor
                 path={path}
-                file={upload}
+                file={editingFile}
+                device={props.device}
+                content={editingContent}
+                onCancel={reload=>{
+                    setEditingFile('');
+                    setEditingContent('');
+                    setDraggable(true);
+                    if (reload) tableRef.current.reload();
+                }}
+            />
+            <FileUploader
+                path={path}
+                file={uploading}
                 device={props.device}
                 onSuccess={onUploadSuccess}
                 onCanel={onUploadCancel}
@@ -347,7 +492,7 @@ function FileBrowser(props) {
                     }
                 }}
             />
-        </Modal>
+        </DraggableModal>
     )
 }
 
@@ -412,8 +557,263 @@ function Navigator(props) {
     )
 }
 
+// 0: not modified, 1: modified but not saved, 2: modified and saved.
+let fileStatus = 0;
+let fileChanged = false;
+let editorConfig = getEditorConfig();
+require('ace-builds/src-min-noconflict/theme-' + editorConfig.theme);
+function TextEditor(props) {
+    const [cancelConfirm, setCancelConfirm] = useState(false);
+    const [fileContent, setFileContent] = useState('');
+    const [editorTheme, setEditorTheme] = useState(editorConfig.theme);
+    const [editorMode, setEditorMode] = useState('text');
+    const [loading, setLoading] = useState(false);
+    const [visible, setVisible] = useState(props.file);
+    const editorRef = useRef();
+    const fontMenu = (
+        <Menu onClick={onFontMenuClick}>
+            <Menu.Item key='enlarge'>{i18n.t('enlarge')}</Menu.Item>
+            <Menu.Item key='shrink'>{i18n.t('shrink')}</Menu.Item>
+        </Menu>
+    );
+    const editorThemes = {
+        'github': 'GitHub',
+        'monokai': 'Monokai',
+        'tomorrow': 'Tomorrow',
+        'twilight': 'Twilight',
+        'eclipse': 'Eclipse',
+        'kuroir': 'Kuroir',
+        'xcode': 'XCode',
+        'idle_fingers': 'Idle Fingers',
+    }
+    const themeMenu = (
+        <Menu onClick={onThemeMenuClick}>
+            {Object.keys(editorThemes).map(key =>
+                <Menu.Item disabled={editorTheme === key} key={key}>
+                    {editorThemes[key]}
+                </Menu.Item>
+            )}
+        </Menu>
+    );
+
+    useEffect(() => {
+        if (props.file) {
+            const fileMode = ModeList.getModeForPath(props.file);
+            require('ace-builds/src-min-noconflict/mode-' + fileMode.name);
+            setVisible(true);
+            setFileContent(props.content);
+            setEditorMode(fileMode);
+        }
+        fileStatus = 0;
+        setCancelConfirm(false);
+        window.onbeforeunload = null;
+    }, [props.file]);
+
+    function onFontMenuClick(e) {
+        let currentFontSize = parseInt(editorRef.current.editor.getFontSize());
+        currentFontSize = isNaN(currentFontSize) ? 12 : currentFontSize;
+        if (e.key === 'enlarge') {
+            currentFontSize++;
+            editorRef.current.editor.setFontSize(currentFontSize + 1);
+        } else if (e.key === 'shrink') {
+            if (currentFontSize <= 3) {
+                message.warn('字体已经达到最小');
+                return;
+            }
+            currentFontSize--;
+            editorRef.current.editor.setFontSize(currentFontSize);
+        }
+        editorConfig.fontSize = currentFontSize;
+        setEditorConfig(editorConfig);
+    }
+    function onThemeMenuClick(e) {
+        require('ace-builds/src-min-noconflict/theme-' + e.key);
+        setEditorTheme(e.key);
+        editorConfig.theme = e.key;
+        setEditorConfig(editorConfig);
+        editorRef.current.editor.setTheme('ace/theme/' + e.key);
+    }
+    function onForceCancel(reload) {
+        setCancelConfirm(false);
+        setTimeout(() => {
+            setVisible(false);
+            setFileContent('');
+            window.onbeforeunload = null;
+            props.onCancel(reload);
+        }, 150);
+    }
+    function onExitCancel() {
+        setCancelConfirm(false);
+    }
+    function onCancel() {
+        if (loading) return;
+        if (fileStatus === 1) {
+            setCancelConfirm(true);
+        } else {
+            setVisible(false);
+            setFileContent('');
+            window.onbeforeunload = null;
+            props.onCancel(fileStatus === 2);
+        }
+    }
+    async function onConfirm(onSave) {
+        if (loading) return;
+        setLoading(true);
+        await waitTime(300);
+        const params = Qs.stringify({
+            device: props.device,
+            path: props.path,
+            file: props.file
+        });
+        axios.post(
+            '/api/device/file/upload?' + params,
+            editorRef.current.editor.getValue(),
+            {
+                headers: { 'Content-Type': 'application/octet-stream' },
+                timeout: 10000
+            }
+        ).then(res => {
+            let data = res.data;
+            if (data.code === 0) {
+                fileStatus = 2;
+                window.onbeforeunload = null;
+                message.success(i18n.t('fileSaveSuccess'));
+                if (typeof onSave === 'function') onSave();
+            }
+        }).catch(err => {
+            message.error(i18n.t('fileSaveFailed') + i18n.t('colon') + err.message);
+        }).finally(() => {
+            setLoading(false);
+        });
+    }
+
+    return (
+        <Modal
+            title={props.file}
+            mask={false}
+            keyboard={false}
+            visible={visible}
+            maskClosable={false}
+            className='editor-modal'
+            closeIcon={loading ? <Spin indicator={<LoadingOutlined />} /> : <CloseOutlined />}
+            onCancel={onCancel}
+            footer={null}
+        >
+            <Alert
+                closable={false}
+                message={
+                    <Space size={16}>
+                        <a onClick={onConfirm}>
+                            {i18n.t('save')}
+                        </a>
+                        <a onClick={()=>editorRef.current.editor.execCommand('find')}>
+                            {i18n.t('search')}
+                        </a>
+                        <a onClick={()=>editorRef.current.editor.execCommand('replace')}>
+                            {i18n.t('replace')}
+                        </a>
+                        <Dropdown overlay={fontMenu}>
+                            <a>{i18n.t('font')}</a>
+                        </Dropdown>
+                        <Dropdown overlay={themeMenu}>
+                            <a>{i18n.t('theme')}</a>
+                        </Dropdown>
+                    </Space>
+                }
+                style={{marginBottom: '12px'}}
+            />
+            <AceEditor
+                ref={editorRef}
+                mode={editorMode.name}
+                theme={editorTheme}
+                name='text-editor'
+                width='100%'
+                height='100%'
+                commands={[{
+                    name: 'save',
+                    bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
+                    exec: onConfirm
+                }, {
+                    name: 'find',
+                    bindKey: {win: 'Ctrl-F', mac: 'Command-F'},
+                    exec: 'find'
+                }, {
+                    name: 'replace',
+                    bindKey: {win: 'Ctrl-H', mac: 'Command-H'},
+                    exec: 'replace'
+                }]}
+                value={fileContent}
+                onChange={val => {
+                    if (!visible) return;
+                    if (val.length === fileContent.length) {
+                        if (val === fileContent) return;
+                    }
+                    window.onbeforeunload = preventClose;
+                    setFileContent(val);
+                    fileStatus = 1;
+                }}
+                debounceChangePeriod={100}
+                fontSize={editorConfig.fontSize}
+                editorProps={{ $blockScrolling: true }}
+                setOptions={{
+                    enableBasicAutocompletion: true
+                }}
+            />
+            <Modal
+                closable={true}
+                visible={cancelConfirm}
+                onCancel={onExitCancel}
+                footer={[
+                    <Button
+                        key='cancel'
+                        onClick={onExitCancel}
+                    >
+                        {i18n.t('cancel')}
+                    </Button>,
+                    <Button
+                        type='danger'
+                        key='doNotSave'
+                        onClick={onForceCancel.bind(null, false)}
+                    >
+                        {i18n.t('fileDoNotSave')}
+                    </Button>,
+                    <Button
+                        type='primary'
+                        key='save'
+                        onClick={onConfirm.bind(null, onForceCancel.bind(null, true))}
+                    >
+                        {i18n.t('save')}
+                    </Button>
+                ]}
+            >
+                {i18n.t('fileNotSaveConfirm')}
+            </Modal>
+        </Modal>
+    );
+}
+function getEditorConfig() {
+    let config = localStorage.getItem('editorConfig');
+    if (config) {
+        try {
+            config = JSON.parse(config);
+        } catch (e) {
+            config = null;
+        }
+    }
+    if (!config) {
+        config = {
+            fontSize: 12,
+            theme: 'idle_fingers',
+        };
+    }
+    return config;
+}
+function setEditorConfig(config) {
+    localStorage.setItem('editorConfig', JSON.stringify(config));
+}
+
 let abortController = null;
-function UploadModal(props) {
+function FileUploader(props) {
     const [visible, setVisible] = useState(!!props.file);
     const [percent, setPercent] = useState(0);
     const [status, setStatus] = useState(0);
@@ -427,25 +827,19 @@ function UploadModal(props) {
         }
     }, [props.file]);
 
-    function onPageUnload(e) {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-    }
-
     function onConfirm() {
         if (status !== 0) {
             onCancel();
             return;
         }
-        let params = Qs.stringify({
+        const params = Qs.stringify({
             device: props.device,
             path: props.path,
             file: props.file.name
         });
         let uploadStatus = 1;
         setStatus(1);
-        window.onbeforeunload = onPageUnload;
+        window.onbeforeunload = preventClose;
         abortController = new AbortController();
         axios.post(
             '/api/device/file/upload?' + params,
@@ -471,7 +865,7 @@ function UploadModal(props) {
                 uploadStatus = 3;
                 setStatus(3);
             }
-        }).catch((err) => {
+        }).catch(err => {
             if (axios.isCancel(err)) {
                 uploadStatus = 4;
                 setStatus(4);
@@ -494,7 +888,6 @@ function UploadModal(props) {
             }, 1500);
         });
     }
-
     function onCancel() {
         if (status === 0) {
             setVisible(false);
@@ -523,7 +916,7 @@ function UploadModal(props) {
     function getDescription() {
         switch (status) {
             case 1:
-                return `${percent}%`;
+                return percent + '%';
             case 2:
                 return i18n.t('uploadSuccess');
             case 3:
@@ -537,7 +930,9 @@ function UploadModal(props) {
     }
 
     return (
-        <Modal
+        <DraggableModal
+            centered
+            draggable
             visible={visible}
             closable={false}
             keyboard={false}
@@ -568,7 +963,7 @@ function UploadModal(props) {
                 percent={percent}
                 showInfo={false}
             />
-        </Modal>
+        </DraggableModal>
     )
 }
 
