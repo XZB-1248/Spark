@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -156,7 +157,7 @@ func getDeviceFiles(ctx *gin.Context) {
 					filename = path.Base(strings.ReplaceAll(form.Files[0], `\`, `/`))
 				}
 			}
-			ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, filename))
+			ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, url.PathEscape(filename)))
 		}
 
 		if partial {
@@ -232,7 +233,7 @@ func getDeviceTextFile(ctx *gin.Context) {
 		if len(filename) == 0 {
 			filename = path.Base(strings.ReplaceAll(form.File, `\`, `/`))
 		}
-		ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, filename))
+		ctx.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, filename, url.PathEscape(filename)))
 		ctx.Status(http.StatusOK)
 	}
 	instance.OnFinish = func(bridge *bridge) {
@@ -285,7 +286,7 @@ func uploadToDevice(ctx *gin.Context) {
 		dst.Header(`Accept-Ranges`, `none`)
 		dst.Header(`Content-Transfer-Encoding`, `binary`)
 		dst.Header(`Content-Type`, `application/octet-stream`)
-		dst.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, form.File, form.File))
+		dst.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, form.File, url.PathEscape(form.File)))
 	}
 	instance.OnFinish = func(bridge *bridge) {
 		wait <- false

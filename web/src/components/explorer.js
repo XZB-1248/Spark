@@ -1,19 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
-import {
-    Alert,
-    Breadcrumb,
-    Button,
-    Dropdown,
-    Image,
-    Input,
-    Menu,
-    message,
-    Modal,
-    Popconfirm,
-    Progress,
-    Space,
-    Spin
-} from "antd";
+import {Alert, Breadcrumb, Button, Dropdown, Image, Menu, message, Modal, Popconfirm, Progress, Space, Spin} from "antd";
 import ProTable from "@ant-design/pro-table";
 import {formatSize, post, preventClose, request, translate, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
@@ -449,7 +435,10 @@ function FileBrowser(props) {
                     replace('{0}', String(selectedRowKeys.length)).
                     replace('{1}', String(fileList.length))
                 }
-                tableAlertOptionRender={alertOptionRenderer}
+                tableAlertOptionRender={
+                    selectedRowKeys.length===0?
+                    null:alertOptionRenderer
+                }
                 options={options}
                 columns={columns}
                 request={getData}

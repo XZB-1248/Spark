@@ -276,6 +276,12 @@ func authCheck() gin.HandlerFunc {
 		}
 	}()
 
+	if config.Config.Auth == nil || len(config.Config.Auth) == 0 {
+		return func(ctx *gin.Context) {
+			lastRequest = common.Unix
+			ctx.Next()
+		}
+	}
 	auth := gin.BasicAuth(config.Config.Auth)
 	return func(ctx *gin.Context) {
 		now := common.Unix

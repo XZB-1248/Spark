@@ -54,7 +54,7 @@ function post(url, data, ext) {
     let form = document.createElement('form');
     form.action = url;
     form.method = 'POST';
-    form.target = '_blank';
+    form.target = '_self';
 
     for (const key in ext) {
         form[key] = ext[key];
