@@ -26,6 +26,7 @@ import DraggableModal from "./modal";
 import AceBuilds from "ace-builds";
 import "ace-builds/src-min-noconflict/ext-language_tools";
 import "ace-builds/src-min-noconflict/ext-searchbox";
+import "ace-builds/src-min-noconflict/ext-modelist";
 import "./explorer.css";
 
 const ModeList = AceBuilds.require("ace/ext/modelist");
@@ -186,10 +187,12 @@ function FileBrowser(props) {
             return;
         }
         // Open editor when file is a text file and size is less than 2MB.
-        const result = ModeList.getModeForPath(file.name);
-        if (result && result.extRe.test(file.name) && file.size <= 2 << 20) {
-            textEdit(file);
-            return;
+        if (file.size <= 2 << 20) {
+            const result = ModeList.getModeForPath(file.name);
+            if (result && result.extRe.test(file.name)) {
+                textEdit(file);
+                return;
+            }
         }
         downloadFiles(file.name);
     }
@@ -564,7 +567,12 @@ function Navigator(props) {
 let fileStatus = 0;
 let fileChanged = false;
 let editorConfig = getEditorConfig();
-require('ace-builds/src-min-noconflict/theme-' + editorConfig.theme);
+try {
+    require('ace-builds/src-min-noconflict/theme-' + editorConfig.theme);
+} catch (e) {
+    require('ace-builds/src-min-noconflict/theme-idle_fingers');
+    editorConfig.theme = 'Idle Fingers';
+}
 function TextEditor(props) {
     const [cancelConfirm, setCancelConfirm] = useState(false);
     const [fileContent, setFileContent] = useState('');
@@ -601,8 +609,15 @@ function TextEditor(props) {
 
     useEffect(() => {
         if (props.file) {
-            const fileMode = ModeList.getModeForPath(props.file);
-            require('ace-builds/src-min-noconflict/mode-' + fileMode.name);
+            let fileMode = ModeList.getModeForPath(props.file);
+            if (!fileMode) {
+                fileMode = { name: 'text' };
+            }
+            try {
+                require('ace-builds/src-min-noconflict/mode-' + fileMode.name);
+            } catch (e) {
+                require('ace-builds/src-min-noconflict/mode-text');
+            }
             setVisible(true);
             setFileContent(props.content);
             setEditorMode(fileMode);
