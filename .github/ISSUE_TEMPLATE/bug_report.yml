@@ -1,0 +1,55 @@
+name: "[BUG Report]"
+description: To file a bug report.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to help us improve our project, please **do confirm that your issue is not duplicate and not because of your operation or version issues**.
+        感谢您花时间帮我们完善项目，请**务必确认您的issue不与他人重复且问题不是由于您的操作和版本问题造成的**。
+  - type: checkboxes
+    attributes:
+      label: Please make sure of the following things.
+      description: You may select more than one, even select all.
+      options:
+        - label: I have read the [documentation](https://github.com/XZB-1248/Spark/blob/master/README.md).
+        - label: 我已阅读 [文档](https://github.com/XZB-1248/Spark/blob/master/README.ZH.md)。
+        - label: I'm sure there are no duplicate issues.
+        - label: 我确定没有提交和他人重复的issue。
+        - label: I'm sure it's due to **Spark** itself and not my operational issue or something else.
+        - label: 我确定问题由**Spark**自身引起，不是我自己的操作失误或其他问题。
+  - type: input
+    id: version
+    attributes:
+      label: Version / 版本
+      description: What version of our software are you running?
+      placeholder: v0.1.1
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug / 问题描述
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction / 复现方式
+      description: |
+        Please provide a way to reproduce the problem.
+        请提供问题的复现方式或操作步骤。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / 日志
+      description: |
+        Please paste output, error info or screenshot here.
+        请把相关的输出、错误日志或者截图粘贴到此处。
+      render: shell
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information / 附加说明

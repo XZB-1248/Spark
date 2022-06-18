@@ -40,19 +40,20 @@ Only local installation are available yet.
 
 ### Local installation
 * Get prebuilt executable file from [Releases](https://github.com/XZB-1248/Spark/releases) page.
+* Extract all files and **do not** delete `built` directory.
 * Create a configuration file named `Config.json` and set your own salt.
 
   ```json
   {
-	  "listen": ":8000",
-	  "salt": "some random string",
-	  "auth": {
-		  "username": "password"
-	  }
+      "listen": ":8000",
+      "salt": "some random string",
+      "auth": {
+          "username": "password"
+      }
   }
   ```
 
-* Run it and browse the address:port you've just set.
+* Run it and browse the address:port you've just set, for example: `http://localhost:8000/`.
 * Generate client online and execute it on your device.
 * Now you can control your device.
 

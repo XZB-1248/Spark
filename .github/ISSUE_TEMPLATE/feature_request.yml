@@ -1,0 +1,34 @@
+name: "[Feature Request]"
+description: To file a feature request.
+labels: [enhancement]
+body:
+  - type: checkboxes
+    attributes:
+      label: Please make sure of the following things.
+      description: You may select more than one, even select all.
+      options:
+        - label: I have read the [documentation](https://github.com/XZB-1248/Spark/blob/master/README.md).
+        - label: 我已阅读 [文档](https://github.com/XZB-1248/Spark/blob/master/README.ZH.md)。
+        - label: I'm sure there are no duplicate issues.
+        - label: 我确定没有提交和他人重复的issue。
+        - label: I'm sure this feature is not implemented.
+        - label: 我确定该功能尚未实现。
+        - label: I'm sure it's a reasonable and popular requirement.
+        - label: 我确定这个需求合理且符合大多数人需要。
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the feature / 需求描述
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested solution / 实现思路
+      description: |
+        Solutions to achieve this requirement.
+        实现此需求的解决思路。
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information / 附加说明

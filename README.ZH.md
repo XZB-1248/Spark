@@ -39,19 +39,20 @@
 ### 本地安装
 
 * 从 [Releases](https://github.com/XZB-1248/Spark/releases) 页面下载对应系统的可执行文件。
+* 解压文件，**不要删除**`built`文件夹。
 * 在目录下创建一个名为`Config.json`的配置文件，修改其中的信息。
 
   ```json
   {
-	  "listen": ":8000",
-	  "salt": "some random string",
-	  "auth": {
-		  "username": "password"
-	  }
+      "listen": ":8000",
+      "salt": "some random string",
+      "auth": {
+          "username": "password"
+      }
   }
   ```
 
-* 修改完成后运行服务端，然后打开 IP:端口。
+* 修改完成后运行服务端，然后打开 IP:端口，例如 `http://localhost:8000/` 。
 * 在管理页面中生成客户端，并部署到设备上。
 * 现在就可以控制这个设备了。
 
