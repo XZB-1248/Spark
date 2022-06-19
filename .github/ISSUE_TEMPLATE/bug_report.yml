@@ -23,7 +23,7 @@ body:
     attributes:
       label: Version / 版本
       description: What version of our software are you running?
-      placeholder: v0.1.1
+      placeholder: v0.1.2
     validations:
       required: true
   - type: textarea

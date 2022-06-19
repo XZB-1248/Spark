@@ -11,9 +11,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/rakyll/statik/fs"
+	"io"
 	"net"
 	"os"
 	"os/signal"
+	"path"
+	"strings"
 	"syscall"
 	"time"
 
@@ -70,7 +73,9 @@ func main() {
 		handler.InitRouter(app.Group(`/api`))
 		app.Any(`/ws`, wsHandshake)
 		app.NoRoute(handler.AuthHandler, func(ctx *gin.Context) {
-			http.FileServer(webFS).ServeHTTP(ctx.Writer, ctx.Request)
+			if !serveGzip(ctx, webFS) && !checkCache(ctx, webFS) {
+				http.FileServer(webFS).ServeHTTP(ctx.Writer, ctx.Request)
+			}
 		})
 	}
 
@@ -305,4 +310,82 @@ func authCheck() gin.HandlerFunc {
 		}
 		lastRequest = now
 	}
+}
+
+func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
+	headers := ctx.Request.Header
+	filename := path.Clean(ctx.Request.RequestURI)
+	if !strings.Contains(headers.Get(`Accept-Encoding`), `gzip`) {
+		return false
+	}
+	if strings.Contains(headers.Get(`Connection`), `Upgrade`) {
+		return false
+	}
+	if strings.Contains(headers.Get(`Accept`), `text/event-stream`) {
+		return false
+	}
+
+	file, err := statikFS.Open(filename + `.gz`)
+	if err != nil {
+		return false
+	}
+
+	file.Seek(0, io.SeekStart)
+	conn, ok := ctx.Request.Context().Value(`Conn`).(net.Conn)
+	if !ok {
+		file.Close()
+		return false
+	}
+
+	etag := fmt.Sprintf(`"%x-%s"`, []byte(filename), config.COMMIT)
+	if headers.Get(`If-None-Match`) == etag {
+		ctx.Status(http.StatusNotModified)
+		return true
+	}
+	ctx.Header(`Cache-Control`, `max-age=604800`)
+	ctx.Header(`ETag`, etag)
+	ctx.Header(`Expires`, common.Now.Add(7*24*time.Hour).Format(`Mon, 02 Jan 2006 15:04:05 GMT`))
+
+	ctx.Writer.Header().Del(`Content-Length`)
+	ctx.Header(`Content-Encoding`, `gzip`)
+	ctx.Header(`Vary`, `Accept-Encoding`)
+	ctx.Status(http.StatusOK)
+
+	for {
+		eof := false
+		buf := make([]byte, 2<<14)
+		n, err := file.Read(buf)
+		if n == 0 {
+			break
+		}
+		if err != nil {
+			eof = err == io.EOF
+			if !eof {
+				break
+			}
+		}
+		conn.SetWriteDeadline(common.Now.Add(10 * time.Second))
+		_, err = ctx.Writer.Write(buf[:n])
+		if eof || err != nil {
+			break
+		}
+	}
+	conn.SetWriteDeadline(time.Time{})
+	file.Close()
+	ctx.Done()
+	return true
+}
+
+func checkCache(ctx *gin.Context, _ http.FileSystem) bool {
+	filename := path.Clean(ctx.Request.RequestURI)
+
+	etag := fmt.Sprintf(`"%x-%s"`, []byte(filename), config.COMMIT)
+	if ctx.Request.Header.Get(`If-None-Match`) == etag {
+		ctx.Status(http.StatusNotModified)
+		return true
+	}
+	ctx.Header(`ETag`, etag)
+	ctx.Header(`Cache-Control`, `max-age=604800`)
+	ctx.Header(`Expires`, common.Now.Add(7*24*time.Hour).Format(`Mon, 02 Jan 2006 15:04:05 GMT`))
+	return false
 }

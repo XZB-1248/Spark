@@ -1,3 +1,11 @@
+## v0.1.2
+
+* Optimize: compress frontend assets.
+
+* 优化: 压缩前端资源，加快加载速度。
+
+
+
 ## v0.1.1
 
 * Add: text file editor.

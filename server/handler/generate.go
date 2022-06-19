@@ -43,7 +43,7 @@ func checkClient(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
-	_, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
+	_, err := os.Stat(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
 		return

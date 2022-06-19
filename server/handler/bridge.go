@@ -100,16 +100,16 @@ func bridgePush(ctx *gin.Context) {
 				buf := make([]byte, 2<<14)
 				srcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
 				n, err := bridge.src.Request.Body.Read(buf)
+				if n == 0 {
+					break
+				}
 				if err != nil {
 					eof = err == io.EOF
 					if !eof {
 						break
 					}
 				}
-				if n == 0 {
-					break
-				}
-				dstConn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				dstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
 				_, err = bridge.dst.Writer.Write(buf[:n])
 				if eof || err != nil {
 					break
@@ -154,16 +154,16 @@ func bridgePull(ctx *gin.Context) {
 				buf := make([]byte, 2<<14)
 				srcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
 				n, err := bridge.src.Request.Body.Read(buf)
+				if n == 0 {
+					break
+				}
 				if err != nil {
 					eof = err == io.EOF
 					if !eof {
 						break
 					}
 				}
-				if n == 0 {
-					break
-				}
-				dstConn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				dstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
 				_, err = bridge.dst.Writer.Write(buf[:n])
 				if eof || err != nil {
 					break

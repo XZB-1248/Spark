@@ -1,9 +1,10 @@
-const path = require('path');
-const TerserPlugin = require('terser-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const {CleanWebpackPlugin} = require('clean-webpack-plugin');
-const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
+const path = require("path");
+const TerserPlugin = require("terser-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const {CleanWebpackPlugin} = require("clean-webpack-plugin");
+const AntdDayjsWebpackPlugin = require("antd-dayjs-webpack-plugin");
+const CompressionPlugin = require("compression-webpack-plugin");
 
 module.exports = (env, args) => {
     let mode = args.mode;
@@ -12,7 +13,7 @@ module.exports = (env, args) => {
         output: {
             publicPath: mode === 'development' ? undefined : './',
             path: path.resolve(__dirname, 'dist'),
-            filename: '[name].js' //'[name].[contenthash:7].js'
+            filename: '[name].[contenthash:7].js'
         },
         devtool: mode === 'development' ? 'eval-source-map' : false,
         module: {
@@ -70,6 +71,15 @@ module.exports = (env, args) => {
                         from: path.resolve(__dirname, 'public/ext-modelist.js'),
                     }
                 ]
+            }),
+            new CompressionPlugin({
+                test: /\.js$|\.css$|\.html$/,
+                filename: "[file].gz",
+                algorithm: "gzip",
+                threshold: 256 * 1024,
+                compressionOptions: {
+                    level: 9
+                }
             })
         ],
         optimization: {
@@ -77,6 +87,7 @@ module.exports = (env, args) => {
             minimizer: [
                 new TerserPlugin({
                     test: /\.js(\?.*)?$/i,
+                    parallel: true,
                     extractComments: false,
                     terserOptions: {
                         compress: {
@@ -87,22 +98,38 @@ module.exports = (env, args) => {
                     }
                 })
             ],
-            runtimeChunk: 'single',
+            runtimeChunk: 'multiple',
             splitChunks: {
                 chunks: 'initial',
                 cacheGroups: {
-                    runtime: {
-                        name: 'runtime',
-                        test: (module) => {
-                            return /axios|react|redux|antd|ant-design/.test(module.context);
-                        },
+                    react: {
+                        test: /react|redux|react-router/i,
+                        priority: -1,
+                        chunks: 'all',
+                        reuseExistingChunk: true
+                    },
+                    common: {
+                        test: /axios|i18next|crypto-js|dayjs/i,
+                        priority: -2,
+                        chunks: 'all',
+                        reuseExistingChunk: true
+                    },
+                    antd: {
+                        test: /antd|ant-design/i,
+                        priority: -3,
+                        chunks: 'all',
+                        reuseExistingChunk: true
+                    },
+                    addon: {
+                        test: /xterm|react-ace|ace-builds/i,
+                        priority: -4,
                         chunks: 'initial',
-                        priority: 10,
                         reuseExistingChunk: true
                     },
                     vendor: {
-                        test: /[\\/]node_modules[\\/]/,
-                        name: 'vendors',
+                        test: /[\\/]node_modules[\\/]/i,
+                        priority: -5,
+                        chunks: 'initial',
                         reuseExistingChunk: true
                     }
                 }
