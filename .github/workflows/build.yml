@@ -120,18 +120,19 @@ jobs:
 
     - name: Pack releases
       run: |
+        mv ./built ./releases/built
         cd ./releases
         sudo apt install zip tar -y
-        tar -zcf server_darwin_arm64.tar.gz server_darwin_arm64 ../built
-        tar -zcf server_darwin_amd64.tar.gz server_darwin_amd64 ../built
-        tar -zcf server_linux_arm.tar.gz server_linux_arm ../built
-        tar -zcf server_linux_i386.tar.gz server_linux_i386 ../built
-        tar -zcf server_linux_arm64.tar.gz server_linux_arm64 ../built
-        tar -zcf server_linux_amd64.tar.gz server_linux_amd64 ../built
-        zip -r -9 -q server_windows_arm.zip server_windows_arm.exe ../built
-        zip -r -9 -q server_windows_i386.zip server_windows_i386.exe ../built
-        zip -r -9 -q server_windows_arm64.zip server_windows_arm64.exe ../built
-        zip -r -9 -q server_windows_amd64.zip server_windows_amd64.exe ../built
+        tar -zcf server_darwin_arm64.tar.gz server_darwin_arm64 ./built
+        tar -zcf server_darwin_amd64.tar.gz server_darwin_amd64 ./built
+        tar -zcf server_linux_arm.tar.gz server_linux_arm ./built
+        tar -zcf server_linux_i386.tar.gz server_linux_i386 ./built
+        tar -zcf server_linux_arm64.tar.gz server_linux_arm64 ./built
+        tar -zcf server_linux_amd64.tar.gz server_linux_amd64 ./built
+        zip -r -9 -q server_windows_arm.zip server_windows_arm.exe ./built
+        zip -r -9 -q server_windows_i386.zip server_windows_i386.exe ./built
+        zip -r -9 -q server_windows_arm64.zip server_windows_arm64.exe ./built
+        zip -r -9 -q server_windows_amd64.zip server_windows_amd64.exe ./built
 
     - name: Release
       uses: softprops/action-gh-release@v1
