@@ -76,8 +76,8 @@ func InputTerminal(pack modules.Packet) error {
 		return nil
 	}
 	terminal := val.(*terminal)
-	terminal.lastPack = time.Now().Unix()
 	terminal.pty.Write(data)
+	terminal.lastPack = time.Now().Unix()
 	return nil
 }
 
@@ -123,6 +123,7 @@ func KillTerminal(pack modules.Packet) error {
 		return nil
 	}
 	terminal := val.(*terminal)
+	terminals.Remove(termUUID)
 	doKillTerminal(terminal)
 	return nil
 }

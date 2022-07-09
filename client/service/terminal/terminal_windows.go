@@ -107,13 +107,13 @@ func InputTerminal(pack modules.Packet) error {
 		return nil
 	}
 	terminal := val.(*terminal)
-	terminal.lastPack = time.Now().Unix()
 	if len(data) == 1 && data[0] == '\x03' {
 		terminal.cmd.Process.Signal(os.Interrupt)
 		return nil
 	}
 	data, _ = decodeUTF8(data)
 	(*terminal.stdin).Write(data)
+	terminal.lastPack = time.Now().Unix()
 	return nil
 }
 
@@ -133,6 +133,7 @@ func KillTerminal(pack modules.Packet) error {
 		return nil
 	}
 	terminal := val.(*terminal)
+	terminals.Remove(termUUID)
 	doKillTerminal(terminal)
 	return nil
 }

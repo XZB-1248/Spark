@@ -54,6 +54,7 @@ func Start() {
 		var err error
 		if common.WSConn != nil {
 			common.WSConn.Close()
+			common.WSConn = nil
 		}
 		common.WSConn, err = connectWS()
 		if err != nil && !stop {
@@ -209,6 +210,11 @@ func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	if act, ok := handlers[pack.Act]; !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|actionNotImplemented}`}, pack, wsConn)
 	} else {
+		defer func() {
+			if r := recover(); r != nil {
+				golog.Error(`Panic: `, r)
+			}
+		}()
 		act(pack, wsConn)
 	}
 }
