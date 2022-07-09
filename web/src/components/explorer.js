@@ -220,7 +220,10 @@ function FileBrowser(props) {
     }
     function textEdit(file) {
         // Only edit text file smaller than 2MB.
-        if (file.size > 2 << 20) return;
+        if (file.size > 2 << 20) {
+            message.warn(i18n.t('fileTooLarge'));
+            return;
+        }
         if (editingFile) return;
         setLoading(true);
         request('/api/device/file/text', {device: props.device, file: path + file.name}, {}, {
@@ -619,13 +622,13 @@ function TextEditor(props) {
 
     function onFontMenuClick(e) {
         let currentFontSize = parseInt(editorRef.current.editor.getFontSize());
-        currentFontSize = isNaN(currentFontSize) ? 12 : currentFontSize;
+        currentFontSize = isNaN(currentFontSize) ? 15 : currentFontSize;
         if (e.key === 'enlarge') {
             currentFontSize++;
             editorRef.current.editor.setFontSize(currentFontSize + 1);
         } else if (e.key === 'shrink') {
-            if (currentFontSize <= 3) {
-                message.warn('字体已经达到最小');
+            if (currentFontSize <= 14) {
+                message.warn(i18n.t('minFontSize'));
                 return;
             }
             currentFontSize--;
@@ -810,7 +813,7 @@ function getEditorConfig() {
     }
     if (!config) {
         config = {
-            fontSize: 12,
+            fontSize: 15,
             theme: 'idle_fingers',
         };
     }
@@ -950,6 +953,7 @@ function FileUploader(props) {
             okText={i18n.t(status === 1 ? 'uploading' : 'upload')}
             onOk={onConfirm}
             onCancel={onCancel}
+            modalTitle={i18n.t(status === 1 ? 'uploading' : 'upload')}
             okButtonProps={{disabled: status !== 0}}
             cancelButtonProps={{disabled: status > 1}}
             width={550}

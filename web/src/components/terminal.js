@@ -112,59 +112,14 @@ class TerminalModal extends React.Component {
 
     initialize(ev) {
         ev?.dispose();
-        let buffer = '';
+        let buffer = { content: '' };
         let termEv = null;
         // Windows doesn't support pty, so we still use traditional way.
+        // And we need to handle arrow events manually.
         if (this.props.device.os === 'windows') {
-            let cmd = '';
-            termEv = this.term.onData((e) => {
-                if (!this.conn) {
-                    if (e === '\r' || e === ' ') {
-                        this.term.write(`\n${i18n.t('reconnecting')}\n`);
-                        this.termEv = this.initialize(termEv);
-                    }
-                    return;
-                }
-                switch (e) {
-                    case '\r':
-                        this.term.write('\n');
-                        this.sendInput(cmd + '\n');
-                        buffer = cmd + '\n';
-                        cmd = '';
-                        break;
-                    case '\u0003':
-                        this.term.write('^C');
-                        this.sendInput('\u0003');
-                        break;
-                    case '\u007F':
-                        if (cmd.length > 0) {
-                            let charWidth = wcwidth(cmd[cmd.length - 1]);
-                            cmd = cmd.substring(0, cmd.length - 1);
-
-                            this.term.write('\b'.repeat(charWidth));
-                            this.term.write(' '.repeat(charWidth));
-                            this.term.write('\b'.repeat(charWidth));
-                        }
-                        break;
-                    default:
-                        if ((e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7B)) || e >= '\u00a0') {
-                            cmd += e;
-                            this.term.write(e);
-                            return;
-                        }
-                }
-            });
+            termEv = this.term.onData(this.onWindowsInput.call(this, buffer));
         } else {
-            termEv = this.term.onData((e) => {
-                if (!this.conn) {
-                    if (e === '\r' || e === ' ') {
-                        this.term.write(`\n${i18n.t('reconnecting')}\n`);
-                        this.termEv = this.initialize(termEv);
-                    }
-                    return;
-                }
-                this.sendInput(e);
-            });
+            termEv = this.term.onData(this.onUnixOSInput.call(this, buffer));
         }
 
         this.ws = new WebSocket(`${getBaseURL(true)}?device=${this.props.device.id}&secret=${this.secret}`);
@@ -180,11 +135,11 @@ class TerminalModal extends React.Component {
             if (this.conn) {
                 if (data?.act === 'outputTerminal') {
                     data = ab2str(hex2buf(data?.data?.output));
-                    if (buffer.length > 0) {
+                    if (buffer.content.length > 0) {
                         // check if data starts with buffer, if so, remove buffer.
-                        if (data.startsWith(buffer)) {
-                            data = data.substring(buffer.length);
-                            buffer = '';
+                        if (data.startsWith(buffer.content)) {
+                            data = data.substring(buffer.content.length);
+                            buffer.content = '';
                         }
                     }
                     this.term.write(data);
@@ -216,6 +171,136 @@ class TerminalModal extends React.Component {
         }
         return termEv;
     }
+    onWindowsInput(buffer) {
+        let cmd = '';
+        let index = 0;
+        let cursor = 0;
+        let history = [];
+        let tempCmd = '';
+        let tempCursor = 0;
+        function clearTerm() {
+            let before = cmd.substring(0, cursor);
+            let after = cmd.substring(cursor);
+            this.term.write('\b'.repeat(wcwidth(before)));
+            this.term.write(' '.repeat(wcwidth(cmd)));
+            this.term.write('\b'.repeat(wcwidth(cmd)));
+        }
+        return function (e) {
+            if (!this.conn) {
+                if (e === '\r' || e === '\n' || e === ' ') {
+                    this.term.write(`\n${i18n.t('reconnecting')}\n`);
+                    this.termEv = this.initialize(termEv);
+                }
+                return;
+            }
+            switch (e) {
+                case '\u001b\u005b\u0041': // up arrow.
+                    if (index > 0 && index <= history.length) {
+                        if (index === history.length) {
+                            tempCmd = cmd;
+                            tempCursor = cursor;
+                        }
+                        index--;
+                        clearTerm.call(this);
+                        cmd = history[index];
+                        cursor = cmd.length;
+                        this.term.write(cmd);
+                    }
+                    break;
+                case '\u001b\u005b\u0042': // down arrow.
+                    if (index + 1 < history.length) {
+                        index++;
+                        clearTerm.call(this);
+                        cmd = history[index];
+                        cursor = cmd.length;
+                        this.term.write(cmd);
+                    } else if (index + 1 <= history.length) {
+                        clearTerm.call(this);
+                        index++;
+                        cmd = tempCmd;
+                        cursor = tempCursor;
+                        this.term.write(cmd);
+                        this.term.write('\u001b\u005b\u0044'.repeat(wcwidth(cmd.substring(cursor))));
+                        tempCmd = '';
+                        tempCursor = 0;
+                    }
+                    break;
+                case '\u001b\u005b\u0043': // right arrow.
+                    if (cursor < cmd.length) {
+                        this.term.write('\u001b\u005b\u0043'.repeat(wcwidth(cmd[cursor])));
+                        cursor++;
+                    }
+                    break;
+                case '\u001b\u005b\u0044': // left arrow.
+                    if (cursor > 0) {
+                        this.term.write('\u001b\u005b\u0044'.repeat(wcwidth(cmd[cursor-1])));
+                        cursor--;
+                    }
+                    break;
+                case '\n':
+                case '\r':
+                    this.term.write('\n');
+                    this.sendInput(cmd + '\n');
+                    if (cmd.length > 0) history.push(cmd);
+                    buffer.content = cmd + '\n';
+                    cursor = 0;
+                    cmd = '';
+                    if (history.length > 128) {
+                        history = history.slice(history.length - 128);
+                    }
+                    tempCmd = '';
+                    tempCursor = 0;
+                    index = history.length;
+                    break;
+                case '\u0003':
+                    this.term.write('^C');
+                    this.sendInput('\u0003');
+                    cursor = 0;
+                    cmd = '';
+                    break;
+                case '\u007F':
+                    if (cmd.length > 0 && cursor > 0) {
+                        cursor--;
+                        let charWidth = wcwidth(cmd[cursor]);
+                        let before = cmd.substring(0, cursor);
+                        let after = cmd.substring(cursor+1);
+                        cmd = before + after;
+
+                        this.term.write('\b'.repeat(charWidth));
+                        this.term.write(after + ' '.repeat(charWidth));
+                        this.term.write('\u001b\u005b\u0044'.repeat(wcwidth(after) + charWidth));
+                    }
+                    break;
+                default:
+                    if ((e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7B)) || e >= '\u00a0') {
+                        if (cursor < cmd.length) {
+                            let before = cmd.substring(0, cursor);
+                            let after = cmd.substring(cursor);
+                            cmd = before + e + after;
+                            this.term.write(e + after);
+                            this.term.write('\u001b\u005b\u0044'.repeat(wcwidth(after)));
+                        } else {
+                            cmd += e;
+                            this.term.write(e);
+                        }
+                        cursor += e.length;
+                        return;
+                    }
+            }
+        }.bind(this);
+    }
+    onUnixOSInput(buffer) {
+        return function (e) {
+            if (!this.conn) {
+                if (e === '\r' || e === ' ') {
+                    this.term.write(`\n${i18n.t('reconnecting')}\n`);
+                    this.termEv = this.initialize(termEv);
+                }
+                return;
+            }
+            this.sendInput(e);
+        }.bind(this);
+    }
 
     encrypt(data) {
         let json = JSON.stringify(data);
@@ -227,7 +312,6 @@ class TerminalModal extends React.Component {
         });
         return wordArray2Uint8Array(encrypted.ciphertext);
     }
-
     decrypt(data) {
         data = CryptoJS.lib.WordArray.create(data);
         let decrypted = CryptoJS.AES.encrypt(data, this.secret, {
@@ -248,7 +332,6 @@ class TerminalModal extends React.Component {
             });
         }
     }
-
     sendData(data) {
         if (this.conn) {
             this.ws.send(this.encrypt(data));
@@ -288,7 +371,6 @@ class TerminalModal extends React.Component {
             }
         }
     }
-
     componentWillUnmount() {
         window.onresize = null;
         if (this.conn) {
@@ -315,7 +397,6 @@ class TerminalModal extends React.Component {
             });
         }
     }
-
     onResize() {
         if (typeof this.doResize === 'function') {
             debounce(this.doResize.bind(this), 70);

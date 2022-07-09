@@ -76,9 +76,9 @@ Only local installation are available yet.
 | Screenshot      | ✔       | ✔     | ✔     |
 | * Shutdown      | ✔       | ✔     | ✔     |
 | * Reboot        | ✔       | ✔     | ✔     |
+| * Log off       | ✔       | ❌     | ✔     |
+| * Sleep         | ✔       | ❌     | ✔     |
 | * Hibernate     | ✔       | ❌     | ❌     |
-| * Sleep         | ✔       | ❌     | ❌     |
-| * Log off       | ✔       | ❌     | ❌     |
 | * Lock screen   | ✔       | ❌     | ❌     |
 
 * Blank cell means the situation is not tested yet.
