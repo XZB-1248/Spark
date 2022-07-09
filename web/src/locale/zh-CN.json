@@ -49,6 +49,7 @@
 	"upload": "上传",
 	"delete": "删除",
 	"download": "下载",
+	"editAsText": "编辑文本",
 	"uploading": "上传中...",
 	"uploadFailed": "上传失败",
 	"uploadAborted": "取消上传",

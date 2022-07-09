@@ -65,6 +65,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	app := gin.New()
+	app.Use(gin.Recovery())
 	if config.Config.Debug.Pprof {
 		pprof.Register(app)
 	}

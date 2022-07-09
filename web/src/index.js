@@ -13,7 +13,7 @@ import Overview from "./pages/overview";
 import {translate} from "./utils/utils";
 
 axios.defaults.baseURL = '.';
-axios.interceptors.response.use(async (res) => {
+axios.interceptors.response.use(async res => {
     let data = res.data;
     if (data.hasOwnProperty('code')) {
         if (data.code !== 0){
@@ -26,7 +26,7 @@ axios.interceptors.response.use(async (res) => {
         }
     }
     return Promise.resolve(res);
-}, (err) => {
+}, err => {
     // console.error(err);
     if (err.code === 'ECONNABORTED') {
         message.error(i18n.t('requestTimeout'));

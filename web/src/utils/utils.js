@@ -1,6 +1,7 @@
 import axios from "axios";
 import Qs from "qs";
 import i18n, {getLang} from "../locale/locale";
+import {message} from "antd";
 
 let orderCompare;
 try {
@@ -99,4 +100,18 @@ function preventClose(e) {
     return '';
 }
 
-export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate, preventClose, orderCompare};
+function catchBlobReq(err) {
+    let res = err.response;
+    if ((res?.data?.type ?? '').startsWith('application/json')) {
+        let data = res?.data ?? {};
+        data.text().then((str) => {
+            let data = {};
+            try {
+                data = JSON.parse(str);
+            } catch (e) { }
+            message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
+        });
+    }
+}
+
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate, preventClose, catchBlobReq, orderCompare};

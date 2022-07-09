@@ -1,8 +1,18 @@
+## v0.1.3
+
+* Optimize: basic operations for macOS.
+* Fix: deadlock when download more than one item.
+
+* 优化：macOS下，基础操作改为API调用的方式实现。
+* 修复：下载目录或多文件时发生死锁，导致压缩文件不完整。
+
+
+
 ## v0.1.2
 
 * Optimize: compress frontend assets.
 
-* 优化: 压缩前端资源，加快加载速度。
+* 优化：压缩前端资源，加快加载速度。
 
 
 
@@ -15,10 +25,10 @@
 * BREAKING-CHANGE: API `/device/file/get` parameter `file` changed to `files`.
 * BREAKING-CHANGE: API `/device/file/remove` parameter `file` changed to `files`.
 
-* 新增: 文本文件编辑器。
-* 新增: 文件管理器多选。
-* 新增: 文件管理器过滤。
-* 修复: 一些潜在的bug。
+* 新增：文本文件编辑器。
+* 新增：文件管理器多选。
+* 新增：文件管理器过滤。
+* 修复：一些潜在的bug。
 * 破坏性变动：API `/device/file/get` 参数 `file` 变为 `files`。
 * 破坏性变动：API `/device/file/remove` 参数 `file` 变为 `files`。
 
@@ -49,8 +59,8 @@
 * Add: file upload.
 * Optimize: project structure.
 
-* 新增: 文件上传功能。
-* 优化: 项目结构。
+* 新增：文件上传功能。
+* 优化：项目结构。
 
 
 

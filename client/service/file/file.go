@@ -100,6 +100,19 @@ func FetchFile(dir, file, bridge string) error {
 	return err
 }
 
+func getTempFileName(dir, file string) string {
+	exists := true
+	tempFile := ``
+	for i := 0; exists; i++ {
+		tempFile = path.Join(dir, file+`.tmp.`+strconv.Itoa(i))
+		_, err := os.Stat(tempFile)
+		if os.IsNotExist(err) {
+			exists = false
+		}
+	}
+	return tempFile
+}
+
 func RemoveFiles(files []string) error {
 	for i := 0; i < len(files); i++ {
 		if files[i] == `\` || files[i] == `/` || len(files[i]) == 0 {
@@ -273,6 +286,10 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 		go func() {
 			for _, subJob := range spare {
 				lock.Lock()
+				if escape {
+					lock.Unlock()
+					break
+				}
 				queue <- subJob
 				lock.Unlock()
 			}
@@ -296,6 +313,10 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 				return err
 			}
 			lock.Lock()
+			if escape {
+				lock.Unlock()
+				break
+			}
 			queue <- Job{stat, items[i], []string{stat.Name()}}
 			lock.Unlock()
 		}
@@ -312,30 +333,35 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 			select {
 			case job := <-queue:
 				if escape {
+					// Try to get next job, to make locked producer unlock.
+					// Job is useless so there's no need to keep it.
+					lock.Lock()
+					if len(queue) > 0 {
+						_, _ = <-queue
+					}
+					lock.Unlock()
 					break
 				}
 				handleJob(job)
-				if escape {
-					// Try to get next job, to make locking producer unlock.
-					// Escaping now, job is useless so there's no need to keep it.
-					_, _ = <-queue
-				}
 			default:
 				escape = true
-				_, _ = <-queue
-				break
-			}
-			if escape {
 				lock.Lock()
-				close(queue)
-				lock.Unlock()
-				if len(fails) > 0 {
-					zipWriter.SetComment(`Those files could not be archived:` + "\n" + strings.Join(fails, "\n"))
+				if len(queue) > 0 {
+					_, _ = <-queue
 				}
-				zipWriter.Close()
-				writer.Close()
+				lock.Unlock()
 				break
 			}
+		}
+		if escape {
+			lock.Lock()
+			close(queue)
+			lock.Unlock()
+			if len(fails) > 0 {
+				zipWriter.SetComment(`Those files could not be archived:` + "\n" + strings.Join(fails, "\n"))
+			}
+			zipWriter.Close()
+			writer.Close()
 		}
 	}()
 	return nil
@@ -363,59 +389,20 @@ func UploadTextFile(path, bridge string) error {
 	})
 	uploadReq.RawRequest.ContentLength = size
 
-	// Check file if is a text file.
-	// UTF-8 and GBK are only supported yet.
+	// Check file if is a text file with UTF-8 encoding.
 	buf := make([]byte, size)
 	_, err = file.Read(buf)
 	if err != nil {
 		return err
 	}
-	if utf8.Valid(buf) {
-		uploadReq.SetHeader(`FileEncoding`, `UTF-8`)
-	} else if gbkValidate(buf) {
-		uploadReq.SetHeader(`FileEncoding`, `GBK`)
-	} else {
+	if !utf8.Valid(buf) {
 		return errors.New(`${i18n|fileEncodingUnsupported}`)
 	}
 
-	file.Seek(0, 0)
 	url := config.GetBaseURL(false) + `/api/bridge/push`
 	_, err = uploadReq.
-		SetBody(file).
+		SetBody(buf).
 		SetQueryParam(`bridge`, bridge).
 		Send(`PUT`, url)
 	return err
-}
-
-func gbkValidate(b []byte) bool {
-	length := len(b)
-	var i int = 0
-	for i < length {
-		if b[i] <= 0x7f {
-			i++
-			continue
-		} else {
-			if i+1 < length {
-				if b[i] >= 0x81 && b[i] <= 0xfe && b[i+1] >= 0x40 && b[i+1] <= 0xfe && b[i+1] != 0xf7 {
-					i += 2
-					continue
-				}
-			}
-			return false
-		}
-	}
-	return true
-}
-
-func getTempFileName(dir, file string) string {
-	exists := true
-	tempFile := ``
-	for i := 0; exists; i++ {
-		tempFile = path.Join(dir, file+`.tmp.`+strconv.Itoa(i))
-		_, err := os.Stat(tempFile)
-		if os.IsNotExist(err) {
-			exists = false
-		}
-	}
-	return tempFile
 }

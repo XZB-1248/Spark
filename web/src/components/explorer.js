@@ -13,8 +13,8 @@ import {
     Space,
     Spin
 } from "antd";
-import ProTable from "@ant-design/pro-table";
-import {formatSize, orderCompare, post, preventClose, request, translate, waitTime} from "../utils/utils";
+import ProTable, {TableDropdown} from "@ant-design/pro-table";
+import {catchBlobReq, formatSize, orderCompare, post, preventClose, request, translate, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
@@ -134,34 +134,40 @@ function FileBrowser(props) {
     }, [props.device, props.visible]);
 
     function renderOperation(file) {
-        const remove = (
-            <Popconfirm
-                key='remove'
-                title={
-                    i18n.t('deleteConfirm').replace('{0}',
-                        i18n.t(file.type === 0 ? 'file' : 'folder')
-                    )
-                }
-                onConfirm={() => removeFiles(file.name)}
-            >
-                <a>{i18n.t('delete')}</a>
-            </Popconfirm>
-        );
-        switch (file.type) {
-            case 0:
-                return [
-                    <a
-                        key='download'
-                        onClick={() => downloadFiles(file.name)}
-                    >{i18n.t('download')}</a>,
-                    remove,
-                ];
-            case 1:
-                return [remove];
-            case 2:
-                return [];
+        let menus = [
+            {key: 'delete', name: i18n.t('delete')},
+            {key: 'editAsText', name: i18n.t('editAsText')},
+        ];
+        if (file.type === 1) {
+            menus.pop();
+        } else if (file.type === 2) {
+            return [];
         }
-        return [];
+        if (file.name === '..') {
+            return [];
+        }
+        return [
+            <a
+                key='download'
+                onClick={() => downloadFiles(file.name)}
+            >
+                {i18n.t('download')}
+            </a>,
+            <TableDropdown
+                key='more'
+                onSelect={key => onDropdownSelect(key, file)}
+                menus={menus}
+            />,
+        ];
+    }
+    function onDropdownSelect(key, file) {
+        switch (key) {
+            case 'delete':
+                removeFiles(file.name);
+                break;
+            case 'editAsText':
+                textEdit(file);
+        }
     }
     function onRowClick(file) {
         const separator = props.isWindows ? '\\' : '/';
@@ -202,21 +208,13 @@ function FileBrowser(props) {
             responseType: 'blob',
             timeout: 10000
         }).then(res => {
-            if (res.status !== 200) {
-                res.data.text().then((str) => {
-                    let data = {};
-                    try {
-                        data = JSON.parse(str);
-                    } catch (e) { }
-                    message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
-                });
-            } else {
+            if (res.status === 200) {
                 if (preview.length > 0) {
                     URL.revokeObjectURL(preview);
                 }
                 setPreview(URL.createObjectURL(res.data));
             }
-        }).finally(() => {
+        }).catch(catchBlobReq).finally(() => {
             setLoading(false);
         });
     }
@@ -229,22 +227,14 @@ function FileBrowser(props) {
             responseType: 'blob',
             timeout: 7000
         }).then(res => {
-            if (res.status !== 200) {
-                res.data.text().then(str => {
-                    let data = {};
-                    try {
-                        data = JSON.parse(str);
-                    } catch (e) { }
-                    message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
-                });
-            } else {
+            if (res.status === 200) {
                 res.data.text().then(str => {
                     setEditingContent(str);
                     setDraggable(false);
                     setEditingFile(file.name);
                 });
             }
-        }).finally(() => {
+        }).catch(catchBlobReq).finally(() => {
             setLoading(false);
         });
     }

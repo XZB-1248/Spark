@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import ProTable, {TableDropdown} from '@ant-design/pro-table';
 import {Button, Image, message, Modal, Progress, Tooltip} from 'antd';
-import {formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
+import {catchBlobReq, formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
 import Terminal from "../components/terminal";
 import ProcMgr from "../components/procmgr";
 import Generate from "../components/generate";
@@ -284,10 +284,12 @@ function overview(props) {
             <a key='explorer' onClick={() => {
                 setExplorer(device.id);
                 setIsWindows(device.os === 'windows');
-            }}>{i18n.t('fileMgr')}</a>,
+            }}>
+                {i18n.t('fileMgr')}
+            </a>,
             <TableDropdown
                 key='more'
-                onSelect={(key) => callDevice(key, device)}
+                onSelect={key => callDevice(key, device)}
                 menus={menus}
             />,
         ]
@@ -297,7 +299,7 @@ function overview(props) {
         if (act === 'screenshot') {
             request('/api/device/screenshot/get', {device: device.id}, {}, {
                 responseType: 'blob'
-            }).then((res) => {
+            }).then(res => {
                 console.log(res.data.type);
                 if ((res.data.type ?? '').substring(0, 5) === 'image') {
                     if (screenBlob.length > 0) {
@@ -305,19 +307,7 @@ function overview(props) {
                     }
                     setScreenBlob(URL.createObjectURL(res.data));
                 }
-            }).catch((e) => {
-                let res = e.response;
-                if ((res?.data?.type ?? '').substring(0, 16) === 'application/json') {
-                    let data = res?.data ?? {};
-                    data.text().then((str) => {
-                        let data = {};
-                        try {
-                            data = JSON.parse(str);
-                        } catch (e) { }
-                        message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
-                    });
-                }
-            });
+            }).catch(catchBlobReq);
             return;
         }
         Modal.confirm({

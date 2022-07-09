@@ -48,6 +48,7 @@
 	"upload": "Upload",
 	"delete": "Delete",
 	"download": "Download",
+	"editAsText": "Edit as text",
 	"uploading": "Uploading...",
 	"uploadFailed": "Upload Failed",
 	"uploadAborted": "Upload Aborted",
