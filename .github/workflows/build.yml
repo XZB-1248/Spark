@@ -133,6 +133,7 @@ jobs:
         zip -r -9 -q server_windows_i386.zip server_windows_i386.exe ./built
         zip -r -9 -q server_windows_arm64.zip server_windows_arm64.exe ./built
         zip -r -9 -q server_windows_amd64.zip server_windows_amd64.exe ./built
+        zip -r -9 -q frontend_assets.zip ../web/dist/*
 
     - name: Release
       uses: softprops/action-gh-release@v1
@@ -149,6 +150,7 @@ jobs:
           releases/server_windows_i386.zip
           releases/server_windows_arm64.zip
           releases/server_windows_amd64.zip
+          releases/frontend_assets.zip
 
     - name: Clean up
       uses: geekyeggo/delete-artifact@v1

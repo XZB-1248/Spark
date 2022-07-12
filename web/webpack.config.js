@@ -144,6 +144,10 @@ module.exports = (env, args) => {
                     target: 'http://localhost:8001/',
                     secure: false
                 },
+                '/api/device/desktop': {
+                    target: 'ws://localhost:8001/',
+                    ws: true
+                },
                 '/api/device/terminal': {
                     target: 'ws://localhost:8001/',
                     ws: true

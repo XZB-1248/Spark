@@ -1,3 +1,13 @@
+## v0.1.4
+
+* Add: desktop viewer (experimental).
+* Optimize: project structure.
+
+* 新增：桌面监控(试验版)。
+* 优化：项目结构。
+
+
+
 ## v0.1.3
 
 * Optimize: basic operations for macOS.

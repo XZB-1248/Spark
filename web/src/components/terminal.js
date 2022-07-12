@@ -1,5 +1,5 @@
 import React, {createRef} from "react";
-import {message, Modal} from "antd";
+import {message} from "antd";
 import {Terminal} from "xterm";
 import {WebLinksAddon} from "xterm-addon-web-links";
 import {FitAddon} from "xterm-addon-fit";
@@ -8,85 +8,8 @@ import CryptoJS from 'crypto-js';
 import wcwidth from 'wcwidth';
 import "xterm/css/xterm.css";
 import i18n from "../locale/locale";
-import {getBaseURL, translate} from "../utils/utils";
+import {ab2str, genRandHex, getBaseURL, hex2buf, translate, ws2ua} from "../utils/utils";
 import DraggableModal from "./modal";
-
-function hex2buf(hex) {
-    if (typeof hex !== 'string') {
-        return new Uint8Array([]);
-    }
-    let list = hex.match(/.{1,2}/g);
-    if (list === null) {
-        return new Uint8Array([]);
-    }
-    return new Uint8Array(list.map(byte => parseInt(byte, 16)));
-}
-
-function ab2str(buffer) {
-    const array = new Uint8Array(buffer);
-    let out, i, len, c;
-    let char2, char3;
-
-    out = "";
-    len = array.length;
-    i = 0;
-    while (i < len) {
-        c = array[i++];
-        switch (c >> 4) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-                out += String.fromCharCode(c);
-                break;
-            case 12:
-            case 13:
-                char2 = array[i++];
-                out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
-                break;
-            case 14:
-                char2 = array[i++];
-                char3 = array[i++];
-                out += String.fromCharCode(((c & 0x0F) << 12) |
-                    ((char2 & 0x3F) << 6) |
-                    ((char3 & 0x3F) << 0));
-                break;
-        }
-    }
-    return out;
-}
-
-function genRandHex(length) {
-    return [...Array(length)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-}
-
-function wordArray2Uint8Array(wordArray) {
-    const l = wordArray.sigBytes;
-    const words = wordArray.words;
-    const result = new Uint8Array(l);
-    let i = 0 /*dst*/, j = 0 /*src*/;
-    while (true) {
-        // here i is a multiple of 4
-        if (i === l)
-            break;
-        const w = words[j++];
-        result[i++] = (w & 0xff000000) >>> 24;
-        if (i === l)
-            break;
-        result[i++] = (w & 0x00ff0000) >>> 16;
-        if (i === l)
-            break;
-        result[i++] = (w & 0x0000ff00) >>> 8;
-        if (i === l)
-            break;
-        result[i++] = (w & 0x000000ff);
-    }
-    return result;
-}
 
 class TerminalModal extends React.Component {
     constructor(props) {
@@ -122,7 +45,7 @@ class TerminalModal extends React.Component {
             termEv = this.term.onData(this.onUnixOSInput.call(this, buffer));
         }
 
-        this.ws = new WebSocket(`${getBaseURL(true)}?device=${this.props.device.id}&secret=${this.secret}`);
+        this.ws = new WebSocket(getBaseURL(true, `api/device/terminal?device=${this.props.device.id}&secret=${this.secret}`));
         this.ws.binaryType = 'arraybuffer';
         this.ws.onopen = () => {
             this.conn = true;
@@ -148,9 +71,6 @@ class TerminalModal extends React.Component {
                 if (data?.act === 'warn') {
                     message.warn(data.msg ? translate(data.msg) : i18n.t('unknownError'));
                 }
-                if (data?.act === 'ping') {
-                    this.sendData({act: 'pong'});
-                }
             }
         }
         this.ws.onclose = (e) => {
@@ -161,6 +81,7 @@ class TerminalModal extends React.Component {
             }
         }
         this.ws.onerror = (e) => {
+            console.error(e);
             if (this.conn) {
                 this.conn = false;
                 this.term.write(`\n${i18n.t('disconnected')}\n`);
@@ -310,7 +231,7 @@ class TerminalModal extends React.Component {
             iv: this.secret,
             padding: CryptoJS.pad.NoPadding
         });
-        return wordArray2Uint8Array(encrypted.ciphertext);
+        return ws2ua(encrypted.ciphertext);
     }
     decrypt(data) {
         data = CryptoJS.lib.WordArray.create(data);
@@ -319,7 +240,7 @@ class TerminalModal extends React.Component {
             iv: this.secret,
             padding: CryptoJS.pad.NoPadding
         });
-        return ab2str(wordArray2Uint8Array(decrypted.ciphertext).buffer);
+        return ab2str(ws2ua(decrypted.ciphertext).buffer);
     }
 
     sendInput(input) {
@@ -363,11 +284,11 @@ class TerminalModal extends React.Component {
                 }
                 this.term.clear();
                 this.termEv = this.initialize(null);
-                setInterval(function () {
+                this.ticker = setInterval(function () {
                     if (this.conn) {
-                        this.sendData({act: 'heartbeat'});
+                        this.sendData({act: 'ping'});
                     }
-                }, 1500);
+                }, 10000);
             }
         }
     }

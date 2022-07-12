@@ -97,6 +97,11 @@ func New() *Melody {
 	}
 }
 
+// EnableCompress sets whether to compress data. Should negotiate with peer.
+func (m *Melody) EnableCompress(enabled bool) {
+	m.Upgrader.EnableCompression = enabled
+}
+
 // HandleConnect fires fn when a session connects.
 func (m *Melody) HandleConnect(fn func(*Session)) {
 	m.connectHandler = fn
@@ -199,6 +204,8 @@ func (m *Melody) HandleRequestWithKeys(w http.ResponseWriter, r *http.Request, h
 	session.close()
 
 	m.disconnectHandler(session)
+
+	session.Keys = nil
 
 	return nil
 }

@@ -62,7 +62,6 @@ func (s *Session) close() {
 		s.open = false
 		s.conn.Close()
 		close(s.output)
-		s.Keys = nil
 		s.rwmutex.Unlock()
 	}
 }
@@ -202,9 +201,6 @@ func (s *Session) Set(key string, value interface{}) bool {
 // Get returns the value for the given key, ie: (value, true).
 // If the key does not exist, it returns (nil, false)
 func (s *Session) Get(key string) (value interface{}, exists bool) {
-	if s.closed() {
-		return
-	}
 	if s.Keys != nil {
 		value, exists = s.Keys[key]
 	}

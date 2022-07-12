@@ -12,10 +12,10 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	ws "github.com/gorilla/websocket"
-	"github.com/imroc/req/v3"
 	"github.com/kataras/golog"
 )
 
@@ -39,6 +39,7 @@ var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
 	`initTerminal`:   initTerminal,
 	`inputTerminal`:  inputTerminal,
 	`resizeTerminal`: resizeTerminal,
+	`pingTerminal`:   pingTerminal,
 	`killTerminal`:   killTerminal,
 	`listFiles`:      listFiles,
 	`fetchFile`:      fetchFile,
@@ -47,16 +48,23 @@ var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
 	`uploadTextFile`: uploadTextFile,
 	`listProcesses`:  listProcesses,
 	`killProcess`:    killProcess,
+	`initDesktop`:    initDesktop,
+	`pingDesktop`:    pingDesktop,
+	`killDesktop`:    killDesktop,
+	`getDesktop`:     getDesktop,
 }
 
 func Start() {
 	for !stop {
 		var err error
 		if common.WSConn != nil {
+			common.WSLock.Lock()
 			common.WSConn.Close()
-			common.WSConn = nil
+			common.WSLock.Unlock()
 		}
+		common.WSLock.Lock()
 		common.WSConn, err = connectWS()
+		common.WSLock.Unlock()
 		if err != nil && !stop {
 			golog.Error(`Connection error: `, err)
 			<-time.After(3 * time.Second)
@@ -135,7 +143,7 @@ func checkUpdate(wsConn *common.Conn) error {
 	if len(config.COMMIT) == 0 {
 		return nil
 	}
-	resp, err := req.R().
+	resp, err := common.HTTP.R().
 		SetBody(config.CfgBuffer).
 		SetQueryParam(`os`, runtime.GOOS).
 		SetQueryParam(`arch`, runtime.GOARCH).
@@ -148,14 +156,18 @@ func checkUpdate(wsConn *common.Conn) error {
 	if resp == nil {
 		return errors.New(`${i18n|unknownError}`)
 	}
-	if resp.GetContentType() == `application/octet-stream` {
+	if strings.HasPrefix(resp.GetContentType(), `application/octet-stream`) {
 		body := resp.Bytes()
 		if len(body) > 0 {
-			err = ioutil.WriteFile(os.Args[0]+`.tmp`, body, 0755)
+			selfPath, err := os.Executable()
+			if err != nil {
+				selfPath = os.Args[0]
+			}
+			err = ioutil.WriteFile(selfPath+`.tmp`, body, 0755)
 			if err != nil {
 				return err
 			}
-			cmd := exec.Command(os.Args[0]+`.tmp`, `--update`)
+			cmd := exec.Command(selfPath+`.tmp`, `--update`)
 			err = cmd.Start()
 			if err != nil {
 				return err

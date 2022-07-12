@@ -1,16 +1,14 @@
-package handler
+package terminal
 
 import (
 	"Spark/modules"
 	"Spark/server/common"
+	"Spark/server/handler/utility"
 	"Spark/utils"
 	"Spark/utils/melody"
-	"crypto/aes"
-	"crypto/cipher"
 	"encoding/hex"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"time"
 )
 
 type terminal struct {
@@ -21,18 +19,18 @@ type terminal struct {
 	deviceConn *melody.Session
 }
 
-var wsSessions = melody.New()
+var terminalSessions = melody.New()
 
 func init() {
-	wsSessions.HandleConnect(onConnect)
-	wsSessions.HandleMessage(onMessage)
-	wsSessions.HandleMessageBinary(onMessage)
-	wsSessions.HandleDisconnect(onDisconnect)
-	go wsHealthCheck(wsSessions)
+	terminalSessions.HandleConnect(onTerminalConnect)
+	terminalSessions.HandleMessage(onTerminalMessage)
+	terminalSessions.HandleMessageBinary(onTerminalMessage)
+	terminalSessions.HandleDisconnect(onTerminalDisconnect)
+	go utility.WSHealthCheck(terminalSessions, sendPack)
 }
 
-// initTerminal handles terminal websocket handshake event
-func initTerminal(ctx *gin.Context) {
+// InitTerminal handles terminal websocket handshake event
+func InitTerminal(ctx *gin.Context) {
 	if !ctx.IsWebsocket() {
 		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -57,16 +55,16 @@ func initTerminal(ctx *gin.Context) {
 		return
 	}
 
-	wsSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
+	terminalSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
 		`Secret`:   secret,
 		`Device`:   device,
 		`LastPack`: common.Unix,
 	})
 }
 
-// eventWrapper returns a eventCb function that will be called when
+// terminalEventWrapper returns a eventCb function that will be called when
 // device need to send a packet to browser terminal
-func eventWrapper(terminal *terminal) common.EventCallback {
+func terminalEventWrapper(terminal *terminal) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
 		if pack.Act == `initTerminal` {
 			if pack.Code != 0 {
@@ -76,7 +74,7 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 				} else {
 					msg += `${i18n|unknownError}`
 				}
-				simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
+				sendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 				common.RemoveEvent(terminal.event)
 				terminal.session.Close()
 			}
@@ -87,7 +85,7 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
 			}
-			simpleSendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
+			sendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 			common.RemoveEvent(terminal.event)
 			terminal.session.Close()
 			return
@@ -97,7 +95,7 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 				return
 			}
 			if output, ok := pack.Data[`output`]; ok {
-				simpleSendPack(modules.Packet{Act: `outputTerminal`, Data: gin.H{
+				sendPack(modules.Packet{Act: `outputTerminal`, Data: gin.H{
 					`output`: output,
 				}}, terminal.session)
 			}
@@ -105,56 +103,22 @@ func eventWrapper(terminal *terminal) common.EventCallback {
 	}
 }
 
-func wsHealthCheck(container *melody.Melody) {
-	const MaxIdleSeconds = 300
-	ping := func(uuid string, s *melody.Session) {
-		if !simpleSendPack(modules.Packet{Act: `ping`}, s) {
-			s.Close()
-		}
-	}
-	for now := range time.NewTicker(60 * time.Second).C {
-		timestamp := now.Unix()
-		// stores sessions to be disconnected
-		queue := make([]*melody.Session, 0)
-		container.IterSessions(func(uuid string, s *melody.Session) bool {
-			go ping(uuid, s)
-			val, ok := s.Get(`LastPack`)
-			if !ok {
-				queue = append(queue, s)
-				return true
-			}
-			lastPack, ok := val.(int64)
-			if !ok {
-				queue = append(queue, s)
-				return true
-			}
-			if timestamp-lastPack > MaxIdleSeconds {
-				queue = append(queue, s)
-			}
-			return true
-		})
-		for i := 0; i < len(queue); i++ {
-			queue[i].Close()
-		}
-	}
-}
-
-func onConnect(session *melody.Session) {
+func onTerminalConnect(session *melody.Session) {
 	device, ok := session.Get(`Device`)
 	if !ok {
-		simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
 		session.Close()
 		return
 	}
 	connUUID, ok := common.CheckDevice(device.(string), ``)
 	if !ok {
-		simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
 		session.Close()
 		return
 	}
 	deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
 	if !ok {
-		simpleSendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
 		session.Close()
 		return
 	}
@@ -168,27 +132,27 @@ func onConnect(session *melody.Session) {
 		deviceConn: deviceConn,
 	}
 	session.Set(`Terminal`, terminal)
-	common.AddEvent(eventWrapper(terminal), connUUID, eventUUID)
+	common.AddEvent(terminalEventWrapper(terminal), connUUID, eventUUID)
 	common.SendPack(modules.Packet{Act: `initTerminal`, Data: gin.H{
 		`terminal`: termUUID,
 	}, Event: eventUUID}, deviceConn)
 }
 
-func onMessage(session *melody.Session, data []byte) {
+func onTerminalMessage(session *melody.Session, data []byte) {
 	var pack modules.Packet
-	data, ok := simpleDecrypt(data, session)
+	data, ok := utility.SimpleDecrypt(data, session)
 	if !(ok && utils.JSON.Unmarshal(data, &pack) == nil) {
-		simpleSendPack(modules.Packet{Code: -1}, session)
+		sendPack(modules.Packet{Code: -1}, session)
 		session.Close()
 		return
 	}
+	val, ok := session.Get(`Terminal`)
+	if !ok {
+		return
+	}
+	terminal := val.(*terminal)
 	session.Set(`LastPack`, common.Unix)
 	if pack.Act == `inputTerminal` {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
 		if pack.Data == nil {
 			return
 		}
@@ -201,11 +165,6 @@ func onMessage(session *melody.Session, data []byte) {
 		return
 	}
 	if pack.Act == `resizeTerminal` {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
 		if pack.Data == nil {
 			return
 		}
@@ -221,11 +180,6 @@ func onMessage(session *melody.Session, data []byte) {
 		return
 	}
 	if pack.Act == `killTerminal` {
-		val, ok := session.Get(`Terminal`)
-		if !ok {
-			return
-		}
-		terminal := val.(*terminal)
 		if pack.Data == nil {
 			return
 		}
@@ -234,13 +188,19 @@ func onMessage(session *melody.Session, data []byte) {
 		}, Event: terminal.event}, terminal.deviceConn)
 		return
 	}
-	if pack.Act == `pong` {
+	if pack.Act == `ping` {
+		if pack.Data == nil {
+			return
+		}
+		common.SendPack(modules.Packet{Act: `pingTerminal`, Data: gin.H{
+			`terminal`: terminal.uuid,
+		}, Event: terminal.event}, terminal.deviceConn)
 		return
 	}
 	session.Close()
 }
 
-func onDisconnect(session *melody.Session) {
+func onTerminalDisconnect(session *melody.Session) {
 	val, ok := session.Get(`Terminal`)
 	if !ok {
 		return
@@ -257,39 +217,7 @@ func onDisconnect(session *melody.Session) {
 	terminal = nil
 }
 
-func simpleEncrypt(data []byte, session *melody.Session) ([]byte, bool) {
-	temp, ok := session.Get(`Secret`)
-	if !ok {
-		return nil, false
-	}
-	secret := temp.([]byte)
-	block, err := aes.NewCipher(secret)
-	if err != nil {
-		return nil, false
-	}
-	stream := cipher.NewCTR(block, secret)
-	encBuffer := make([]byte, len(data))
-	stream.XORKeyStream(encBuffer, data)
-	return encBuffer, true
-}
-
-func simpleDecrypt(data []byte, session *melody.Session) ([]byte, bool) {
-	temp, ok := session.Get(`Secret`)
-	if !ok {
-		return nil, false
-	}
-	secret := temp.([]byte)
-	block, err := aes.NewCipher(secret)
-	if err != nil {
-		return nil, false
-	}
-	stream := cipher.NewCTR(block, secret)
-	decBuffer := make([]byte, len(data))
-	stream.XORKeyStream(decBuffer, data)
-	return decBuffer, true
-}
-
-func simpleSendPack(pack modules.Packet, session *melody.Session) bool {
+func sendPack(pack modules.Packet, session *melody.Session) bool {
 	if session == nil {
 		return false
 	}
@@ -297,7 +225,7 @@ func simpleSendPack(pack modules.Packet, session *melody.Session) bool {
 	if err != nil {
 		return false
 	}
-	data, ok := simpleEncrypt(data, session)
+	data, ok := utility.SimpleEncrypt(data, session)
 	if !ok {
 		return false
 	}
@@ -307,7 +235,7 @@ func simpleSendPack(pack modules.Packet, session *melody.Session) bool {
 
 func CloseSessionsByDevice(deviceID string) {
 	var queue []*melody.Session
-	wsSessions.IterSessions(func(_ string, session *melody.Session) bool {
+	terminalSessions.IterSessions(func(_ string, session *melody.Session) bool {
 		val, ok := session.Get(`Terminal`)
 		if !ok {
 			return true

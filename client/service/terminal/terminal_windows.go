@@ -138,6 +138,22 @@ func KillTerminal(pack modules.Packet) error {
 	return nil
 }
 
+func PingTerminal(pack modules.Packet) {
+	var termUUID string
+	var termSession *terminal
+	if val, ok := pack.GetData(`terminal`, reflect.String); !ok {
+		return
+	} else {
+		termUUID = val.(string)
+	}
+	if val, ok := terminals.Get(termUUID); !ok {
+		return
+	} else {
+		termSession = val.(*terminal)
+		termSession.lastPack = time.Now().Unix()
+	}
+}
+
 func doKillTerminal(terminal *terminal) {
 	(*terminal.stdout).Close()
 	(*terminal.stderr).Close()
@@ -190,17 +206,15 @@ func healthCheck() {
 	for now := range time.NewTicker(30 * time.Second).C {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
-		queue := make([]string, 0)
+		keys := make([]string, 0)
 		terminals.IterCb(func(uuid string, t interface{}) bool {
 			termSession := t.(*terminal)
 			if timestamp-termSession.lastPack > MaxInterval {
-				queue = append(queue, uuid)
+				keys = append(keys, uuid)
 				doKillTerminal(termSession)
 			}
 			return true
 		})
-		for i := 0; i < len(queue); i++ {
-			terminals.Remove(queue[i])
-		}
+		terminals.Remove(keys...)
 	}
 }

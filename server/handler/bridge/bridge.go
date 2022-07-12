@@ -1,4 +1,4 @@
-package handler
+package bridge
 
 import (
 	"Spark/modules"
@@ -16,17 +16,17 @@ import (
 // Bridge is a utility that handles the binary flow from the client
 // to the browser or flow from the browser to the client.
 
-type bridge struct {
+type Bridge struct {
 	creation int64
 	using    bool
 	uuid     string
 	lock     *sync.Mutex
-	dst      *gin.Context
-	src      *gin.Context
+	Dst      *gin.Context
+	Src      *gin.Context
 	ext      interface{}
-	OnPull   func(bridge *bridge)
-	OnPush   func(bridge *bridge)
-	OnFinish func(bridge *bridge)
+	OnPull   func(bridge *Bridge)
+	OnPush   func(bridge *Bridge)
+	OnFinish func(bridge *Bridge)
 }
 
 var bridges = cmap.New()
@@ -37,14 +37,14 @@ func init() {
 			var queue []string
 			timestamp := now.Unix()
 			bridges.IterCb(func(k string, v interface{}) bool {
-				b := v.(*bridge)
+				b := v.(*Bridge)
 				if timestamp-b.creation > 60 && !b.using {
 					b.lock.Lock()
-					if b.src != nil && b.src.Request.Body != nil {
-						b.src.Request.Body.Close()
+					if b.Src != nil && b.Src.Request.Body != nil {
+						b.Src.Request.Body.Close()
 					}
-					b.src = nil
-					b.dst = nil
+					b.Src = nil
+					b.Dst = nil
 					b.lock.Unlock()
 					b = nil
 					queue = append(queue, b.uuid)
@@ -56,7 +56,7 @@ func init() {
 	}()
 }
 
-func checkBridge(ctx *gin.Context) *bridge {
+func CheckBridge(ctx *gin.Context) *Bridge {
 	var form struct {
 		Bridge string `json:"bridge" yaml:"bridge" form:"bridge" binding:"required"`
 	}
@@ -70,36 +70,36 @@ func checkBridge(ctx *gin.Context) *bridge {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidBridgeID}`})
 		return nil
 	}
-	return val.(*bridge)
+	return val.(*Bridge)
 }
 
-func bridgePush(ctx *gin.Context) {
-	bridge := checkBridge(ctx)
+func BridgePush(ctx *gin.Context) {
+	bridge := CheckBridge(ctx)
 	if bridge == nil {
 		return
 	}
 	bridge.lock.Lock()
-	if bridge.using || (bridge.src != nil && bridge.dst != nil) {
+	if bridge.using || (bridge.Src != nil && bridge.Dst != nil) {
 		bridge.lock.Unlock()
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
 		return
 	}
-	bridge.src = ctx
+	bridge.Src = ctx
 	bridge.using = true
 	bridge.lock.Unlock()
 	if bridge.OnPush != nil {
 		bridge.OnPush(bridge)
 	}
-	if bridge.dst != nil && bridge.dst.Writer != nil {
+	if bridge.Dst != nil && bridge.Dst.Writer != nil {
 		// Get net.Conn to set deadline manually.
-		srcConn, srcOK := bridge.src.Request.Context().Value(`Conn`).(net.Conn)
-		dstConn, dstOK := bridge.dst.Request.Context().Value(`Conn`).(net.Conn)
-		if srcOK && dstOK {
+		SrcConn, SrcOK := bridge.Src.Request.Context().Value(`Conn`).(net.Conn)
+		DstConn, DstOK := bridge.Dst.Request.Context().Value(`Conn`).(net.Conn)
+		if SrcOK && DstOK {
 			for {
 				eof := false
 				buf := make([]byte, 2<<14)
-				srcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
-				n, err := bridge.src.Request.Body.Read(buf)
+				SrcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+				n, err := bridge.Src.Request.Body.Read(buf)
 				if n == 0 {
 					break
 				}
@@ -109,51 +109,51 @@ func bridgePush(ctx *gin.Context) {
 						break
 					}
 				}
-				dstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
-				_, err = bridge.dst.Writer.Write(buf[:n])
+				DstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
+				_, err = bridge.Dst.Writer.Write(buf[:n])
 				if eof || err != nil {
 					break
 				}
 			}
 		}
-		srcConn.SetReadDeadline(time.Time{})
-		dstConn.SetWriteDeadline(time.Time{})
-		bridge.src.Status(http.StatusOK)
+		SrcConn.SetReadDeadline(time.Time{})
+		DstConn.SetWriteDeadline(time.Time{})
+		bridge.Src.Status(http.StatusOK)
 		if bridge.OnFinish != nil {
 			bridge.OnFinish(bridge)
 		}
-		removeBridge(bridge.uuid)
+		RemoveBridge(bridge.uuid)
 		bridge = nil
 	}
 }
 
-func bridgePull(ctx *gin.Context) {
-	bridge := checkBridge(ctx)
+func BridgePull(ctx *gin.Context) {
+	bridge := CheckBridge(ctx)
 	if bridge == nil {
 		return
 	}
 	bridge.lock.Lock()
-	if bridge.using || (bridge.src != nil && bridge.dst != nil) {
+	if bridge.using || (bridge.Src != nil && bridge.Dst != nil) {
 		bridge.lock.Unlock()
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
 		return
 	}
-	bridge.dst = ctx
+	bridge.Dst = ctx
 	bridge.using = true
 	bridge.lock.Unlock()
 	if bridge.OnPull != nil {
 		bridge.OnPull(bridge)
 	}
-	if bridge.src != nil && bridge.src.Request.Body != nil {
+	if bridge.Src != nil && bridge.Src.Request.Body != nil {
 		// Get net.Conn to set deadline manually.
-		srcConn, srcOK := bridge.src.Request.Context().Value(`Conn`).(net.Conn)
-		dstConn, dstOK := bridge.dst.Request.Context().Value(`Conn`).(net.Conn)
-		if srcOK && dstOK {
+		SrcConn, SrcOK := bridge.Src.Request.Context().Value(`Conn`).(net.Conn)
+		DstConn, DstOK := bridge.Dst.Request.Context().Value(`Conn`).(net.Conn)
+		if SrcOK && DstOK {
 			for {
 				eof := false
 				buf := make([]byte, 2<<14)
-				srcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
-				n, err := bridge.src.Request.Body.Read(buf)
+				SrcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+				n, err := bridge.Src.Request.Body.Read(buf)
 				if n == 0 {
 					break
 				}
@@ -163,26 +163,26 @@ func bridgePull(ctx *gin.Context) {
 						break
 					}
 				}
-				dstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
-				_, err = bridge.dst.Writer.Write(buf[:n])
+				DstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
+				_, err = bridge.Dst.Writer.Write(buf[:n])
 				if eof || err != nil {
 					break
 				}
 			}
 		}
-		srcConn.SetReadDeadline(time.Time{})
-		dstConn.SetWriteDeadline(time.Time{})
-		bridge.src.Status(http.StatusOK)
+		SrcConn.SetReadDeadline(time.Time{})
+		DstConn.SetWriteDeadline(time.Time{})
+		bridge.Src.Status(http.StatusOK)
 		if bridge.OnFinish != nil {
 			bridge.OnFinish(bridge)
 		}
-		removeBridge(bridge.uuid)
+		RemoveBridge(bridge.uuid)
 		bridge = nil
 	}
 }
 
-func addBridge(ext interface{}, uuid string) *bridge {
-	bridge := &bridge{
+func AddBridge(ext interface{}, uuid string) *Bridge {
+	bridge := &Bridge{
 		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
@@ -193,43 +193,43 @@ func addBridge(ext interface{}, uuid string) *bridge {
 	return bridge
 }
 
-func addBridgeWithSrc(ext interface{}, uuid string, src *gin.Context) *bridge {
-	bridge := &bridge{
+func AddBridgeWithSrc(ext interface{}, uuid string, Src *gin.Context) *Bridge {
+	bridge := &Bridge{
 		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
 		ext:      ext,
-		src:      src,
+		Src:      Src,
 	}
 	bridges.Set(uuid, bridge)
 	return bridge
 }
 
-func addBridgeWithDst(ext interface{}, uuid string, dst *gin.Context) *bridge {
-	bridge := &bridge{
+func AddBridgeWithDst(ext interface{}, uuid string, Dst *gin.Context) *Bridge {
+	bridge := &Bridge{
 		creation: common.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
 		ext:      ext,
-		dst:      dst,
+		Dst:      Dst,
 	}
 	bridges.Set(uuid, bridge)
 	return bridge
 }
 
-func removeBridge(uuid string) {
+func RemoveBridge(uuid string) {
 	val, ok := bridges.Get(uuid)
 	if !ok {
 		return
 	}
 	bridges.Remove(uuid)
-	b := val.(*bridge)
-	if b.src != nil && b.src.Request.Body != nil {
-		b.src.Request.Body.Close()
+	b := val.(*Bridge)
+	if b.Src != nil && b.Src.Request.Body != nil {
+		b.Src.Request.Body.Close()
 	}
-	b.src = nil
-	b.dst = nil
+	b.Src = nil
+	b.Dst = nil
 	b = nil
 }

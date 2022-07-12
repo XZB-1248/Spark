@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {message, Modal, Popconfirm} from "antd";
+import {message, Popconfirm} from "antd";
 import ProTable from '@ant-design/pro-table';
 import {request, waitTime} from "../utils/utils";
 import i18n from "../locale/locale";

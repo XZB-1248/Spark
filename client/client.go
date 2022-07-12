@@ -53,13 +53,16 @@ func main() {
 }
 
 func update() {
+	selfPath, err := os.Executable()
+	if err != nil {
+		selfPath = os.Args[0]
+	}
 	if len(os.Args) > 1 && os.Args[1] == `--update` {
-		thisPath := os.Args[0]
-		destPath := thisPath[:len(thisPath)-4]
-		if len(thisPath) <= 4 {
+		if len(selfPath) <= 4 {
 			return
 		}
-		thisFile, err := ioutil.ReadFile(thisPath)
+		destPath := selfPath[:len(selfPath)-4]
+		thisFile, err := ioutil.ReadFile(selfPath)
 		if err != nil {
 			return
 		}
@@ -71,8 +74,8 @@ func update() {
 		}
 	}
 	if len(os.Args) > 1 && os.Args[1] == `--clean` {
-		<-time.After(time.Second)
-		os.Remove(os.Args[0] + `.tmp`)
+		<-time.After(3 * time.Second)
+		os.Remove(selfPath + `.tmp`)
 	}
 }
 

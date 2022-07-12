@@ -2,10 +2,11 @@ import React, {useEffect, useRef, useState} from 'react';
 import ProTable, {TableDropdown} from '@ant-design/pro-table';
 import {Button, Image, message, Modal, Progress, Tooltip} from 'antd';
 import {catchBlobReq, formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
-import Terminal from "../components/terminal";
-import ProcMgr from "../components/procmgr";
 import Generate from "../components/generate";
 import Explorer from "../components/explorer";
+import Terminal from "../components/terminal";
+import ProcMgr from "../components/procmgr";
+import Desktop from "../components/desktop";
 import {QuestionCircleOutlined} from "@ant-design/icons";
 import i18n from "../locale/locale";
 
@@ -37,6 +38,7 @@ function UsageBar(props) {
 }
 
 function overview(props) {
+    const [desktop, setDesktop] = useState(false);
     const [procMgr, setProcMgr] = useState(false);
     const [explorer, setExplorer] = useState(false);
     const [generate, setGenerate] = useState(false);
@@ -170,13 +172,13 @@ function overview(props) {
 
     useEffect(() => {
         // Auto update is only available when all modal are closed.
-        if (!procMgr && !explorer && !generate && !terminal) {
+        if (!desktop && !procMgr && !explorer && !generate && !terminal) {
             let id = setInterval(getData, 3000);
             return () => {
                 clearInterval(id);
             };
         }
-    }, [procMgr, explorer, generate, terminal]);
+    }, [desktop, procMgr, explorer, generate, terminal]);
 
     function getInitColumnsState() {
         let data = localStorage.getItem(`columnsState`);
@@ -270,6 +272,7 @@ function overview(props) {
     function renderOperation(device) {
         let menus = [
             {key: 'screenshot', name: i18n.t('screenshot')},
+            {key: 'desktop', name: i18n.t('desktop')},
             {key: 'lock', name: i18n.t('lock')},
             {key: 'logoff', name: i18n.t('logoff')},
             {key: 'hibernate', name: i18n.t('hibernate')},
@@ -300,7 +303,6 @@ function overview(props) {
             request('/api/device/screenshot/get', {device: device.id}, {}, {
                 responseType: 'blob'
             }).then(res => {
-                console.log(res.data.type);
                 if ((res.data.type ?? '').substring(0, 5) === 'image') {
                     if (screenBlob.length > 0) {
                         URL.revokeObjectURL(screenBlob);
@@ -308,6 +310,10 @@ function overview(props) {
                     setScreenBlob(URL.createObjectURL(res.data));
                 }
             }).catch(catchBlobReq);
+            return;
+        }
+        if (act === 'desktop') {
+            setDesktop(device);
             return;
         }
         Modal.confirm({
@@ -402,6 +408,11 @@ function overview(props) {
                 visible={procMgr}
                 device={procMgr}
                 onCancel={setProcMgr.bind(null, false)}
+            />
+            <Desktop
+                visible={desktop}
+                device={desktop}
+                onCancel={setDesktop.bind(null, false)}
             />
             <Terminal
                 visible={terminal}

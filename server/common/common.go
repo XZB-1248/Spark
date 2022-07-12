@@ -11,7 +11,9 @@ import (
 	"encoding/hex"
 	"github.com/gin-gonic/gin"
 	"net"
+	"reflect"
 	"strings"
+	"unsafe"
 )
 
 var Melody = melody.New()
@@ -184,4 +186,24 @@ func DecAES(data []byte, key []byte) ([]byte, error) {
 		return nil, utils.ErrFailedVerification
 	}
 	return decBuffer[:dataLen-16], nil
+}
+
+func RemoveBytesPrefix(data *[]byte, n int) *[]byte {
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(data))
+	header := &reflect.SliceHeader{
+		Data: sliceHeader.Data + uintptr(n),
+		Len:  sliceHeader.Len - n,
+		Cap:  sliceHeader.Cap - n,
+	}
+	return (*[]byte)(unsafe.Pointer(header))
+}
+
+func RemoveBytesSuffix(data *[]byte, n int) *[]byte {
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(data))
+	header := &reflect.SliceHeader{
+		Data: sliceHeader.Data,
+		Len:  sliceHeader.Len - n,
+		Cap:  sliceHeader.Cap - n,
+	}
+	return (*[]byte)(unsafe.Pointer(header))
 }

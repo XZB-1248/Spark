@@ -1,4 +1,4 @@
-package handler
+package generate
 
 import (
 	"Spark/modules"
@@ -27,10 +27,10 @@ type clientCfg struct {
 }
 
 var (
-	errTooLargeEntity = errors.New(`length of data can not excess buffer size`)
+	ErrTooLargeEntity = errors.New(`length of data can not excess buffer size`)
 )
 
-func checkClient(ctx *gin.Context) {
+func CheckClient(ctx *gin.Context) {
 	var form struct {
 		OS     string `json:"os" yaml:"os" form:"os" binding:"required"`
 		Arch   string `json:"arch" yaml:"arch" form:"arch" binding:"required"`
@@ -57,7 +57,7 @@ func checkClient(ctx *gin.Context) {
 		Key:    strings.Repeat(`FF`, 32),
 	})
 	if err != nil {
-		if err == errTooLargeEntity {
+		if err == ErrTooLargeEntity {
 			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
 			return
 		}
@@ -67,7 +67,7 @@ func checkClient(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 }
 
-func generateClient(ctx *gin.Context) {
+func GenerateClient(ctx *gin.Context) {
 	var form struct {
 		OS     string `json:"os" yaml:"os" form:"os" binding:"required"`
 		Arch   string `json:"arch" yaml:"arch" form:"arch" binding:"required"`
@@ -100,7 +100,7 @@ func generateClient(ctx *gin.Context) {
 		Key:    hex.EncodeToString(clientKey),
 	})
 	if err != nil {
-		if err == errTooLargeEntity {
+		if err == ErrTooLargeEntity {
 			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
 			return
 		}
@@ -154,7 +154,7 @@ func genConfig(cfg clientCfg) ([]byte, error) {
 	}
 	final := append(key, data...)
 	if len(final) > 384-2 {
-		return nil, errTooLargeEntity
+		return nil, ErrTooLargeEntity
 	}
 
 	// Get the length of encrypted buffer as a 2-byte big-endian integer.

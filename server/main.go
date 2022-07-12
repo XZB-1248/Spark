@@ -5,6 +5,9 @@ import (
 	"Spark/server/common"
 	"Spark/server/config"
 	"Spark/server/handler"
+	"Spark/server/handler/desktop"
+	"Spark/server/handler/terminal"
+	"Spark/server/handler/utility"
 	"Spark/utils/cmap"
 	"bytes"
 	"context"
@@ -80,7 +83,7 @@ func main() {
 		})
 	}
 
-	common.Melody.Config.MaxMessageSize = 1024
+	common.Melody.Config.MaxMessageSize = 32768 + 1024
 	common.Melody.HandleConnect(wsOnConnect)
 	common.Melody.HandleMessage(wsOnMessage)
 	common.Melody.HandleMessageBinary(wsOnMessageBinary)
@@ -173,19 +176,36 @@ func wsOnMessage(session *melody.Session, bytes []byte) {
 
 func wsOnMessageBinary(session *melody.Session, data []byte) {
 	var pack modules.Packet
+
+	{
+		if len(data) >= 22 {
+			if bytes.Equal(data[:5], []byte{00, 22, 34, 19, 20}) {
+				event := hex.EncodeToString(data[6:22])
+				copy(data[6:], data[22:])
+				common.CallEvent(modules.Packet{
+					Event: event,
+					Data: gin.H{
+						`data`: common.RemoveBytesSuffix(&data, 16),
+					},
+				}, session)
+				return
+			}
+		}
+	}
+
 	data, ok := common.Decrypt(data, session)
 	if !(ok && utils.JSON.Unmarshal(data, &pack) == nil) {
 		common.SendPack(modules.Packet{Code: -1}, session)
-		session.Close()
+		session.CloseWithMsg(melody.FormatCloseMessage(1000, `invalid request`))
 		return
 	}
 	if pack.Act == `report` || pack.Act == `setDevice` {
 		session.Set(`LastPack`, common.Unix)
-		handler.OnDevicePack(data, session)
+		utility.OnDevicePack(data, session)
 		return
 	}
 	if !common.Devices.Has(session.UUID) {
-		session.Close()
+		session.CloseWithMsg(melody.FormatCloseMessage(1001, `invalid identifier`))
 		return
 	}
 	common.CallEvent(pack, session)
@@ -195,7 +215,8 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 func wsOnDisconnect(session *melody.Session) {
 	if val, ok := common.Devices.Get(session.UUID); ok {
 		deviceInfo := val.(*modules.Device)
-		handler.CloseSessionsByDevice(deviceInfo.ID)
+		terminal.CloseSessionsByDevice(deviceInfo.ID)
+		desktop.CloseSessionsByDevice(deviceInfo.ID)
 	}
 	common.Devices.Remove(session.UUID)
 }

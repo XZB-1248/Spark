@@ -18,7 +18,14 @@ import {catchBlobReq, formatSize, orderCompare, post, preventClose, request, tra
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
-import {CloseOutlined, HomeOutlined, LoadingOutlined, ReloadOutlined, UploadOutlined} from "@ant-design/icons";
+import {
+    CloseOutlined,
+    ExclamationCircleOutlined,
+    HomeOutlined,
+    LoadingOutlined, QuestionCircleOutlined,
+    ReloadOutlined,
+    UploadOutlined
+} from "@ant-design/icons";
 import axios from "axios";
 import Qs from "qs";
 import AceEditor from "react-ace";
@@ -163,7 +170,17 @@ function FileBrowser(props) {
     function onDropdownSelect(key, file) {
         switch (key) {
             case 'delete':
-                removeFiles(file.name);
+                let content = i18n.t('deleteConfirm');
+                if (file.type === 0) {
+                    content = content.replace('{0}', i18n.t('file'));
+                } else {
+                    content = content.replace('{0}', i18n.t('folder'));
+                }
+                Modal.confirm({
+                    icon: <QuestionCircleOutlined />,
+                    content: content,
+                    onOk: removeFiles.bind(null, file.name)
+                });
                 break;
             case 'editAsText':
                 textEdit(file);
@@ -709,6 +726,7 @@ function TextEditor(props) {
             closeIcon={loading ? <Spin indicator={<LoadingOutlined />} /> : <CloseOutlined />}
             onCancel={onCancel}
             footer={null}
+            destroyOnClose
         >
             <Alert
                 closable={false}

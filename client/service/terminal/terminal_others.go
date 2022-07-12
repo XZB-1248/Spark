@@ -128,6 +128,22 @@ func KillTerminal(pack modules.Packet) error {
 	return nil
 }
 
+func PingTerminal(pack modules.Packet) {
+	var termUUID string
+	var termSession *terminal
+	if val, ok := pack.GetData(`terminal`, reflect.String); !ok {
+		return
+	} else {
+		termUUID = val.(string)
+	}
+	if val, ok := terminals.Get(termUUID); !ok {
+		return
+	} else {
+		termSession = val.(*terminal)
+		termSession.lastPack = time.Now().Unix()
+	}
+}
+
 func doKillTerminal(terminal *terminal) {
 	if terminal.pty != nil {
 		terminal.pty.Close()

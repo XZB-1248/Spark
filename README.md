@@ -69,11 +69,12 @@ Only local installation are available yet.
 | File explorer   | ✔       | ✔     | ✔     |
 | File transfer   | ✔       | ✔     | ✔     |
 | File editor     | ✔       | ✔     | ✔     |
-| Code highlight  | ✔       | ✔     | ✔     |
 | Delete file     | ✔       | ✔     | ✔     |
+| Code highlight  | ✔       | ✔     | ✔     |
+| Desktop monitor | ✔       | ✔     | ✔     |
+| Screenshot      | ✔       | ✔     | ✔     |
 | OS info         | ✔       | ✔     | ✔     |
 | Terminal        | ✔       | ✔     | ✔     |
-| Screenshot      | ✔       | ✔     | ✔     |
 | * Shutdown      | ✔       | ✔     | ✔     |
 | * Reboot        | ✔       | ✔     | ✔     |
 | * Log off       | ✔       | ❌     | ✔     |
@@ -91,6 +92,8 @@ Only local installation are available yet.
 ![overview](./screenshots/overview.png)
 
 ![terminal](./screenshots/terminal.png)
+
+![desktop](./screenshots/desktop.png)
 
 ![procmgr](./screenshots/procmgr.png)
 
@@ -199,6 +202,11 @@ Some major dependencies are listed below.
 * [xterm.js](https://github.com/xtermjs/xterm.js) (MIT License)
 
 * [crypto-js](https://github.com/brix/crypto-js) (MIT License)
+
+### Acknowledgements
+
+* [natpass](https://github.com/lwch/natpass) (MIT License)
+* Image difference algorithm inspired by natpass.
 
 ---
 

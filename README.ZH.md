@@ -68,11 +68,12 @@
 | 文件浏览  | ✔       | ✔     | ✔     |
 | 文件传输  | ✔       | ✔     | ✔     |
 | 文件编辑  | ✔       | ✔     | ✔     |
-| 代码高亮  | ✔       | ✔     | ✔     |
 | 删除文件  | ✔       | ✔     | ✔     |
+| 代码高亮  | ✔       | ✔     | ✔     |
+| 屏幕监控  | ✔       | ✔     | ✔     |
+| 屏幕快照  | ✔       | ✔     | ✔     |
 | 系统信息  | ✔       | ✔     | ✔     |
 | 远程终端  | ✔       | ✔     | ✔     |
-| 屏幕快照  | ✔       | ✔     | ✔     |
 | * 关机  | ✔       | ✔     | ✔     |
 | * 重启  | ✔       | ✔     | ✔     |
 | * 注销  | ✔       | ❌     | ✔     |
@@ -90,6 +91,8 @@
 ![overview](./screenshots/overview.ZH.png)
 
 ![terminal](./screenshots/terminal.ZH.png)
+
+![desktop](./screenshots/desktop.ZH.png)
 
 ![procmgr](./screenshots/procmgr.ZH.png)
 
@@ -196,6 +199,11 @@ Spark使用了许多第三方的开源项目。
 * [xterm.js](https://github.com/xtermjs/xterm.js) (MIT License)
 
 * [crypto-js](https://github.com/brix/crypto-js) (MIT License)
+
+### 感谢
+
+* [natpass](https://github.com/lwch/natpass) (MIT License)
+* 图像差异算法部分参考了natpass项目的有关部分。
 
 ---
 

@@ -1,6 +1,7 @@
 package file
 
 import (
+	"Spark/client/common"
 	"Spark/client/config"
 	"archive/zip"
 	"errors"
@@ -21,6 +22,8 @@ type File struct {
 	Time int64  `json:"time"`
 	Type int    `json:"type"` // 0: file, 1: folder, 2: volume
 }
+
+var client = common.HTTP.Clone().DisableAutoReadResponse()
 
 // listFiles returns files and directories find in path.
 func listFiles(path string) ([]File, error) {
@@ -48,7 +51,6 @@ func listFiles(path string) ([]File, error) {
 // Save body as temp file and when done, rename it to file.
 func FetchFile(dir, file, bridge string) error {
 	url := config.GetBaseURL(false) + `/api/bridge/pull`
-	client := req.C().DisableAutoReadResponse()
 	resp, err := client.R().SetQueryParam(`bridge`, bridge).Get(url)
 	if err != nil {
 		return err
@@ -56,15 +58,18 @@ func FetchFile(dir, file, bridge string) error {
 	defer resp.Body.Close()
 
 	// If dest file exists, write to temp file first.
-	dest := path.Join(dir, file)
-	tmpFile := dest
-	destExists := false
+	var (
+		dest       = path.Join(dir, file)
+		tmpFile    = dest
+		destExists = false
+		fileMode   os.FileMode
+	)
 	if _, err := os.Stat(dest); !os.IsNotExist(err) {
-		tmpFile = getTempFileName(dir, file)
+		tmpFile, fileMode = getTempFile(dir, file)
 		destExists = true
 	}
 
-	fh, err := os.Create(tmpFile)
+	fh, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY, fileMode)
 	if err != nil {
 		return err
 	}
@@ -100,17 +105,18 @@ func FetchFile(dir, file, bridge string) error {
 	return err
 }
 
-func getTempFileName(dir, file string) string {
+func getTempFile(dir, file string) (string, os.FileMode) {
 	exists := true
 	tempFile := ``
 	for i := 0; exists; i++ {
 		tempFile = path.Join(dir, file+`.tmp.`+strconv.Itoa(i))
-		_, err := os.Stat(tempFile)
+		stat, err := os.Stat(tempFile)
 		if os.IsNotExist(err) {
 			exists = false
 		}
+		return tempFile, stat.Mode()
 	}
-	return tempFile
+	return tempFile, 0644
 }
 
 func RemoveFiles(files []string) error {
@@ -127,7 +133,7 @@ func RemoveFiles(files []string) error {
 }
 
 func UploadFiles(files []string, bridge string, start, end int64) error {
-	uploadReq := req.R()
+	uploadReq := common.HTTP.R()
 	reader, writer := io.Pipe()
 	if len(files) == 1 {
 		stat, err := os.Stat(files[0])
@@ -373,7 +379,7 @@ func UploadTextFile(path, bridge string) error {
 		return err
 	}
 	defer file.Close()
-	uploadReq := req.R()
+	uploadReq := common.HTTP.R()
 	stat, err := file.Stat()
 	if err != nil {
 		return err

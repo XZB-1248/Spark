@@ -1,8 +1,10 @@
-package handler
+package screenshot
 
 import (
 	"Spark/modules"
 	"Spark/server/common"
+	"Spark/server/handler/bridge"
+	"Spark/server/handler/utility"
 	"Spark/utils"
 	"Spark/utils/melody"
 	"github.com/gin-gonic/gin"
@@ -10,9 +12,9 @@ import (
 	"time"
 )
 
-// getScreenshot will call client to screenshot.
-func getScreenshot(ctx *gin.Context) {
-	target, ok := checkForm(ctx, nil)
+// GetScreenshot will call client to screenshot.
+func GetScreenshot(ctx *gin.Context) {
+	target, ok := utility.CheckForm(ctx, nil)
 	if !ok {
 		return
 	}
@@ -24,24 +26,24 @@ func getScreenshot(ctx *gin.Context) {
 	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
 		wait <- false
 		called = true
-		removeBridge(bridgeID)
+		bridge.RemoveBridge(bridgeID)
 		common.RemoveEvent(trigger)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 	}, target, trigger)
-	instance := addBridgeWithDst(nil, bridgeID, ctx)
-	instance.OnPush = func(bridge *bridge) {
+	instance := bridge.AddBridgeWithDst(nil, bridgeID, ctx)
+	instance.OnPush = func(bridge *bridge.Bridge) {
 		called = true
 		common.RemoveEvent(trigger)
 		ctx.Header(`Content-Type`, `image/png`)
 	}
-	instance.OnFinish = func(bridge *bridge) {
+	instance.OnFinish = func(bridge *bridge.Bridge) {
 		wait <- false
 	}
 	select {
 	case <-wait:
 	case <-time.After(5 * time.Second):
 		if !called {
-			removeBridge(bridgeID)
+			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
 			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {

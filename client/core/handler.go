@@ -3,6 +3,7 @@ package core
 import (
 	"Spark/client/common"
 	"Spark/client/service/basic"
+	"Spark/client/service/desktop"
 	"Spark/client/service/file"
 	"Spark/client/service/process"
 	Screenshot "Spark/client/service/screenshot"
@@ -112,6 +113,10 @@ func inputTerminal(pack modules.Packet, wsConn *common.Conn) {
 
 func resizeTerminal(pack modules.Packet, wsConn *common.Conn) {
 	terminal.ResizeTerminal(pack)
+}
+
+func pingTerminal(pack modules.Packet, wsConn *common.Conn) {
+	terminal.PingTerminal(pack)
 }
 
 func killTerminal(pack modules.Packet, wsConn *common.Conn) {
@@ -234,7 +239,7 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 func uploadTextFile(pack modules.Packet, wsConn *common.Conn) {
 	var path string
 	var bridge string
-	if val, ok := pack.Data[`file`]; !ok {
+	if val, ok := pack.GetData(`file`, reflect.String); !ok {
 		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
 		return
 	} else {
@@ -278,4 +283,23 @@ func killProcess(pack modules.Packet, wsConn *common.Conn) {
 	} else {
 		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
 	}
+}
+
+func initDesktop(pack modules.Packet, wsConn *common.Conn) {
+	err := desktop.InitDesktop(pack)
+	if err != nil {
+		common.SendCb(modules.Packet{Act: `initDesktop`, Code: 1, Msg: err.Error()}, pack, wsConn)
+	}
+}
+
+func pingDesktop(pack modules.Packet, wsConn *common.Conn) {
+	desktop.PingDesktop(pack)
+}
+
+func killDesktop(pack modules.Packet, wsConn *common.Conn) {
+	desktop.KillDesktop(pack)
+}
+
+func getDesktop(pack modules.Packet, wsConn *common.Conn) {
+	desktop.GetDesktop(pack)
 }

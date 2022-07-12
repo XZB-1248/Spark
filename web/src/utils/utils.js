@@ -50,13 +50,17 @@ function tsToTime(ts) {
     return `${String(hours) + i18n.t('hours') + ' ' + String(minutes) + i18n.t('minutes')}`;
 }
 
-function getBaseURL(ws) {
+function getBaseURL(ws, suffix) {
     if (location.protocol === 'https:') {
         let scheme = ws ? 'wss' : 'https';
-        return scheme + `://${location.host}${location.pathname}api/device/terminal`;
+        return scheme + `://${location.host}${location.pathname}${suffix}`;
     }
     let scheme = ws ? 'ws' : 'http';
-    return scheme + `://${location.host}${location.pathname}api/device/terminal`;
+    return scheme + `://${location.host}${location.pathname}${suffix}`;
+}
+
+function genRandHex(len) {
+    return [...Array(len)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
 function post(url, data, ext) {
@@ -114,4 +118,76 @@ function catchBlobReq(err) {
     }
 }
 
-export {post, request, waitTime, formatSize, tsToTime, getBaseURL, translate, preventClose, catchBlobReq, orderCompare};
+function hex2buf(hex) {
+    if (typeof hex !== 'string') {
+        return new Uint8Array([]);
+    }
+    let list = hex.match(/.{1,2}/g);
+    if (list === null) {
+        return new Uint8Array([]);
+    }
+    return new Uint8Array(list.map(byte => parseInt(byte, 16)));
+}
+
+function ab2str(buffer) {
+    const array = new Uint8Array(buffer);
+    let out, i, len, c;
+    let char2, char3;
+
+    out = "";
+    len = array.length;
+    i = 0;
+    while (i < len) {
+        c = array[i++];
+        switch (c >> 4) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+                out += String.fromCharCode(c);
+                break;
+            case 12:
+            case 13:
+                char2 = array[i++];
+                out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
+                break;
+            case 14:
+                char2 = array[i++];
+                char3 = array[i++];
+                out += String.fromCharCode(((c & 0x0F) << 12) |
+                    ((char2 & 0x3F) << 6) |
+                    ((char3 & 0x3F) << 0));
+                break;
+        }
+    }
+    return out;
+}
+
+function ws2ua(wordArray) {
+    const l = wordArray.sigBytes;
+    const words = wordArray.words;
+    const result = new Uint8Array(l);
+    let i = 0, j = 0;
+    while (true) {
+        if (i === l)
+            break;
+        const w = words[j++];
+        result[i++] = (w & 0xff000000) >>> 24;
+        if (i === l)
+            break;
+        result[i++] = (w & 0x00ff0000) >>> 16;
+        if (i === l)
+            break;
+        result[i++] = (w & 0x0000ff00) >>> 8;
+        if (i === l)
+            break;
+        result[i++] = (w & 0x000000ff);
+    }
+    return result;
+}
+
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, genRandHex, translate, preventClose, catchBlobReq, hex2buf, ab2str, ws2ua, orderCompare};

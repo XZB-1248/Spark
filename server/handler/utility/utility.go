@@ -1,4 +1,4 @@
-package handler
+package utility
 
 import (
 	"Spark/modules"
@@ -7,6 +7,8 @@ import (
 	"Spark/utils"
 	"Spark/utils/melody"
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
@@ -15,6 +17,31 @@ import (
 	"strconv"
 	"time"
 )
+
+type Sender func(pack modules.Packet, session *melody.Session) bool
+
+// CheckForm checks if the form contains the required fields.
+// Every request must contain connection UUID or device ID.
+func CheckForm(ctx *gin.Context, form interface{}) (string, bool) {
+	var base struct {
+		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
+		Device string `json:"device" yaml:"device" form:"device"`
+	}
+	if form != nil && ctx.ShouldBind(form) != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return ``, false
+	}
+	if ctx.ShouldBind(&base) != nil || (len(base.Conn) == 0 && len(base.Device) == 0) {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return ``, false
+	}
+	connUUID, ok := common.CheckDevice(base.Device, base.Conn)
+	if !ok {
+		ctx.AbortWithStatusJSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
+		return ``, false
+	}
+	return connUUID, true
+}
 
 // OnDevicePack handles events about device info.
 // Such as websocket handshake and update device info.
@@ -76,8 +103,8 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 	return nil
 }
 
-// checkUpdate will check if client need update and return latest client if so.
-func checkUpdate(ctx *gin.Context) {
+// CheckUpdate will check if client need update and return latest client if so.
+func CheckUpdate(ctx *gin.Context) {
 	var form struct {
 		OS     string `form:"os" binding:"required"`
 		Arch   string `form:"arch" binding:"required"`
@@ -114,6 +141,7 @@ func checkUpdate(ctx *gin.Context) {
 		return
 	}
 
+	ctx.Header(`Spark-Commit`, config.COMMIT)
 	ctx.Header(`Accept-Ranges`, `none`)
 	ctx.Header(`Content-Transfer-Encoding`, `binary`)
 	ctx.Header(`Content-Type`, `application/octet-stream`)
@@ -143,8 +171,8 @@ func checkUpdate(ctx *gin.Context) {
 	}
 }
 
-// getDevices will return all info about all clients.
-func getDevices(ctx *gin.Context) {
+// GetDevices will return all info about all clients.
+func GetDevices(ctx *gin.Context) {
 	devices := map[string]interface{}{}
 	common.Devices.IterCb(func(uuid string, v interface{}) bool {
 		device := v.(*modules.Device)
@@ -154,8 +182,8 @@ func getDevices(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0, Data: devices})
 }
 
-// callDevice will call client with command from browser.
-func callDevice(ctx *gin.Context) {
+// CallDevice will call client with command from browser.
+func CallDevice(ctx *gin.Context) {
 	act := ctx.Param(`act`)
 	if len(act) == 0 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
@@ -175,7 +203,7 @@ func callDevice(ctx *gin.Context) {
 			return
 		}
 	}
-	connUUID, ok := checkForm(ctx, nil)
+	connUUID, ok := CheckForm(ctx, nil)
 	if !ok {
 		return
 	}
@@ -192,5 +220,71 @@ func callDevice(ctx *gin.Context) {
 		//This means the client is offline.
 		//So we take this as a success.
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
+	}
+}
+
+func SimpleEncrypt(data []byte, session *melody.Session) ([]byte, bool) {
+	temp, ok := session.Get(`Secret`)
+	if !ok {
+		return nil, false
+	}
+	secret := temp.([]byte)
+	block, err := aes.NewCipher(secret)
+	if err != nil {
+		return nil, false
+	}
+	stream := cipher.NewCTR(block, secret)
+	encBuffer := make([]byte, len(data))
+	stream.XORKeyStream(encBuffer, data)
+	return encBuffer, true
+}
+
+func SimpleDecrypt(data []byte, session *melody.Session) ([]byte, bool) {
+	temp, ok := session.Get(`Secret`)
+	if !ok {
+		return nil, false
+	}
+	secret := temp.([]byte)
+	block, err := aes.NewCipher(secret)
+	if err != nil {
+		return nil, false
+	}
+	stream := cipher.NewCTR(block, secret)
+	decBuffer := make([]byte, len(data))
+	stream.XORKeyStream(decBuffer, data)
+	return decBuffer, true
+}
+
+func WSHealthCheck(container *melody.Melody, sender Sender) {
+	const MaxIdleSeconds = 300
+	ping := func(uuid string, s *melody.Session) {
+		if !sender(modules.Packet{Act: `ping`}, s) {
+			s.Close()
+		}
+	}
+	for now := range time.NewTicker(60 * time.Second).C {
+		timestamp := now.Unix()
+		// stores sessions to be disconnected
+		queue := make([]*melody.Session, 0)
+		container.IterSessions(func(uuid string, s *melody.Session) bool {
+			go ping(uuid, s)
+			val, ok := s.Get(`LastPack`)
+			if !ok {
+				queue = append(queue, s)
+				return true
+			}
+			lastPack, ok := val.(int64)
+			if !ok {
+				queue = append(queue, s)
+				return true
+			}
+			if timestamp-lastPack > MaxIdleSeconds {
+				queue = append(queue, s)
+			}
+			return true
+		})
+		for i := 0; i < len(queue); i++ {
+			queue[i].Close()
+		}
 	}
 }
