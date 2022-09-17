@@ -178,14 +178,15 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 	var pack modules.Packet
 
 	{
-		if len(data) >= 22 {
-			if bytes.Equal(data[:5], []byte{00, 22, 34, 19, 20}) {
+		dataLen := len(data)
+		if dataLen >= 22 {
+			if bytes.Equal(data[:5], []byte{34, 22, 19, 17, 20}) {
 				event := hex.EncodeToString(data[6:22])
 				copy(data[6:], data[22:])
 				common.CallEvent(modules.Packet{
 					Event: event,
 					Data: gin.H{
-						`data`: common.RemoveBytesSuffix(&data, 16),
+						`data`: utils.GetSlicePrefix(&data, dataLen-16),
 					},
 				}, session)
 				return
@@ -205,7 +206,7 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 		return
 	}
 	if !common.Devices.Has(session.UUID) {
-		session.CloseWithMsg(melody.FormatCloseMessage(1001, `invalid identifier`))
+		session.CloseWithMsg(melody.FormatCloseMessage(1001, `invalid device id`))
 		return
 	}
 	common.CallEvent(pack, session)

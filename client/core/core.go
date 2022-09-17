@@ -26,45 +26,18 @@ var stop bool
 var (
 	errNoSecretHeader = errors.New(`can not find secret header`)
 )
-var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
-	`ping`:           ping,
-	`offline`:        offline,
-	`lock`:           lock,
-	`logoff`:         logoff,
-	`hibernate`:      hibernate,
-	`suspend`:        suspend,
-	`restart`:        restart,
-	`shutdown`:       shutdown,
-	`screenshot`:     screenshot,
-	`initTerminal`:   initTerminal,
-	`inputTerminal`:  inputTerminal,
-	`resizeTerminal`: resizeTerminal,
-	`pingTerminal`:   pingTerminal,
-	`killTerminal`:   killTerminal,
-	`listFiles`:      listFiles,
-	`fetchFile`:      fetchFile,
-	`removeFiles`:    removeFiles,
-	`uploadFiles`:    uploadFiles,
-	`uploadTextFile`: uploadTextFile,
-	`listProcesses`:  listProcesses,
-	`killProcess`:    killProcess,
-	`initDesktop`:    initDesktop,
-	`pingDesktop`:    pingDesktop,
-	`killDesktop`:    killDesktop,
-	`getDesktop`:     getDesktop,
-}
 
 func Start() {
 	for !stop {
 		var err error
 		if common.WSConn != nil {
-			common.WSLock.Lock()
+			common.Mutex.Lock()
 			common.WSConn.Close()
-			common.WSLock.Unlock()
+			common.Mutex.Unlock()
 		}
-		common.WSLock.Lock()
+		common.Mutex.Lock()
 		common.WSConn, err = connectWS()
-		common.WSLock.Unlock()
+		common.Mutex.Unlock()
 		if err != nil && !stop {
 			golog.Error(`Connection error: `, err)
 			<-time.After(3 * time.Second)
@@ -105,7 +78,7 @@ func connectWS() (*common.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &common.Conn{Conn: wsConn, Secret: secret}, nil
+	return common.CreateConn(wsConn, secret), nil
 }
 
 func reportWS(wsConn *common.Conn) error {
@@ -114,18 +87,18 @@ func reportWS(wsConn *common.Conn) error {
 		return err
 	}
 	pack := modules.CommonPack{Act: `report`, Data: *device}
-	err = common.SendPack(pack, wsConn)
+	err = wsConn.SendPack(pack)
 	common.WSConn.SetWriteDeadline(time.Time{})
 	if err != nil {
 		return err
 	}
-	common.WSConn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	common.WSConn.SetReadDeadline(common.Now.Add(5 * time.Second))
 	_, data, err := common.WSConn.ReadMessage()
 	common.WSConn.SetReadDeadline(time.Time{})
 	if err != nil {
 		return err
 	}
-	data, err = utils.Decrypt(data, common.WSConn.Secret)
+	data, err = utils.Decrypt(data, common.WSConn.GetSecret())
 	if err != nil {
 		return err
 	}
@@ -148,7 +121,7 @@ func checkUpdate(wsConn *common.Conn) error {
 		SetQueryParam(`os`, runtime.GOOS).
 		SetQueryParam(`arch`, runtime.GOARCH).
 		SetQueryParam(`commit`, config.COMMIT).
-		SetHeader(`Secret`, hex.EncodeToString(wsConn.Secret)).
+		SetHeader(`Secret`, wsConn.GetSecretHex()).
 		Send(`POST`, config.GetBaseURL(false)+`/api/client/update`)
 	if err != nil {
 		return err
@@ -189,7 +162,7 @@ func handleWS(wsConn *common.Conn) error {
 			golog.Error(err)
 			return nil
 		}
-		data, err = utils.Decrypt(data, wsConn.Secret)
+		data, err = utils.Decrypt(data, wsConn.GetSecret())
 		if err != nil {
 			golog.Error(err)
 			errCount++
@@ -220,7 +193,7 @@ func handleWS(wsConn *common.Conn) error {
 
 func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	if act, ok := handlers[pack.Act]; !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|actionNotImplemented}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|actionNotImplemented}`}, pack)
 	} else {
 		defer func() {
 			if r := recover(); r != nil {

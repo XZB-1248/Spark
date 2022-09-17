@@ -53,7 +53,7 @@ func InitTerminal(pack modules.Packet) error {
 		stdout:   &stdout,
 		stderr:   &stderr,
 		stdin:    &stdin,
-		lastPack: time.Now().Unix(),
+		lastPack: common.Unix,
 	}
 	terminals.Set(pack.Data[`terminal`].(string), termSession)
 
@@ -63,18 +63,18 @@ func InitTerminal(pack modules.Packet) error {
 			n, err := rc.Read(buffer)
 			buffer = buffer[:n]
 
-			// Clear screen.
+			// clear screen
 			if len(buffer) == 1 && buffer[0] == 12 {
 				buffer = []byte{27, 91, 72, 27, 91, 50, 74}
 			}
 
 			buffer, _ = encodeUTF8(buffer)
-			common.SendCb(modules.Packet{Act: `outputTerminal`, Data: map[string]interface{}{
+			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]interface{}{
 				`output`: hex.EncodeToString(buffer),
-			}}, pack, common.WSConn)
-			termSession.lastPack = time.Now().Unix()
+			}}, pack)
+			termSession.lastPack = common.Unix
 			if err != nil {
-				common.SendCb(modules.Packet{Act: `quitTerminal`}, pack, common.WSConn)
+				common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`}, pack)
 				break
 			}
 		}
@@ -103,7 +103,7 @@ func InputTerminal(pack modules.Packet) error {
 	termUUID := val.(string)
 	val, ok = terminals.Get(termUUID)
 	if !ok {
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
+		common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack)
 		return nil
 	}
 	terminal := val.(*terminal)
@@ -113,7 +113,7 @@ func InputTerminal(pack modules.Packet) error {
 	}
 	data, _ = decodeUTF8(data)
 	(*terminal.stdin).Write(data)
-	terminal.lastPack = time.Now().Unix()
+	terminal.lastPack = common.Unix
 	return nil
 }
 
@@ -129,7 +129,7 @@ func KillTerminal(pack modules.Packet) error {
 	termUUID := val.(string)
 	val, ok = terminals.Get(termUUID)
 	if !ok {
-		common.SendCb(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack, common.WSConn)
+		common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|terminalSessionClosed}`}, pack)
 		return nil
 	}
 	terminal := val.(*terminal)
@@ -150,7 +150,7 @@ func PingTerminal(pack modules.Packet) {
 		return
 	} else {
 		termSession = val.(*terminal)
-		termSession.lastPack = time.Now().Unix()
+		termSession.lastPack = common.Unix
 	}
 }
 

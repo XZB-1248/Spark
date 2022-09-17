@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"errors"
 	jsoniter "github.com/json-iterator/go"
+	"reflect"
+	"unsafe"
 )
 
 var (
@@ -16,6 +18,27 @@ var (
 	ErrFailedVerification = errors.New(`failed to verify entity`)
 	JSON                  = jsoniter.ConfigCompatibleWithStandardLibrary
 )
+
+func If[T any](b bool, t, f T) T {
+	if b {
+		return t
+	}
+	return f
+}
+
+func Min[T int | int32 | int64 | uint | uint32 | uint64 | float32 | float64](a, b T) T {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func Max[T int | int32 | int64 | uint | uint32 | uint64 | float32 | float64](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
 
 func GenRandByte(n int) []byte {
 	secBuffer := make([]byte, n)
@@ -82,4 +105,31 @@ func Decrypt(data []byte, key []byte) ([]byte, error) {
 
 	//fmt.Println(`Recv: `, string(decBuffer[:dataLen-16-64]))
 	return decBuffer, nil
+}
+
+func GetSlicePrefix[T any](data *[]T, n int) *[]T {
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(data))
+	return (*[]T)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: sliceHeader.Data,
+		Len:  n,
+		Cap:  n,
+	}))
+}
+
+func GetSliceSuffix[T any](data *[]T, n int) *[]T {
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(data))
+	return (*[]T)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: sliceHeader.Data + uintptr(sliceHeader.Len-n),
+		Len:  n,
+		Cap:  n,
+	}))
+}
+
+func GetSliceChunk[T any](data *[]T, start, end int) *[]T {
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(data))
+	return (*[]T)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: sliceHeader.Data + uintptr(start),
+		Len:  end - start,
+		Cap:  end - start,
+	}))
 }

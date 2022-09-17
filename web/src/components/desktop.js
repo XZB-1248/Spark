@@ -142,6 +142,7 @@ function ScreenModal(props) {
             updateImage(ab.slice(offset, offset + len + 12), canvasCtx);
             offset += len + 12;
         }
+        dv = null;
     }
     function updateImage(ab, canvasCtx) {
         let dv = new DataView(ab);
@@ -153,12 +154,13 @@ function ScreenModal(props) {
         let bh = dv.getUint16(10, false);
         ab = ab.slice(12);
         if (it === 0) {
-            canvasCtx.putImageData(new ImageData(new Uint8ClampedArray(ab), bw, bh), dx, dy);
+            canvasCtx.putImageData(new ImageData(new Uint8ClampedArray(ab), bw, bh), dx, dy, 0, 0, bw, bh);
+            dv = null;
         } else {
             createImageBitmap(new Blob([ab]), 0, 0, bw, bh)
                 .then((ib) => {
-                    canvasCtx.drawImage(ib, dx, dy);
-                });
+                    canvasCtx.drawImage(ib, 0, 0, bw, bh, dx, dy, bw, bh);
+                }).finally(() => dv = null);
         }
     }
     function handleJSON(ab) {

@@ -14,55 +14,76 @@ import (
 
 type Conn struct {
 	*ws.Conn
-	Secret []byte
+	secret    []byte
+	secretHex string
 }
 
 var WSConn *Conn
-var WSLock = sync.Mutex{}
-var HTTP = req.C().SetUserAgent(`SPARK COMMIT: ` + config.COMMIT)
+var Mutex = &sync.Mutex{}
+var HTTP = CreateClient()
 
 const MaxMessageSize = 32768 + 1024
 
-func SendData(data []byte, wsConn *Conn) error {
-	WSLock.Lock()
-	defer WSLock.Unlock()
+func CreateConn(wsConn *ws.Conn, secret []byte) *Conn {
+	return &Conn{
+		Conn:      wsConn,
+		secret:    secret,
+		secretHex: hex.EncodeToString(secret),
+	}
+}
+
+func CreateClient() *req.Client {
+	return req.C().SetUserAgent(`SPARK COMMIT: ` + config.COMMIT)
+}
+
+func (wsConn *Conn) SendData(data []byte) error {
+	Mutex.Lock()
+	defer Mutex.Unlock()
 	if WSConn == nil {
 		return errors.New(`${i18n|wsClosed}`)
 	}
-	wsConn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	wsConn.SetWriteDeadline(Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})
 	return wsConn.WriteMessage(ws.BinaryMessage, data)
 }
 
-func SendPack(pack interface{}, wsConn *Conn) error {
-	WSLock.Lock()
-	defer WSLock.Unlock()
+func (wsConn *Conn) SendPack(pack interface{}) error {
+	Mutex.Lock()
+	defer Mutex.Unlock()
 	data, err := utils.JSON.Marshal(pack)
 	if err != nil {
 		return err
 	}
-	data, err = utils.Encrypt(data, wsConn.Secret)
+	data, err = utils.Encrypt(data, wsConn.secret)
 	if err != nil {
 		return err
 	}
 	if len(data) > MaxMessageSize {
 		_, err = HTTP.R().
 			SetBody(data).
-			SetHeader(`Secret`, hex.EncodeToString(wsConn.Secret)).
+			SetHeader(`Secret`, wsConn.secretHex).
 			Send(`POST`, config.GetBaseURL(false)+`/ws`)
 		return err
 	}
 	if WSConn == nil {
 		return errors.New(`${i18n|wsClosed}`)
 	}
-	wsConn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	wsConn.SetWriteDeadline(Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})
 	return wsConn.WriteMessage(ws.BinaryMessage, data)
 }
 
-func SendCb(pack, prev modules.Packet, wsConn *Conn) error {
+func (wsConn *Conn) SendCallback(pack, prev modules.Packet) error {
 	if len(prev.Event) > 0 {
 		pack.Event = prev.Event
 	}
-	return SendPack(pack, wsConn)
+	return wsConn.SendPack(pack)
+}
+
+func (wsConn *Conn) GetSecret() []byte {
+	return wsConn.secret
+}
+
+func (wsConn *Conn) GetSecretHex() string {
+	return wsConn.secretHex
 }

@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        go-version: [ 1.17 ]
+        go-version: [ 1.18.1 ]
 
     steps:
       - uses: actions/checkout@v3
@@ -57,7 +57,7 @@ jobs:
     strategy:
       matrix:
         node-version: [ 16.x ]
-        go-version: [ 1.17 ]
+        go-version: [ 1.18.1 ]
 
     steps:
     - uses: actions/checkout@v3

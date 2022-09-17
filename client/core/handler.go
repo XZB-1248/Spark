@@ -12,21 +12,48 @@ import (
 	"github.com/kataras/golog"
 	"os"
 	"reflect"
-	"strconv"
 )
 
+var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
+	`ping`:           ping,
+	`offline`:        offline,
+	`lock`:           lock,
+	`logoff`:         logoff,
+	`hibernate`:      hibernate,
+	`suspend`:        suspend,
+	`restart`:        restart,
+	`shutdown`:       shutdown,
+	`screenshot`:     screenshot,
+	`initTerminal`:   initTerminal,
+	`inputTerminal`:  inputTerminal,
+	`resizeTerminal`: resizeTerminal,
+	`pingTerminal`:   pingTerminal,
+	`killTerminal`:   killTerminal,
+	`listFiles`:      listFiles,
+	`fetchFile`:      fetchFile,
+	`removeFiles`:    removeFiles,
+	`uploadFiles`:    uploadFiles,
+	`uploadTextFile`: uploadTextFile,
+	`listProcesses`:  listProcesses,
+	`killProcess`:    killProcess,
+	`initDesktop`:    initDesktop,
+	`pingDesktop`:    pingDesktop,
+	`killDesktop`:    killDesktop,
+	`getDesktop`:     getDesktop,
+}
+
 func ping(pack modules.Packet, wsConn *common.Conn) {
-	common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+	wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	device, err := GetPartialInfo()
 	if err != nil {
 		golog.Error(err)
 		return
 	}
-	common.SendPack(modules.CommonPack{Act: `setDevice`, Data: *device}, wsConn)
+	wsConn.SendPack(modules.CommonPack{Act: `setDevice`, Data: *device})
 }
 
 func offline(pack modules.Packet, wsConn *common.Conn) {
-	common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+	wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	stop = true
 	wsConn.Close()
 	os.Exit(0)
@@ -35,75 +62,75 @@ func offline(pack modules.Packet, wsConn *common.Conn) {
 func lock(pack modules.Packet, wsConn *common.Conn) {
 	err := basic.Lock()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func logoff(pack modules.Packet, wsConn *common.Conn) {
 	err := basic.Logoff()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func hibernate(pack modules.Packet, wsConn *common.Conn) {
 	err := basic.Hibernate()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func suspend(pack modules.Packet, wsConn *common.Conn) {
 	err := basic.Suspend()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func restart(pack modules.Packet, wsConn *common.Conn) {
 	err := basic.Restart()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func shutdown(pack modules.Packet, wsConn *common.Conn) {
 	err := basic.Shutdown()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func screenshot(pack modules.Packet, wsConn *common.Conn) {
 	var bridge string
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
 	}
 	err := Screenshot.GetScreenshot(bridge)
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	}
 }
 
 func initTerminal(pack modules.Packet, wsConn *common.Conn) {
 	err := terminal.InitTerminal(pack)
 	if err != nil {
-		common.SendCb(modules.Packet{Act: `initTerminal`, Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Act: `initTerminal`, Code: 1, Msg: err.Error()}, pack)
 	}
 }
 
@@ -130,42 +157,42 @@ func listFiles(pack modules.Packet, wsConn *common.Conn) {
 	}
 	files, err := file.ListFiles(path)
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0, Data: smap{`files`: files}}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0, Data: smap{`files`: files}}, pack)
 	}
 }
 
 func fetchFile(pack modules.Packet, wsConn *common.Conn) {
 	var path, filename, bridge string
 	if val, ok := pack.GetData(`path`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 		return
 	} else {
 		path = val.(string)
 	}
 	if val, ok := pack.GetData(`file`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
 		return
 	} else {
 		filename = val.(string)
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
 	}
 	err := file.FetchFile(path, filename, bridge)
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	}
 }
 
 func removeFiles(pack modules.Packet, wsConn *common.Conn) {
 	var files []string
 	if val, ok := pack.Data[`files`]; !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 		return
 	} else {
 		slice := val.([]interface{})
@@ -176,24 +203,26 @@ func removeFiles(pack modules.Packet, wsConn *common.Conn) {
 			}
 		}
 		if len(files) == 0 {
-			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 			return
 		}
 	}
 	err := file.RemoveFiles(files)
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
-	var start, end int64
-	var files []string
-	var bridge string
+	var (
+		start, end int64
+		files      []string
+		bridge     string
+	)
 	if val, ok := pack.Data[`files`]; !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 		return
 	} else {
 		slice := val.([]interface{})
@@ -204,12 +233,12 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 			}
 		}
 		if len(files) == 0 {
-			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 			return
 		}
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
@@ -225,28 +254,27 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 			}
 		}
 		if end > 0 && end < start {
-			common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidFileRange}`}, pack, wsConn)
+			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidFileRange}`}, pack)
 			return
 		}
 	}
 	err := file.UploadFiles(files, bridge, start, end)
 	if err != nil {
 		golog.Error(err)
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	}
 }
 
 func uploadTextFile(pack modules.Packet, wsConn *common.Conn) {
-	var path string
-	var bridge string
+	var path, bridge string
 	if val, ok := pack.GetData(`file`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 		return
 	} else {
 		path = val.(string)
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		common.SendCb(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
@@ -254,41 +282,42 @@ func uploadTextFile(pack modules.Packet, wsConn *common.Conn) {
 	err := file.UploadTextFile(path, bridge)
 	if err != nil {
 		golog.Error(err)
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	}
 }
 
 func listProcesses(pack modules.Packet, wsConn *common.Conn) {
 	processes, err := process.ListProcesses()
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0, Data: map[string]interface{}{`processes`: processes}}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0, Data: map[string]interface{}{`processes`: processes}}, pack)
 	}
 }
 
 func killProcess(pack modules.Packet, wsConn *common.Conn) {
 	var (
-		pid int64
+		pid int32
 		err error
 	)
-	if val, ok := pack.GetData(`pid`, reflect.String); ok {
-		pid, err = strconv.ParseInt(val.(string), 10, 32)
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+	if val, ok := pack.GetData(`pid`, reflect.Float64); !ok {
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
 		return
+	} else {
+		pid = int32(val.(float64))
 	}
 	err = process.KillProcess(int32(pid))
 	if err != nil {
-		common.SendCb(modules.Packet{Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		common.SendCb(modules.Packet{Code: 0}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Code: 0}, pack)
 	}
 }
 
 func initDesktop(pack modules.Packet, wsConn *common.Conn) {
 	err := desktop.InitDesktop(pack)
 	if err != nil {
-		common.SendCb(modules.Packet{Act: `initDesktop`, Code: 1, Msg: err.Error()}, pack, wsConn)
+		wsConn.SendCallback(modules.Packet{Act: `initDesktop`, Code: 1, Msg: err.Error()}, pack)
 	}
 }
 

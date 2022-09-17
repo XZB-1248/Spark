@@ -147,17 +147,20 @@ func GetRAMInfo() (modules.IO, error) {
 }
 
 func GetDiskInfo() (modules.IO, error) {
+	devices := map[string]struct{}{}
 	result := modules.IO{}
-	disk.IOCounters()
-	disks, err := disk.Partitions(true)
+	disks, err := disk.Partitions(false)
 	if err != nil {
 		return result, nil
 	}
 	for i := 0; i < len(disks); i++ {
-		stat, err := disk.Usage(disks[i].Mountpoint)
-		if err == nil {
-			result.Total += stat.Total
-			result.Used += stat.Used
+		if _, ok := devices[disks[i].Device]; !ok {
+			devices[disks[i].Device] = struct{}{}
+			stat, err := disk.Usage(disks[i].Mountpoint)
+			if err == nil {
+				result.Total += stat.Total
+				result.Used += stat.Used
+			}
 		}
 	}
 	result.Usage = float64(result.Used) / float64(result.Total) * 100

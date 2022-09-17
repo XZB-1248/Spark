@@ -8,7 +8,6 @@ import (
 	"Spark/utils/melody"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -43,7 +42,7 @@ func KillDeviceProcess(ctx *gin.Context) {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `killProcess`, Data: gin.H{`pid`: strconv.FormatInt(int64(form.Pid), 10)}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Code: 0, Act: `killProcess`, Data: gin.H{`pid`: form.Pid}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
