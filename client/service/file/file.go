@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/imroc/req/v3"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -28,7 +27,7 @@ var client = common.HTTP.Clone().DisableAutoReadResponse()
 // listFiles returns files and directories find in path.
 func listFiles(path string) ([]File, error) {
 	result := make([]File, 0)
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -37,12 +36,22 @@ func listFiles(path string) ([]File, error) {
 		if files[i].IsDir() {
 			itemType = 1
 		}
-		result = append(result, File{
-			Name: files[i].Name(),
-			Size: uint64(files[i].Size()),
-			Time: files[i].ModTime().Unix(),
-			Type: itemType,
-		})
+		info, err := files[i].Info()
+		if err != nil {
+			result = append(result, File{
+				Name: files[i].Name(),
+				Size: 0,
+				Time: 0,
+				Type: itemType,
+			})
+		} else {
+			result = append(result, File{
+				Name: files[i].Name(),
+				Size: uint64(info.Size()),
+				Time: info.ModTime().Unix(),
+				Type: itemType,
+			})
+		}
 	}
 	return result, nil
 }
@@ -211,7 +220,7 @@ func uploadSingle(path string, start, end int64, writer *io.PipeWriter, req *req
 
 func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error {
 	type Job struct {
-		info      os.FileInfo
+		dir       bool
 		path      string
 		hierarchy []string
 	}
@@ -266,7 +275,7 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 		file.Close()
 	}
 	scanDir := func(job Job) {
-		entries, err := ioutil.ReadDir(job.path)
+		entries, err := os.ReadDir(job.path)
 		if err != nil {
 			fails = append(fails, job.path)
 			return
@@ -276,7 +285,7 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 			if escape {
 				break
 			}
-			subJob := Job{entry, path.Join(job.path, entry.Name()), append(job.hierarchy, entry.Name())}
+			subJob := Job{entry.IsDir(), path.Join(job.path, entry.Name()), append(job.hierarchy, entry.Name())}
 			if entry.IsDir() {
 				lock.Lock()
 				if len(queue) < QueueSize {
@@ -302,7 +311,7 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 		}()
 	}
 	handleJob := func(job Job) {
-		if job.info.IsDir() {
+		if job.dir {
 			scanDir(job)
 		} else {
 			archiveFile(job)
@@ -323,7 +332,7 @@ func uploadMulti(files []string, writer *io.PipeWriter, req *req.Request) error 
 				lock.Unlock()
 				break
 			}
-			queue <- Job{stat, items[i], []string{stat.Name()}}
+			queue <- Job{stat.IsDir(), items[i], []string{stat.Name()}}
 			lock.Unlock()
 		}
 		return nil

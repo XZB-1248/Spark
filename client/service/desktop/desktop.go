@@ -84,7 +84,7 @@ func worker() {
 			lock.Unlock()
 			break
 		}
-		time.Sleep(30 * time.Millisecond)
+		<-time.After(70 * time.Millisecond)
 		img, err = screenshot.CaptureDisplay(0)
 		if err != nil {
 			errors++

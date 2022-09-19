@@ -7,8 +7,9 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"io/ioutil"
 	"math/big"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,6 +49,7 @@ func init() {
 }
 
 func main() {
+	go http.ListenAndServe(`:6060`, nil)
 	update()
 	core.Start()
 }
@@ -62,11 +64,11 @@ func update() {
 			return
 		}
 		destPath := selfPath[:len(selfPath)-4]
-		thisFile, err := ioutil.ReadFile(selfPath)
+		thisFile, err := os.ReadFile(selfPath)
 		if err != nil {
 			return
 		}
-		ioutil.WriteFile(destPath, thisFile, 0755)
+		os.WriteFile(destPath, thisFile, 0755)
 		cmd := exec.Command(destPath, `--clean`)
 		if cmd.Start() == nil {
 			os.Exit(0)

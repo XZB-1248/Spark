@@ -7,7 +7,6 @@ import (
 	"Spark/utils"
 	"Spark/utils/melody"
 	"encoding/hex"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -142,7 +141,6 @@ func onDesktopMessage(session *melody.Session, data []byte) {
 	var pack modules.Packet
 	data, ok := utility.SimpleDecrypt(data, session)
 	if !(ok && utils.JSON.Unmarshal(data, &pack) == nil) {
-		fmt.Println(`desktop message decrypt failed`)
 		if val, ok := session.Get(`Desktop`); !ok {
 			desktop := val.(*desktop)
 			common.SendPack(modules.Packet{Act: `killDesktop`, Data: gin.H{

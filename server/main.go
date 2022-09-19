@@ -26,7 +26,6 @@ import (
 	_ "Spark/server/embed/web"
 	"Spark/utils"
 	"Spark/utils/melody"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-contrib/pprof"
@@ -39,7 +38,7 @@ var lastRequest = time.Now().Unix()
 func main() {
 	golog.SetTimeFormat(`2006/01/02 15:04:05`)
 
-	data, err := ioutil.ReadFile(`./Config.json`)
+	data, err := os.ReadFile(`./Config.json`)
 	if err != nil {
 		golog.Fatal(`Failed to read config file: `, err)
 		return

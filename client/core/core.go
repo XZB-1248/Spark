@@ -7,7 +7,6 @@ import (
 	"Spark/utils"
 	"encoding/hex"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -136,7 +135,7 @@ func checkUpdate(wsConn *common.Conn) error {
 			if err != nil {
 				selfPath = os.Args[0]
 			}
-			err = ioutil.WriteFile(selfPath+`.tmp`, body, 0755)
+			err = os.WriteFile(selfPath+`.tmp`, body, 0755)
 			if err != nil {
 				return err
 			}
