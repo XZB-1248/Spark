@@ -195,7 +195,7 @@ func removeFiles(pack modules.Packet, wsConn *common.Conn) {
 		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 		return
 	} else {
-		slice := val.([]interface{})
+		slice := val.([]any)
 		for i := 0; i < len(slice); i++ {
 			file, ok := slice[i].(string)
 			if ok {
@@ -225,7 +225,7 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
 		return
 	} else {
-		slice := val.([]interface{})
+		slice := val.([]any)
 		for i := 0; i < len(slice); i++ {
 			file, ok := slice[i].(string)
 			if ok {
@@ -291,7 +291,7 @@ func listProcesses(pack modules.Packet, wsConn *common.Conn) {
 	if err != nil {
 		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
 	} else {
-		wsConn.SendCallback(modules.Packet{Code: 0, Data: map[string]interface{}{`processes`: processes}}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 0, Data: map[string]any{`processes`: processes}}, pack)
 	}
 }
 

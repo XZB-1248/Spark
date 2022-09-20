@@ -42,7 +42,9 @@ function DraggableModal(props) {
                         setDisabled(true);
                     }}
                     onFocus={() => {}}
-                    onBlur={() => {}}
+                    onBlur={() => {
+                        setDisabled(true);
+                    }}
                 >
                     {props.modalTitle}
                 </div>

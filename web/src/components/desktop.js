@@ -5,7 +5,6 @@ import DraggableModal from "./modal";
 import CryptoJS from "crypto-js";
 import {Button, message} from "antd";
 import {FullscreenOutlined, ReloadOutlined} from "@ant-design/icons";
-import "./desktop.css";
 
 let ws = null;
 let ctx = null;
@@ -74,8 +73,8 @@ function ScreenModal(props) {
             clearInterval(ticker);
             ticker = setInterval(() => {
                 setBandwidth(bytes);
-                bytes = 0;
                 setFps(frames);
+                bytes = 0;
                 frames = 0;
                 ticks++;
                 if (ticks > 10 && conn) {

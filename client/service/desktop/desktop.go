@@ -62,7 +62,7 @@ var lock = &sync.Mutex{}
 var working = false
 var sessions = cmap.New()
 var prevDesktop *image.RGBA
-var ErrNoImage = errors.New("no image yet")
+var ErrNoImage = errors.New(`no image yet`)
 
 func init() {
 	go healthCheck()
@@ -108,7 +108,7 @@ func worker() {
 			diff := imageCompare(img, prevDesktop, compress)
 			if diff != nil && len(diff) > 0 {
 				prevDesktop = img
-				sessions.IterCb(func(uuid string, t interface{}) bool {
+				sessions.IterCb(func(uuid string, t any) bool {
 					desktop := t.(*session)
 					desktop.lock.Lock()
 					if !desktop.escape {
@@ -134,7 +134,7 @@ func worker() {
 
 func quitAll(info string) {
 	keys := make([]string, 0)
-	sessions.IterCb(func(uuid string, t interface{}) bool {
+	sessions.IterCb(func(uuid string, t any) bool {
 		keys = append(keys, uuid)
 		desktop := t.(*session)
 		desktop.escape = true
@@ -433,7 +433,7 @@ func healthCheck() {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		keys := make([]string, 0)
-		sessions.IterCb(func(uuid string, t interface{}) bool {
+		sessions.IterCb(func(uuid string, t any) bool {
 			desktop := t.(*session)
 			if timestamp-desktop.lastPack > MaxInterval {
 				keys = append(keys, uuid)

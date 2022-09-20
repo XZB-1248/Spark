@@ -141,7 +141,7 @@ func CheckDevice(deviceID, connUUID string) (string, bool) {
 		}
 	} else {
 		tempConnUUID := ``
-		Devices.IterCb(func(uuid string, v interface{}) bool {
+		Devices.IterCb(func(uuid string, v any) bool {
 			device := v.(*modules.Device)
 			if device.ID == deviceID {
 				tempConnUUID = uuid

@@ -41,7 +41,7 @@ func InitTerminal(pack modules.Packet) error {
 			buffer := make([]byte, 512)
 			n, err := ptySession.Read(buffer)
 			buffer = buffer[:n]
-			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]interface{}{
+			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]any{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack)
 			termSession.lastPack = common.Unix
@@ -167,7 +167,7 @@ func healthCheck() {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		queue := make([]string, 0)
-		terminals.IterCb(func(uuid string, t interface{}) bool {
+		terminals.IterCb(func(uuid string, t any) bool {
 			termSession := t.(*terminal)
 			if timestamp-termSession.lastPack > MaxInterval {
 				queue = append(queue, uuid)

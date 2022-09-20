@@ -293,7 +293,7 @@ func authCheck() gin.HandlerFunc {
 	go func() {
 		for now := range time.NewTicker(60 * time.Second).C {
 			var queue []string
-			tokens.IterCb(func(key string, v interface{}) bool {
+			tokens.IterCb(func(key string, v any) bool {
 				if now.Unix()-v.(int64) > 1800 {
 					queue = append(queue, key)
 				}

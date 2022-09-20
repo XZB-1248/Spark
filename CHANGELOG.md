@@ -1,9 +1,11 @@
 ## v0.1.5
 
 * Optimize: performance of desktop viewer on Windows.
+* Optimize: terminal for Windows.
 * Remove: deprecated ioutil package.
 
 * 优化：Windows下的远程桌面性能表现。
+* 优化：Windows的终端表现。
 * 移除：已经废弃的ioutil包。
 
 
@@ -112,7 +114,7 @@
 * 新增：服务端和客户端已支持macOS系统。
 * 新增：macOS现在将支持关机和重启功能（需要root权限）。
 * 更新：类unix系统的终端现已改用pty实现，以提供完整的终端功能。
-* 更新：改进了windows下的终端表现，修复了一些bug。
+* 更新：改进了Windows下的终端表现，修复了一些bug。
 
 
 

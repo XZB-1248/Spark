@@ -22,7 +22,7 @@ type Sender func(pack modules.Packet, session *melody.Session) bool
 
 // CheckForm checks if the form contains the required fields.
 // Every request must contain connection UUID or device ID.
-func CheckForm(ctx *gin.Context, form interface{}) (string, bool) {
+func CheckForm(ctx *gin.Context, form any) (string, bool) {
 	var base struct {
 		Conn   string `json:"uuid" yaml:"uuid" form:"uuid"`
 		Device string `json:"device" yaml:"device" form:"device"`
@@ -71,7 +71,7 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 		// If so, then find the session and let client quit.
 		// This will keep only one connection remained per device.
 		exSession := ``
-		common.Devices.IterCb(func(uuid string, v interface{}) bool {
+		common.Devices.IterCb(func(uuid string, v any) bool {
 			device := v.(*modules.Device)
 			if device.ID == pack.Device.ID {
 				exSession = uuid
@@ -173,8 +173,8 @@ func CheckUpdate(ctx *gin.Context) {
 
 // GetDevices will return all info about all clients.
 func GetDevices(ctx *gin.Context) {
-	devices := map[string]interface{}{}
-	common.Devices.IterCb(func(uuid string, v interface{}) bool {
+	devices := map[string]any{}
+	common.Devices.IterCb(func(uuid string, v any) bool {
 		device := v.(*modules.Device)
 		devices[uuid] = *device
 		return true

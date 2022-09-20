@@ -47,7 +47,7 @@ func (wsConn *Conn) SendData(data []byte) error {
 	return wsConn.WriteMessage(ws.BinaryMessage, data)
 }
 
-func (wsConn *Conn) SendPack(pack interface{}) error {
+func (wsConn *Conn) SendPack(pack any) error {
 	Mutex.Lock()
 	defer Mutex.Unlock()
 	data, err := utils.JSON.Marshal(pack)

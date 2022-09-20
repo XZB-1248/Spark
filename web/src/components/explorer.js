@@ -20,9 +20,9 @@ import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
 import {
     CloseOutlined,
-    ExclamationCircleOutlined,
     HomeOutlined,
-    LoadingOutlined, QuestionCircleOutlined,
+    LoadingOutlined,
+    QuestionCircleOutlined,
     ReloadOutlined,
     UploadOutlined
 } from "@ant-design/icons";

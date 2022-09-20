@@ -19,7 +19,7 @@ import (
 )
 
 // simplified type of map
-type smap map[string]interface{}
+type smap map[string]any
 
 var stop bool
 var (

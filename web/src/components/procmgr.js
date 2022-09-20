@@ -1,10 +1,11 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {message, Popconfirm} from "antd";
+import {Button, message, Popconfirm} from "antd";
 import ProTable from '@ant-design/pro-table';
 import {request, waitTime} from "../utils/utils";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
 import DraggableModal from "./modal";
+import {ReloadOutlined} from "@ant-design/icons";
 
 function ProcessMgr(props) {
     const [loading, setLoading] = useState(false);
@@ -35,6 +36,7 @@ function ProcessMgr(props) {
     ];
     const options = {
         show: true,
+        reload: false,
         density: false,
         setting: false,
     };
@@ -90,6 +92,7 @@ function ProcessMgr(props) {
 
     return (
         <DraggableModal
+            draggable={true}
             maskClosable={false}
             destroyOnClose={true}
             modalTitle={i18n.t('processManager')}
@@ -104,8 +107,9 @@ function ProcessMgr(props) {
             <ProTable
                 rowKey='pid'
                 tableStyle={{
-                    minHeight: '350px',
-                    maxHeight: '350px'
+                    paddingTop: '20px',
+                    minHeight: '355px',
+                    maxHeight: '355px'
                 }}
                 toolbar={{
                     actions: []
@@ -123,6 +127,14 @@ function ProcessMgr(props) {
                 components={virtualTable}
             >
             </ProTable>
+            <Button
+                style={{right:'59px'}}
+                className='header-button'
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                    tableRef.current.reload();
+                }}
+            />
         </DraggableModal>
     )
 }

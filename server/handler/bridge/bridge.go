@@ -23,7 +23,7 @@ type Bridge struct {
 	lock     *sync.Mutex
 	Dst      *gin.Context
 	Src      *gin.Context
-	ext      interface{}
+	ext      any
 	OnPull   func(bridge *Bridge)
 	OnPush   func(bridge *Bridge)
 	OnFinish func(bridge *Bridge)
@@ -36,7 +36,7 @@ func init() {
 		for now := range time.NewTicker(15 * time.Second).C {
 			var queue []string
 			timestamp := now.Unix()
-			bridges.IterCb(func(k string, v interface{}) bool {
+			bridges.IterCb(func(k string, v any) bool {
 				b := v.(*Bridge)
 				if timestamp-b.creation > 60 && !b.using {
 					b.lock.Lock()
@@ -181,7 +181,7 @@ func BridgePull(ctx *gin.Context) {
 	}
 }
 
-func AddBridge(ext interface{}, uuid string) *Bridge {
+func AddBridge(ext any, uuid string) *Bridge {
 	bridge := &Bridge{
 		creation: common.Unix,
 		uuid:     uuid,
@@ -193,7 +193,7 @@ func AddBridge(ext interface{}, uuid string) *Bridge {
 	return bridge
 }
 
-func AddBridgeWithSrc(ext interface{}, uuid string, Src *gin.Context) *Bridge {
+func AddBridgeWithSrc(ext any, uuid string, Src *gin.Context) *Bridge {
 	bridge := &Bridge{
 		creation: common.Unix,
 		uuid:     uuid,
@@ -206,7 +206,7 @@ func AddBridgeWithSrc(ext interface{}, uuid string, Src *gin.Context) *Bridge {
 	return bridge
 }
 
-func AddBridgeWithDst(ext interface{}, uuid string, Dst *gin.Context) *Bridge {
+func AddBridgeWithDst(ext any, uuid string, Dst *gin.Context) *Bridge {
 	bridge := &Bridge{
 		creation: common.Unix,
 		uuid:     uuid,

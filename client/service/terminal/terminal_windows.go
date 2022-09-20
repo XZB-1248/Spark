@@ -3,17 +3,12 @@ package terminal
 import (
 	"Spark/client/common"
 	"Spark/modules"
-	"bytes"
 	"encoding/hex"
 	"io"
-	"os"
 	"os/exec"
 	"reflect"
-	"runtime"
+	"syscall"
 	"time"
-
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
 )
 
 type terminal struct {
@@ -25,7 +20,13 @@ type terminal struct {
 	stdin    *io.WriteCloser
 }
 
+var defaultCmd = ``
+
 func init() {
+	defer func() {
+		recover()
+	}()
+	syscall.NewLazyDLL(`kernel32.dll`).NewProc(`SetConsoleCP`).Call(65001)
 	go healthCheck()
 }
 
@@ -34,16 +35,19 @@ func InitTerminal(pack modules.Packet) error {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		cmd.Process.Kill()
+		cmd.Process.Release()
 		return err
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		cmd.Process.Kill()
+		cmd.Process.Release()
 		return err
 	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		cmd.Process.Kill()
+		cmd.Process.Release()
 		return err
 	}
 	termSession := &terminal{
@@ -62,13 +66,7 @@ func InitTerminal(pack modules.Packet) error {
 			n, err := rc.Read(buffer)
 			buffer = buffer[:n]
 
-			// clear screen
-			if len(buffer) == 1 && buffer[0] == 12 {
-				buffer = []byte{27, 91, 72, 27, 91, 50, 74}
-			}
-
-			buffer, _ = encodeUTF8(buffer)
-			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]interface{}{
+			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]any{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack)
 			termSession.lastPack = common.Unix
@@ -106,11 +104,6 @@ func InputTerminal(pack modules.Packet) error {
 		return nil
 	}
 	terminal := val.(*terminal)
-	if len(data) == 1 && data[0] == '\x03' {
-		terminal.cmd.Process.Signal(os.Interrupt)
-		return nil
-	}
-	data, _ = decodeUTF8(data)
 	(*terminal.stdin).Write(data)
 	terminal.lastPack = common.Unix
 	return nil
@@ -159,45 +152,25 @@ func doKillTerminal(terminal *terminal) {
 	(*terminal.stdin).Close()
 	if terminal.cmd.Process != nil {
 		terminal.cmd.Process.Kill()
+		terminal.cmd.Process.Release()
 	}
 }
 
 func getTerminal() string {
+	var cmdTable = []string{
+		`powershell.exe`,
+		`cmd.exe`,
+	}
+	if defaultCmd != `` {
+		return defaultCmd
+	}
+	for _, cmd := range cmdTable {
+		if _, err := exec.LookPath(cmd); err == nil {
+			defaultCmd = cmd
+			return cmd
+		}
+	}
 	return `cmd.exe`
-}
-
-func encodeUTF8(s []byte) ([]byte, error) {
-	if runtime.GOOS == `windows` {
-		return gbkToUtf8(s)
-	} else {
-		return s, nil
-	}
-}
-
-func decodeUTF8(s []byte) ([]byte, error) {
-	if runtime.GOOS == `windows` {
-		return utf8ToGbk(s)
-	} else {
-		return s, nil
-	}
-}
-
-func gbkToUtf8(s []byte) ([]byte, error) {
-	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GB18030.NewDecoder())
-	d, e := io.ReadAll(reader)
-	if e != nil {
-		return nil, e
-	}
-	return d, nil
-}
-
-func utf8ToGbk(s []byte) ([]byte, error) {
-	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GB18030.NewEncoder())
-	d, e := io.ReadAll(reader)
-	if e != nil {
-		return nil, e
-	}
-	return d, nil
 }
 
 func healthCheck() {
@@ -206,7 +179,7 @@ func healthCheck() {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		keys := make([]string, 0)
-		terminals.IterCb(func(uuid string, t interface{}) bool {
+		terminals.IterCb(func(uuid string, t any) bool {
 			termSession := t.(*terminal)
 			if timestamp-termSession.lastPack > MaxInterval {
 				keys = append(keys, uuid)

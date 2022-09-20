@@ -28,14 +28,14 @@ class TerminalModal extends React.Component {
             cursorStyle: "block",
             fontFamily: "Hack, monospace",
             fontSize: 16,
-            logLevel: process.env.NODE_ENV === "development" ? "info" : "off",
+            logLevel: "off",
         });
         this.doResize.call(this);
     }
 
     initialize(ev) {
         ev?.dispose();
-        let buffer = { content: '' };
+        let buffer = { content: '', output: '' };
         let termEv = null;
         // Windows doesn't support pty, so we still use traditional way.
         // And we need to handle arrow events manually.
@@ -58,11 +58,19 @@ class TerminalModal extends React.Component {
             if (this.conn) {
                 if (data?.act === 'outputTerminal') {
                     data = ab2str(hex2buf(data?.data?.output));
+                    if (buffer.output.length > 0) {
+                        data = buffer.output + data;
+                        buffer.output = '';
+                    }
                     if (buffer.content.length > 0) {
-                        // check if data starts with buffer, if so, remove buffer.
-                        if (data.startsWith(buffer.content)) {
-                            data = data.substring(buffer.content.length);
-                            buffer.content = '';
+                        if (data.length > buffer.content.length) {
+                            if (data.startsWith(buffer.content)) {
+                                data = data.substring(buffer.content.length);
+                                buffer.content = '';
+                            }
+                        } else {
+                            buffer.output = data;
+                            return;
                         }
                     }
                     this.term.write(data);
@@ -110,7 +118,7 @@ class TerminalModal extends React.Component {
             if (!this.conn) {
                 if (e === '\r' || e === '\n' || e === ' ') {
                     this.term.write(`\n${i18n.t('reconnecting')}\n`);
-                    this.termEv = this.initialize(termEv);
+                    this.termEv = this.initialize(this.termEv);
                 }
                 return;
             }
@@ -158,12 +166,17 @@ class TerminalModal extends React.Component {
                         cursor--;
                     }
                     break;
-                case '\n':
                 case '\r':
-                    this.term.write('\n');
-                    this.sendInput(cmd + '\n');
+                case '\n':
+                    if (cmd === 'clear' || cmd === 'cls') {
+                        clearTerm.call(this);
+                        this.term.clear();
+                    } else {
+                        this.term.write('\n');
+                        this.sendInput(cmd + '\n');
+                        buffer.content = cmd + '\n';
+                    }
                     if (cmd.length > 0) history.push(cmd);
-                    buffer.content = cmd + '\n';
                     cursor = 0;
                     cmd = '';
                     if (history.length > 128) {
@@ -173,20 +186,13 @@ class TerminalModal extends React.Component {
                     tempCursor = 0;
                     index = history.length;
                     break;
-                case '\u0003':
-                    this.term.write('^C');
-                    this.sendInput('\u0003');
-                    cursor = 0;
-                    cmd = '';
-                    break;
-                case '\u007F':
+                case '\u007F': // backspace.
                     if (cmd.length > 0 && cursor > 0) {
                         cursor--;
                         let charWidth = wcwidth(cmd[cursor]);
                         let before = cmd.substring(0, cursor);
                         let after = cmd.substring(cursor+1);
                         cmd = before + after;
-
                         this.term.write('\b'.repeat(charWidth));
                         this.term.write(after + ' '.repeat(charWidth));
                         this.term.write('\u001b\u005b\u0044'.repeat(wcwidth(after) + charWidth));
@@ -205,17 +211,16 @@ class TerminalModal extends React.Component {
                             this.term.write(e);
                         }
                         cursor += e.length;
-                        return;
                     }
             }
         }.bind(this);
     }
-    onUnixOSInput(buffer) {
+    onUnixOSInput(_) {
         return function (e) {
             if (!this.conn) {
                 if (e === '\r' || e === ' ') {
                     this.term.write(`\n${i18n.t('reconnecting')}\n`);
-                    this.termEv = this.initialize(termEv);
+                    this.termEv = this.initialize(this.termEv);
                 }
                 return;
             }
@@ -327,6 +332,7 @@ class TerminalModal extends React.Component {
     render() {
         return (
             <DraggableModal
+                draggable={true}
                 maskClosable={false}
                 modalTitle={i18n.t('terminal')}
                 visible={this.props.visible}
