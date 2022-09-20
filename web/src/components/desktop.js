@@ -40,7 +40,7 @@ function ScreenModal(props) {
 
     function initCanvas() {
         if (!canvas) return;
-        ctx = canvas.getContext('2d');
+        ctx = canvas.getContext('2d', {alpha: false});
     }
     function construct() {
         if (ctx !== null) {

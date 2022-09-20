@@ -97,7 +97,6 @@ function ProcessMgr(props) {
             destroyOnClose={true}
             modalTitle={i18n.t('processManager')}
             footer={null}
-            height={500}
             width={400}
             bodyStyle={{
                 padding: 0
@@ -110,9 +109,6 @@ function ProcessMgr(props) {
                     paddingTop: '20px',
                     minHeight: '355px',
                     maxHeight: '355px'
-                }}
-                toolbar={{
-                    actions: []
                 }}
                 scroll={{scrollToFirstRowOnChange: true, y: 300}}
                 search={false}

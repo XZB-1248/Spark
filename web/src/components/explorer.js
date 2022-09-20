@@ -19,7 +19,7 @@ import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
 import {
-    CloseOutlined,
+    CloseOutlined, FullscreenOutlined,
     HomeOutlined,
     LoadingOutlined,
     QuestionCircleOutlined,
@@ -87,26 +87,9 @@ function FileBrowser(props) {
     const options = {
         show: true,
         search: true,
+        reload: false,
         density: false,
         setting: false,
-    };
-    const toolbar = {
-        settings: [
-            {
-                icon: <UploadOutlined/>,
-                tooltip: i18n.t('upload'),
-                key: 'upload',
-                onClick: uploadFile
-            },
-            {
-                icon: <ReloadOutlined/>,
-                tooltip: i18n.t('reload'),
-                key: 'reload',
-                onClick: () => {
-                    tableRef.current.reload();
-                }
-            }
-        ]
     };
     const tableRef = useRef();
     const virtualTable = useMemo(() => {
@@ -127,7 +110,6 @@ function FileBrowser(props) {
         >
             <a>{i18n.t('delete')}</a>
         </Popconfirm>
-
     </Space>);
     useEffect(() => {
         if (props.device) {
@@ -433,7 +415,6 @@ function FileBrowser(props) {
             destroyOnClose={true}
             modalTitle={i18n.t('fileExplorer')}
             footer={null}
-            height={500}
             width={830}
             bodyStyle={{
                 padding: 0
@@ -442,10 +423,13 @@ function FileBrowser(props) {
         >
             <ProTable
                 rowKey='name'
+                tableStyle={{
+                    minHeight: '320px',
+                    maxHeight: '320px'
+                }}
                 onRow={file => ({
                     onDoubleClick: onRowClick.bind(null, file)
                 })}
-                toolbar={toolbar}
                 scroll={{scrollToFirstRowOnChange: true, y: 300}}
                 search={false}
                 size='small'
@@ -472,6 +456,20 @@ function FileBrowser(props) {
                 pagination={false}
                 actionRef={tableRef}
                 components={virtualTable}
+            />
+            <Button
+                style={{right:'59px'}}
+                className='header-button'
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                    tableRef.current.reload();
+                }}
+            />
+            <Button
+                style={{right:'115px'}}
+                className='header-button'
+                icon={<UploadOutlined />}
+                onClick={uploadFile}
             />
             <input
                 id='uploader'
