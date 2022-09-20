@@ -67,6 +67,15 @@ func InitDesktop(ctx *gin.Context) {
 // device need to send a packet to browser
 func desktopEventWrapper(desktop *desktop) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
+		if len(pack.Act) == 0 {
+			if pack.Data == nil {
+				return
+			}
+			if data, ok := pack.Data[`data`]; ok {
+				desktop.targetConn.WriteBinary(*data.(*[]byte))
+			}
+			return
+		}
 		if pack.Act == `initDesktop` {
 			if pack.Code != 0 {
 				msg := `${i18n|desktopSessionCreationFailed}`
@@ -90,14 +99,6 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 			common.RemoveEvent(desktop.event)
 			desktop.targetConn.Close()
 			return
-		}
-		if len(pack.Act) == 0 {
-			if pack.Data == nil {
-				return
-			}
-			if data, ok := pack.Data[`data`]; ok {
-				desktop.targetConn.WriteBinary(*data.(*[]byte))
-			}
 		}
 	}
 }
@@ -157,41 +158,20 @@ func onDesktopMessage(session *melody.Session, data []byte) {
 	}
 	desktop := val.(*desktop)
 	session.Set(`LastPack`, common.Unix)
-	if pack.Act == `inputDesktop` {
-		if pack.Data == nil {
-			return
-		}
-		if input, ok := pack.Data[`input`]; ok {
-			common.SendPack(modules.Packet{Act: `inputDesktop`, Data: gin.H{
-				`input`:   input,
-				`desktop`: desktop.uuid,
-			}, Event: desktop.event}, desktop.deviceConn)
-		}
+	if pack.Act == `pingDesktop` {
+		common.SendPack(modules.Packet{Act: `pingDesktop`, Data: gin.H{
+			`desktop`: desktop.uuid,
+		}, Event: desktop.event}, desktop.deviceConn)
 		return
 	}
 	if pack.Act == `killDesktop` {
-		if pack.Data == nil {
-			return
-		}
 		common.SendPack(modules.Packet{Act: `killDesktop`, Data: gin.H{
 			`desktop`: desktop.uuid,
 		}, Event: desktop.event}, desktop.deviceConn)
 		return
 	}
 	if pack.Act == `getDesktop` {
-		if pack.Data == nil {
-			return
-		}
 		common.SendPack(modules.Packet{Act: `getDesktop`, Data: gin.H{
-			`desktop`: desktop.uuid,
-		}, Event: desktop.event}, desktop.deviceConn)
-		return
-	}
-	if pack.Act == `ping` {
-		if pack.Data == nil {
-			return
-		}
-		common.SendPack(modules.Packet{Act: `pingDesktop`, Data: gin.H{
 			`desktop`: desktop.uuid,
 		}, Event: desktop.event}, desktop.deviceConn)
 		return

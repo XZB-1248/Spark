@@ -13,6 +13,7 @@ import (
 	"image"
 	"image/jpeg"
 	"reflect"
+	"runtime"
 	"sync"
 	"time"
 	"unsafe"
@@ -51,20 +52,24 @@ type message struct {
 // 0: raw image
 // 1: compressed image (jpeg)
 
+const fpsLimit = 10
 const compress = true
 const blockSize = 64
-const imgQuality = 70
+const displayIndex = 0
+const imageQuality = 70
 
 var lock = &sync.Mutex{}
 var working = false
 var sessions = cmap.New()
 var prevDesktop *image.RGBA
+var ErrNoImage = errors.New("no image yet")
 
 func init() {
 	go healthCheck()
 }
 
 func worker() {
+	runtime.LockOSThread()
 	lock.Lock()
 	if working {
 		lock.Unlock()
@@ -73,10 +78,14 @@ func worker() {
 	working = true
 	lock.Unlock()
 	var (
+		screen screen
+		bounds image.Rectangle
 		img    *image.RGBA
 		err    error
 		errors int
 	)
+	bounds = screenshot.GetDisplayBounds(displayIndex)
+	screen.init(displayIndex)
 	for working {
 		if sessions.Count() == 0 {
 			lock.Lock()
@@ -84,9 +93,12 @@ func worker() {
 			lock.Unlock()
 			break
 		}
-		<-time.After(70 * time.Millisecond)
-		img, err = screenshot.CaptureDisplay(0)
+		img = image.NewRGBA(bounds)
+		err = screen.capture(img, bounds)
 		if err != nil {
+			if err == ErrNoImage {
+				return
+			}
 			errors++
 			if errors > 10 {
 				break
@@ -106,6 +118,7 @@ func worker() {
 					return true
 				})
 			}
+			<-time.After(time.Second / fpsLimit)
 		}
 	}
 	prevDesktop = nil
@@ -115,6 +128,8 @@ func worker() {
 	lock.Lock()
 	working = false
 	lock.Unlock()
+	screen.release()
+	runtime.UnlockOSThread()
 }
 
 func quitAll(info string) {
@@ -210,8 +225,8 @@ func getImageBlock(img *image.RGBA, rect image.Rectangle, compress bool) []byte 
 		Stride: width * 4,
 		Rect:   image.Rect(0, 0, width, height),
 	}
-	writer := new(bytes.Buffer)
-	jpeg.Encode(writer, subImg, &jpeg.Options{Quality: imgQuality})
+	writer := &bytes.Buffer{}
+	jpeg.Encode(writer, subImg, &jpeg.Options{Quality: imageQuality})
 	return writer.Bytes()
 }
 
@@ -219,7 +234,17 @@ func getDiff(img, prev *image.RGBA) []image.Rectangle {
 	imgWidth := img.Rect.Dx()
 	imgHeight := img.Rect.Dy()
 	result := make([]image.Rectangle, 0)
-	for y := 0; y < imgHeight; y += blockSize {
+	for y := 0; y < imgHeight; y += blockSize * 2 {
+		height := utils.If(y+blockSize > imgHeight, imgHeight-y, blockSize)
+		for x := 0; x < imgWidth; x += blockSize {
+			width := utils.If(x+blockSize > imgWidth, imgWidth-x, blockSize)
+			rect := image.Rect(x, y, x+width, y+height)
+			if isDiff(img, prev, rect) {
+				result = append(result, rect)
+			}
+		}
+	}
+	for y := blockSize; y < imgHeight; y += blockSize * 2 {
 		height := utils.If(y+blockSize > imgHeight, imgHeight-y, blockSize)
 		for x := 0; x < imgWidth; x += blockSize {
 			width := utils.If(x+blockSize > imgWidth, imgWidth-x, blockSize)
@@ -249,25 +274,13 @@ func isDiff(img, prev *image.RGBA, rect image.Rectangle) bool {
 	if imgHeader.Len < end || prevHeader.Len < end {
 		return true
 	}
-	if rectWidth%2 == 0 {
-		for y := rect.Min.Y; y < rect.Max.Y; y++ {
-			cursor := uintptr((y*imgWidth + rect.Min.X) * 4)
-			for x := 0; x < rectWidth; x += 2 {
-				if *(*uint64)(unsafe.Pointer(imgPtr + cursor)) != *(*uint64)(unsafe.Pointer(prevPtr + cursor)) {
-					return true
-				}
-				cursor += 8
+	for y := rect.Min.Y; y < rect.Max.Y; y += 2 {
+		cursor := uintptr((y*imgWidth + rect.Min.X) * 4)
+		for x := 0; x < rectWidth; x += 4 {
+			if *(*uint64)(unsafe.Pointer(imgPtr + cursor)) != *(*uint64)(unsafe.Pointer(prevPtr + cursor)) {
+				return true
 			}
-		}
-	} else {
-		for y := rect.Min.Y; y < rect.Max.Y; y++ {
-			cursor := uintptr((y*imgWidth + rect.Min.X) * 4)
-			for x := 0; x < rectWidth; x++ {
-				if *(*uint32)(unsafe.Pointer(imgPtr + cursor)) != *(*uint32)(unsafe.Pointer(prevPtr + cursor)) {
-					return true
-				}
-				cursor += 4
-			}
+			cursor += 16
 		}
 	}
 	return false
@@ -287,7 +300,7 @@ func InitDesktop(pack modules.Packet) error {
 	desktop := &session{
 		event:    pack.Event,
 		rawEvent: rawEvent,
-		lastPack: time.Now().Unix(),
+		lastPack: common.Unix,
 		escape:   false,
 		channel:  make(chan message, 4),
 		lock:     &sync.Mutex{},
@@ -332,7 +345,7 @@ func PingDesktop(pack modules.Packet) {
 		return
 	} else {
 		desktop = val.(*session)
-		desktop.lastPack = time.Now().Unix()
+		desktop.lastPack = common.Unix
 	}
 }
 
@@ -371,7 +384,9 @@ func GetDesktop(pack modules.Packet) {
 		desktop = val.(*session)
 	}
 	if !desktop.escape {
+		lock.Lock()
 		img := splitFullImage(prevDesktop, compress)
+		lock.Unlock()
 		desktop.lock.Lock()
 		desktop.channel <- message{t: 0, data: &img}
 		desktop.lock.Unlock()

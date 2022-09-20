@@ -16,8 +16,10 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.2
 )
 
+require github.com/kirides/screencapture v0.0.0-20211101142135-282f3f7e0f33 // indirect
+
 require (
-	github.com/gen2brain/shm v0.0.0-20200228170931-49f9650110c5 // indirect
+	github.com/gen2brain/shm v0.0.0-20210511105953-083dbc7d9d83 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect

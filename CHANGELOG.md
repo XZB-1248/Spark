@@ -1,3 +1,13 @@
+## v0.1.5
+
+* Optimize: performance of desktop viewer on Windows.
+* Remove: deprecated ioutil package.
+
+* 优化：Windows下的远程桌面性能表现。
+* 移除：已经废弃的ioutil包。
+
+
+
 ## v0.1.4
 
 * Add: desktop viewer (experimental).
@@ -46,8 +56,8 @@
 
 ## v0.1.0
 
-* fix: don't refresh after file upload.
-* fix: don't display error when screenshot fails.
+* Fix: don't refresh after file upload.
+* Fix: don't display error when screenshot fails.
 
 * 修复：文件上传成功后文件管理器不会自动刷新。
 * 修复：截图失败时不会显示错误提示。

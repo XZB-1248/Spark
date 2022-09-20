@@ -81,7 +81,7 @@ function ScreenModal(props) {
                 if (ticks > 10 && conn) {
                     ticks = 0;
                     ws.send(encrypt({
-                        act: 'ping'
+                        act: 'pingDesktop'
                     }, secret));
                 }
             }, 1000);
@@ -129,38 +129,30 @@ function ScreenModal(props) {
             canvas.height = dv.getUint16(3, false);
             return;
         }
+        if (op === 0) frames++;
         bytes += ab.byteLength;
-        if (op === 0) { // 0 means this is first part of a frame.
-            frames++;
-        }
         let offset = 1;
         while (offset < ab.byteLength) {
-            // let it = dv.getUint16(offset + 0, false); // image type
-            // let bw = dv.getUint16(offset + 8, false); // image block width
-            // let bh = dv.getUint16(offset + 10, false); // image block height
-            let len = dv.getUint16(offset + 2, false); // image block length
-            updateImage(ab.slice(offset, offset + len + 12), canvasCtx);
-            offset += len + 12;
+            let it = dv.getUint16(offset + 0, false); // image type
+            let il = dv.getUint16(offset + 2, false); // image length
+            let dx = dv.getUint16(offset + 4, false); // image block x
+            let dy = dv.getUint16(offset + 6, false); // image block y
+            let bw = dv.getUint16(offset + 8, false); // image block width
+            let bh = dv.getUint16(offset + 10, false); // image block height
+            offset += 12;
+            updateImage(ab.slice(offset, offset + il), it, dx, dy, bw, bh, canvasCtx);
+            offset += il;
         }
         dv = null;
     }
-    function updateImage(ab, canvasCtx) {
-        let dv = new DataView(ab);
-        // let bl = dv.getUint16(2, false); // block length without header.
-        let it = dv.getUint16(0, false); // image type: 0: raw, 1: jpg.
-        let dx = dv.getUint16(4, false);
-        let dy = dv.getUint16(6, false);
-        let bw = dv.getUint16(8, false);
-        let bh = dv.getUint16(10, false);
-        ab = ab.slice(12);
+    function updateImage(ab, it, dx, dy, bw, bh, canvasCtx) {
         if (it === 0) {
             canvasCtx.putImageData(new ImageData(new Uint8ClampedArray(ab), bw, bh), dx, dy, 0, 0, bw, bh);
-            dv = null;
         } else {
             createImageBitmap(new Blob([ab]), 0, 0, bw, bh)
                 .then((ib) => {
                     canvasCtx.drawImage(ib, 0, 0, bw, bh, dx, dy, bw, bh);
-                }).finally(() => dv = null);
+                });
         }
     }
     function handleJSON(ab) {
