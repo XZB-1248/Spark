@@ -14,7 +14,7 @@ import {
     Spin
 } from "antd";
 import ProTable, {TableDropdown} from "@ant-design/pro-table";
-import {catchBlobReq, formatSize, orderCompare, post, preventClose, request, translate, waitTime} from "../utils/utils";
+import {catchBlobReq, formatSize, orderCompare, post, preventClose, request, waitTime} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";

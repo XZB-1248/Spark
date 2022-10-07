@@ -3,19 +3,19 @@ package modules
 import "reflect"
 
 type Packet struct {
-	Code  int                    `json:"code"`
-	Act   string                 `json:"act,omitempty"`
-	Msg   string                 `json:"msg,omitempty"`
-	Data  map[string]interface{} `json:"data,omitempty"`
-	Event string                 `json:"event,omitempty"`
+	Code  int            `json:"code"`
+	Act   string         `json:"act,omitempty"`
+	Msg   string         `json:"msg,omitempty"`
+	Data  map[string]any `json:"data,omitempty"`
+	Event string         `json:"event,omitempty"`
 }
 
 type CommonPack struct {
-	Code  int         `json:"code"`
-	Act   string      `json:"act,omitempty"`
-	Msg   string      `json:"msg,omitempty"`
-	Data  interface{} `json:"data,omitempty"`
-	Event string      `json:"event,omitempty"`
+	Code  int    `json:"code"`
+	Act   string `json:"act,omitempty"`
+	Msg   string `json:"msg,omitempty"`
+	Data  any    `json:"data,omitempty"`
+	Event string `json:"event,omitempty"`
 }
 
 type Device struct {
@@ -55,7 +55,7 @@ type Net struct {
 	Recv uint64 `json:"recv"`
 }
 
-func (p *Packet) GetData(key string, t reflect.Kind) (interface{}, bool) {
+func (p *Packet) GetData(key string, t reflect.Kind) (any, bool) {
 	if p.Data == nil {
 		return nil, false
 	}

@@ -18,11 +18,11 @@ type Conn struct {
 	secretHex string
 }
 
+const MaxMessageSize = (2 << 15) + 1024
+
 var WSConn *Conn
 var Mutex = &sync.Mutex{}
 var HTTP = CreateClient()
-
-const MaxMessageSize = 32768 + 1024
 
 func CreateConn(wsConn *ws.Conn, secret []byte) *Conn {
 	return &Conn{
@@ -42,7 +42,7 @@ func (wsConn *Conn) SendData(data []byte) error {
 	if WSConn == nil {
 		return errors.New(`${i18n|wsClosed}`)
 	}
-	wsConn.SetWriteDeadline(Now.Add(5 * time.Second))
+	wsConn.SetWriteDeadline(utils.Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})
 	return wsConn.WriteMessage(ws.BinaryMessage, data)
 }
@@ -68,7 +68,7 @@ func (wsConn *Conn) SendPack(pack any) error {
 	if WSConn == nil {
 		return errors.New(`${i18n|wsClosed}`)
 	}
-	wsConn.SetWriteDeadline(Now.Add(5 * time.Second))
+	wsConn.SetWriteDeadline(utils.Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})
 	return wsConn.WriteMessage(ws.BinaryMessage, data)
 }

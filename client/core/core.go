@@ -91,7 +91,7 @@ func reportWS(wsConn *common.Conn) error {
 	if err != nil {
 		return err
 	}
-	common.WSConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+	common.WSConn.SetReadDeadline(utils.Now.Add(5 * time.Second))
 	_, data, err := common.WSConn.ReadMessage()
 	common.WSConn.SetReadDeadline(time.Time{})
 	if err != nil {
@@ -116,7 +116,7 @@ func checkUpdate(wsConn *common.Conn) error {
 		return nil
 	}
 	resp, err := common.HTTP.R().
-		SetBody(config.CfgBuffer).
+		SetBody(config.ConfigBuffer).
 		SetQueryParam(`os`, runtime.GOOS).
 		SetQueryParam(`arch`, runtime.GOARCH).
 		SetQueryParam(`commit`, config.COMMIT).

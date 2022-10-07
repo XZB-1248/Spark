@@ -8,8 +8,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"math/big"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"strings"
@@ -21,18 +19,18 @@ import (
 func init() {
 	golog.SetTimeFormat(`2006/01/02 15:04:05`)
 
-	if len(strings.Trim(config.CfgBuffer, "\x19")) == 0 {
+	if len(strings.Trim(config.ConfigBuffer, "\x19")) == 0 {
 		os.Exit(0)
 		return
 	}
 
 	// Convert first 2 bytes to int, which is the length of the encrypted config.
-	dataLen := int(big.NewInt(0).SetBytes([]byte(config.CfgBuffer[:2])).Uint64())
-	if dataLen > len(config.CfgBuffer)-2 {
+	dataLen := int(big.NewInt(0).SetBytes([]byte(config.ConfigBuffer[:2])).Uint64())
+	if dataLen > len(config.ConfigBuffer)-2 {
 		os.Exit(0)
 		return
 	}
-	cfgBytes := []byte(config.CfgBuffer[2 : 2+dataLen])
+	cfgBytes := utils.StringToBytes(config.ConfigBuffer, 2, 2+dataLen)
 	cfgBytes, err := decrypt(cfgBytes[16:], cfgBytes[:16])
 	if err != nil {
 		os.Exit(0)
@@ -49,7 +47,6 @@ func init() {
 }
 
 func main() {
-	go http.ListenAndServe(`:6060`, nil)
 	update()
 	core.Start()
 }

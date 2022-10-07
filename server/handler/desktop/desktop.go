@@ -13,16 +13,15 @@ import (
 
 type desktop struct {
 	uuid       string
-	event      string
 	device     string
-	targetConn *melody.Session
+	srcConn    *melody.Session
 	deviceConn *melody.Session
 }
 
 var desktopSessions = melody.New()
 
 func init() {
-	desktopSessions.Config.MaxMessageSize = 32768 + 1024
+	desktopSessions.Config.MaxMessageSize = common.MaxMessageSize
 	desktopSessions.HandleConnect(onDesktopConnect)
 	desktopSessions.HandleMessage(onDesktopMessage)
 	desktopSessions.HandleMessageBinary(onDesktopMessage)
@@ -59,7 +58,7 @@ func InitDesktop(ctx *gin.Context) {
 	desktopSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
 		`Secret`:   secret,
 		`Device`:   device,
-		`LastPack`: common.Unix,
+		`LastPack`: utils.Unix,
 	})
 }
 
@@ -72,7 +71,7 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 				return
 			}
 			if data, ok := pack.Data[`data`]; ok {
-				desktop.targetConn.WriteBinary(*data.(*[]byte))
+				desktop.srcConn.WriteBinary(*data.(*[]byte))
 			}
 			return
 		}
@@ -84,9 +83,16 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 				} else {
 					msg += `${i18n|unknownError}`
 				}
-				sendPack(modules.Packet{Act: `quit`, Msg: msg}, desktop.targetConn)
-				common.RemoveEvent(desktop.event)
-				desktop.targetConn.Close()
+				sendPack(modules.Packet{Act: `quit`, Msg: msg}, desktop.srcConn)
+				common.RemoveEvent(desktop.uuid)
+				desktop.srcConn.Close()
+				common.Warn(desktop.srcConn, `DESKTOP_INIT`, `fail`, msg, map[string]any{
+					`deviceConn`: desktop.deviceConn,
+				})
+			} else {
+				common.Info(desktop.srcConn, `DESKTOP_INIT`, `success`, ``, map[string]any{
+					`deviceConn`: desktop.deviceConn,
+				})
 			}
 			return
 		}
@@ -95,9 +101,12 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
 			}
-			sendPack(modules.Packet{Act: `quit`, Msg: msg}, desktop.targetConn)
-			common.RemoveEvent(desktop.event)
-			desktop.targetConn.Close()
+			sendPack(modules.Packet{Act: `quit`, Msg: msg}, desktop.srcConn)
+			common.RemoveEvent(desktop.uuid)
+			desktop.srcConn.Close()
+			common.Info(desktop.srcConn, `DESKTOP_QUIT`, `success`, ``, map[string]any{
+				`deviceConn`: desktop.deviceConn,
+			})
 			return
 		}
 	}
@@ -122,20 +131,21 @@ func onDesktopConnect(session *melody.Session) {
 		session.Close()
 		return
 	}
-	eventUUID := utils.GetStrUUID()
 	desktopUUID := utils.GetStrUUID()
 	desktop := &desktop{
 		uuid:       desktopUUID,
-		event:      eventUUID,
 		device:     device.(string),
-		targetConn: session,
+		srcConn:    session,
 		deviceConn: deviceConn,
 	}
 	session.Set(`Desktop`, desktop)
-	common.AddEvent(desktopEventWrapper(desktop), connUUID, eventUUID)
+	common.AddEvent(desktopEventWrapper(desktop), connUUID, desktopUUID)
 	common.SendPack(modules.Packet{Act: `initDesktop`, Data: gin.H{
 		`desktop`: desktopUUID,
-	}, Event: eventUUID}, deviceConn)
+	}, Event: desktopUUID}, deviceConn)
+	common.Info(desktop.srcConn, `DESKTOP_CONN`, `success`, ``, map[string]any{
+		`deviceConn`: desktop.deviceConn,
+	})
 }
 
 func onDesktopMessage(session *melody.Session, data []byte) {
@@ -146,7 +156,7 @@ func onDesktopMessage(session *melody.Session, data []byte) {
 			desktop := val.(*desktop)
 			common.SendPack(modules.Packet{Act: `killDesktop`, Data: gin.H{
 				`desktop`: desktop.uuid,
-			}, Event: desktop.event}, desktop.deviceConn)
+			}, Event: desktop.uuid}, desktop.deviceConn)
 		}
 		sendPack(modules.Packet{Code: -1}, session)
 		session.Close()
@@ -157,29 +167,33 @@ func onDesktopMessage(session *melody.Session, data []byte) {
 		return
 	}
 	desktop := val.(*desktop)
-	session.Set(`LastPack`, common.Unix)
+	session.Set(`LastPack`, utils.Unix)
 	if pack.Act == `pingDesktop` {
 		common.SendPack(modules.Packet{Act: `pingDesktop`, Data: gin.H{
 			`desktop`: desktop.uuid,
-		}, Event: desktop.event}, desktop.deviceConn)
+		}, Event: desktop.uuid}, desktop.deviceConn)
 		return
 	}
 	if pack.Act == `killDesktop` {
+		common.Info(desktop.srcConn, `DESKTOP_KILL`, `success`, ``, map[string]any{
+			`deviceConn`: desktop.deviceConn,
+		})
 		common.SendPack(modules.Packet{Act: `killDesktop`, Data: gin.H{
 			`desktop`: desktop.uuid,
-		}, Event: desktop.event}, desktop.deviceConn)
+		}, Event: desktop.uuid}, desktop.deviceConn)
 		return
 	}
 	if pack.Act == `getDesktop` {
 		common.SendPack(modules.Packet{Act: `getDesktop`, Data: gin.H{
 			`desktop`: desktop.uuid,
-		}, Event: desktop.event}, desktop.deviceConn)
+		}, Event: desktop.uuid}, desktop.deviceConn)
 		return
 	}
 	session.Close()
 }
 
 func onDesktopDisconnect(session *melody.Session) {
+	common.Info(session, `DESKTOP_CLOSE`, `success`, ``, nil)
 	val, ok := session.Get(`Desktop`)
 	if !ok {
 		return
@@ -190,8 +204,8 @@ func onDesktopDisconnect(session *melody.Session) {
 	}
 	common.SendPack(modules.Packet{Act: `killDesktop`, Data: gin.H{
 		`desktop`: desktop.uuid,
-	}, Event: desktop.event}, desktop.deviceConn)
-	common.RemoveEvent(desktop.event)
+	}, Event: desktop.uuid}, desktop.deviceConn)
+	common.RemoveEvent(desktop.uuid)
 	session.Set(`Desktop`, nil)
 	desktop = nil
 }
@@ -224,7 +238,7 @@ func CloseSessionsByDevice(deviceID string) {
 			return true
 		}
 		if desktop.device == deviceID {
-			sendPack(modules.Packet{Act: `quit`, Msg: `${i18n|desktopSessionClosed}`}, desktop.targetConn)
+			sendPack(modules.Packet{Act: `quit`, Msg: `${i18n|desktopSessionClosed}`}, desktop.srcConn)
 			queue = append(queue, session)
 			return false
 		}

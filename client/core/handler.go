@@ -11,7 +11,9 @@ import (
 	"Spark/modules"
 	"github.com/kataras/golog"
 	"os"
+	"os/exec"
 	"reflect"
+	"strings"
 )
 
 var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
@@ -40,6 +42,7 @@ var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
 	`pingDesktop`:    pingDesktop,
 	`killDesktop`:    killDesktop,
 	`getDesktop`:     getDesktop,
+	`execCommand`:    execCommand,
 }
 
 func ping(pack modules.Packet, wsConn *common.Conn) {
@@ -131,6 +134,8 @@ func initTerminal(pack modules.Packet, wsConn *common.Conn) {
 	err := terminal.InitTerminal(pack)
 	if err != nil {
 		wsConn.SendCallback(modules.Packet{Act: `initTerminal`, Code: 1, Msg: err.Error()}, pack)
+	} else {
+		wsConn.SendCallback(modules.Packet{Act: `initTerminal`, Code: 0}, pack)
 	}
 }
 
@@ -318,6 +323,8 @@ func initDesktop(pack modules.Packet, wsConn *common.Conn) {
 	err := desktop.InitDesktop(pack)
 	if err != nil {
 		wsConn.SendCallback(modules.Packet{Act: `initDesktop`, Code: 1, Msg: err.Error()}, pack)
+	} else {
+		wsConn.SendCallback(modules.Packet{Act: `initDesktop`, Code: 0}, pack)
 	}
 }
 
@@ -331,4 +338,35 @@ func killDesktop(pack modules.Packet, wsConn *common.Conn) {
 
 func getDesktop(pack modules.Packet, wsConn *common.Conn) {
 	desktop.GetDesktop(pack)
+}
+
+func execCommand(pack modules.Packet, wsConn *common.Conn) {
+	var proc *exec.Cmd
+	var cmd, args string
+	if val, ok := pack.Data[`cmd`]; !ok {
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		return
+	} else {
+		cmd = val.(string)
+	}
+	if val, ok := pack.Data[`args`]; !ok {
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		return
+	} else {
+		args = val.(string)
+	}
+	if len(args) == 0 {
+		proc = exec.Command(cmd)
+	} else {
+		proc = exec.Command(cmd, strings.Split(args, ` `)...)
+	}
+	err := proc.Start()
+	if err != nil {
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: err.Error()}, pack)
+	} else {
+		wsConn.SendCallback(modules.Packet{Code: 0, Data: map[string]any{
+			`pid`: proc.Process.Pid,
+		}}, pack)
+		proc.Process.Release()
+	}
 }

@@ -300,7 +300,7 @@ func InitDesktop(pack modules.Packet) error {
 	desktop := &session{
 		event:    pack.Event,
 		rawEvent: rawEvent,
-		lastPack: common.Unix,
+		lastPack: utils.Unix,
 		escape:   false,
 		channel:  make(chan message, 4),
 		lock:     &sync.Mutex{},
@@ -345,7 +345,7 @@ func PingDesktop(pack modules.Packet) {
 		return
 	} else {
 		desktop = val.(*session)
-		desktop.lastPack = common.Unix
+		desktop.lastPack = utils.Unix
 	}
 }
 

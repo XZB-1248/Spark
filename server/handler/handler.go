@@ -29,6 +29,7 @@ func InitRouter(ctx *gin.RouterGroup) {
 		group.POST(`/device/file/list`, file.ListDeviceFiles)
 		group.POST(`/device/file/text`, file.GetDeviceTextFile)
 		group.POST(`/device/file/get`, file.GetDeviceFiles)
+		group.POST(`/device/exec`, utility.ExecDeviceCmd)
 		group.POST(`/device/list`, utility.GetDevices)
 		group.POST(`/device/:act`, utility.CallDevice)
 		group.POST(`/client/check`, generate.CheckClient)

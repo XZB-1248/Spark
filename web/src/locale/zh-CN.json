@@ -25,6 +25,7 @@
 	"terminal": "终端",
 	"procMgr": "进程",
 	"fileMgr": "文件",
+	"run": "运行",
 	"screenshot": "截屏",
 	"desktop": "桌面",
 	"lock": "锁屏",
@@ -115,6 +116,10 @@
 	"screenshotFailed": "截屏失败",
 	"screenshotObtainFailed": "截屏读取失败",
 	"noDisplayFound": "设备未连接显示器",
+
+	"executionSuccess": "执行成功",
+	"cmdPlaceholder": "命令",
+	"argsPlaceholder": "参数（以空格分隔）",
 
 	"colon": "："
 }

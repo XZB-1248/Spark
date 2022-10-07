@@ -26,6 +26,8 @@ server forever.
 
 **THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.**
 <br />
+**ALL ILLEGAL USAGE IS PROHIBITED!**
+<br />
 **YOU SHALL USE THIS PROJECT AT YOUR OWN RISK.**
 <br />
 **THE AUTHORS AND DEVELOPERS ARE NOT RESPONSIBLE FOR ANY DAMAGE CAUSED BY YOUR MISUSE OF THIS PROJECT.**
@@ -41,14 +43,19 @@ Only local installation are available yet.
 ### Local installation
 * Get prebuilt executable file from [Releases](https://github.com/XZB-1248/Spark/releases) page.
 * Extract all files and **do not** delete `built` directory.
-* Create a configuration file named `Config.json` and set your own salt.
+* Create a configuration file named `config.json` and set your own salt.
 
   ```json
   {
       "listen": ":8000",
-      "salt": "some random string",
+      "salt": "some random string length <= 24",
       "auth": {
           "username": "password"
+      },
+      "log": {
+          "level": "info",
+          "path": "./logs",
+          "days": 7
       }
   }
   ```

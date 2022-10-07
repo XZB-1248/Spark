@@ -7,6 +7,7 @@ import Explorer from "../components/explorer";
 import Terminal from "../components/terminal";
 import ProcMgr from "../components/procmgr";
 import Desktop from "../components/desktop";
+import Runner from "../components/runner";
 import {QuestionCircleOutlined} from "@ant-design/icons";
 import i18n from "../locale/locale";
 
@@ -38,6 +39,7 @@ function UsageBar(props) {
 }
 
 function overview(props) {
+    const [runner, setRunner] = useState(false);
     const [desktop, setDesktop] = useState(false);
     const [procMgr, setProcMgr] = useState(false);
     const [explorer, setExplorer] = useState(false);
@@ -271,8 +273,9 @@ function overview(props) {
     }
     function renderOperation(device) {
         let menus = [
-            {key: 'screenshot', name: i18n.t('screenshot')},
+            {key: 'run', name: i18n.t('run')},
             {key: 'desktop', name: i18n.t('desktop')},
+            {key: 'screenshot', name: i18n.t('screenshot')},
             {key: 'lock', name: i18n.t('lock')},
             {key: 'logoff', name: i18n.t('logoff')},
             {key: 'hibernate', name: i18n.t('hibernate')},
@@ -299,6 +302,14 @@ function overview(props) {
     }
 
     function callDevice(act, device) {
+        if (act === 'run') {
+            setRunner(device);
+            return;
+        }
+        if (act === 'desktop') {
+            setDesktop(device);
+            return;
+        }
         if (act === 'screenshot') {
             request('/api/device/screenshot/get', {device: device.id}, {}, {
                 responseType: 'blob'
@@ -310,10 +321,6 @@ function overview(props) {
                     setScreenBlob(URL.createObjectURL(res.data));
                 }
             }).catch(catchBlobReq);
-            return;
-        }
-        if (act === 'desktop') {
-            setDesktop(device);
             return;
         }
         Modal.confirm({
@@ -408,6 +415,11 @@ function overview(props) {
                 visible={procMgr}
                 device={procMgr}
                 onCancel={setProcMgr.bind(null, false)}
+            />
+            <Runner
+                visible={runner}
+                device={runner}
+                onCancel={setRunner.bind(null, false)}
             />
             <Desktop
                 visible={desktop}

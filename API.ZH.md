@@ -133,13 +133,38 @@ Authorization: Basic WFpCOjEyNDg=
 
 ---
 
+### 执行命令：`/device/exec`
+
+参数：`cmd`、`args`以及`device`（设备ID）
+
+示例:
+```http request
+POST http://localhost:8000/api/device/exec HTTP/1.1
+Host: localhost:8000
+Content-Length: 116
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47
+Origin: http://localhost:8000
+Referer: http://localhost:8000/
+
+cmd=taskkill&args=%2Ff%20%2Fim%20regedit.exe&device=bc7e49f8f794f80ffb0032a4ba516c86d76041bf2023e1be6c5dda3b1ee0cf4c
+```
+
+```
+{
+    "code": 0
+}
+```
+
+---
+
 ### 获取截屏：`/device/screenshot/get`
 
 参数：`device`（设备ID）
 
 如果截屏获取成功，则会直接以图片的形式输出。
 <br />
-如果截屏失败，如下响应会被输出（错误信息不一定是这一个）。
+如果截屏失败，如下响应会被输出（错误信息不唯一）。
 
 ```
 {
@@ -199,7 +224,7 @@ Authorization: Basic WFpCOjEyNDg=
 <br />
 如果存在同名文件，则会被**覆盖**！
 
-Example:
+示例:
 ```http request
 POST http://localhost:8000/api/device/file/upload?path=D%3A%5C&file=Test.txt&device=bc7e49f8f794f80ffb0032a4ba516c86d76041bf2023e1be6c5dda3b1ee0cf4c HTTP/1.1
 Host: localhost:8000
@@ -212,7 +237,7 @@ Referer: http://localhost:8000/
 Hello World.
 ```
 
-如果文件上传成功，则`code`为`1`。
+如果文件上传成功，则`code`为`0`。
 <br />
 文件`D:\Test.txt`会写入：`Hello World.`。
 

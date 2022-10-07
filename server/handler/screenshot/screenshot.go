@@ -24,11 +24,12 @@ func GetScreenshot(ctx *gin.Context) {
 	called := false
 	common.SendPackByUUID(modules.Packet{Code: 0, Act: `screenshot`, Data: gin.H{`bridge`: bridgeID}, Event: trigger}, target)
 	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
-		wait <- false
 		called = true
 		bridge.RemoveBridge(bridgeID)
 		common.RemoveEvent(trigger)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		common.Warn(ctx, `TAKE_SCREENSHOT`, `fail`, p.Msg, nil)
+		wait <- false
 	}, target, trigger)
 	instance := bridge.AddBridgeWithDst(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge.Bridge) {
@@ -37,6 +38,9 @@ func GetScreenshot(ctx *gin.Context) {
 		ctx.Header(`Content-Type`, `image/png`)
 	}
 	instance.OnFinish = func(bridge *bridge.Bridge) {
+		if called {
+			common.Info(ctx, `TAKE_SCREENSHOT`, `success`, ``, nil)
+		}
 		wait <- false
 	}
 	select {
@@ -46,6 +50,7 @@ func GetScreenshot(ctx *gin.Context) {
 			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
 			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			common.Warn(ctx, `TAKE_SCREENSHOT`, `fail`, `timeout`, nil)
 		} else {
 			<-wait
 		}

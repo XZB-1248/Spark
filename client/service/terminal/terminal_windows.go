@@ -3,6 +3,7 @@ package terminal
 import (
 	"Spark/client/common"
 	"Spark/modules"
+	"Spark/utils"
 	"encoding/hex"
 	"io"
 	"os/exec"
@@ -14,6 +15,7 @@ import (
 type terminal struct {
 	lastPack int64
 	event    string
+	stop     bool
 	cmd      *exec.Cmd
 	stdout   *io.ReadCloser
 	stderr   *io.ReadCloser
@@ -26,7 +28,11 @@ func init() {
 	defer func() {
 		recover()
 	}()
-	syscall.NewLazyDLL(`kernel32.dll`).NewProc(`SetConsoleCP`).Call(65001)
+	{
+		kernel32 := syscall.NewLazyDLL(`kernel32.dll`)
+		kernel32.NewProc(`SetConsoleCP`).Call(65001)
+		kernel32.NewProc(`SetConsoleOutputCP`).Call(65001)
+	}
 	go healthCheck()
 }
 
@@ -34,34 +40,28 @@ func InitTerminal(pack modules.Packet) error {
 	cmd := exec.Command(getTerminal())
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		cmd.Process.Kill()
-		cmd.Process.Release()
 		return err
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		cmd.Process.Kill()
-		cmd.Process.Release()
 		return err
 	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		cmd.Process.Kill()
-		cmd.Process.Release()
 		return err
 	}
 	termSession := &terminal{
 		cmd:      cmd,
+		stop:     false,
 		event:    pack.Event,
 		stdout:   &stdout,
 		stderr:   &stderr,
 		stdin:    &stdin,
-		lastPack: common.Unix,
+		lastPack: utils.Unix,
 	}
-	terminals.Set(pack.Data[`terminal`].(string), termSession)
 
 	readSender := func(rc io.ReadCloser) {
-		for {
+		for !termSession.stop {
 			buffer := make([]byte, 512)
 			n, err := rc.Read(buffer)
 			buffer = buffer[:n]
@@ -69,8 +69,9 @@ func InitTerminal(pack modules.Packet) error {
 			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]any{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack)
-			termSession.lastPack = common.Unix
+			termSession.lastPack = utils.Unix
 			if err != nil {
+				termSession.stop = true
 				common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`}, pack)
 				break
 			}
@@ -79,7 +80,12 @@ func InitTerminal(pack modules.Packet) error {
 	go readSender(stdout)
 	go readSender(stderr)
 
-	cmd.Start()
+	err = cmd.Start()
+	if err != nil {
+		termSession.stop = true
+		return err
+	}
+	terminals.Set(pack.Data[`terminal`].(string), termSession)
 	return nil
 }
 
@@ -105,7 +111,7 @@ func InputTerminal(pack modules.Packet) error {
 	}
 	terminal := val.(*terminal)
 	(*terminal.stdin).Write(data)
-	terminal.lastPack = common.Unix
+	terminal.lastPack = utils.Unix
 	return nil
 }
 
@@ -142,7 +148,7 @@ func PingTerminal(pack modules.Packet) {
 		return
 	} else {
 		termSession = val.(*terminal)
-		termSession.lastPack = common.Unix
+		termSession.lastPack = utils.Unix
 	}
 }
 

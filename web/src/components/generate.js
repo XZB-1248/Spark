@@ -15,13 +15,11 @@ function Generate(props) {
         }
         form.secure = location.protocol === 'https:' ? 'true' : 'false';
         let basePath = location.origin + location.pathname + 'api/client/';
-        request(basePath + 'check', form)
-            .then((res) => {
-                if (res.data.code === 0) {
-                    post(basePath += 'generate', form);
-                }
-            })
-            .catch()
+        request(basePath + 'check', form).then(res => {
+            if (res.data.code === 0) {
+                post(basePath += 'generate', form);
+            }
+        }).catch();
     }
 
     function getInitValues() {

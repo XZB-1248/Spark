@@ -27,16 +27,29 @@ func RemoveDeviceFiles(ctx *gin.Context) {
 	if !ok {
 		return
 	}
+	if len(form.Files) == 0 {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return
+	}
 	trigger := utils.GetStrUUID()
 	common.SendPackByUUID(modules.Packet{Code: 0, Act: `removeFiles`, Data: gin.H{`files`: form.Files}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
+			common.Warn(ctx, `REMOVE_FILES`, `fail`, p.Msg, map[string]any{
+				`files`: form.Files,
+			})
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
+			common.Info(ctx, `REMOVE_FILES`, `success`, ``, map[string]any{
+				`files`: form.Files,
+			})
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
+		common.Warn(ctx, `REMOVE_FILES`, `fail`, `timeout`, map[string]any{
+			`files`: form.Files,
+		})
 		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 	}
 }
@@ -124,11 +137,14 @@ func GetDeviceFiles(ctx *gin.Context) {
 	wait := make(chan bool)
 	called := false
 	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
-		wait <- false
 		called = true
 		bridge.RemoveBridge(bridgeID)
 		common.RemoveEvent(trigger)
+		common.Warn(ctx, `READ_FILES`, `fail`, p.Msg, map[string]any{
+			`files`: form.Files,
+		})
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		wait <- false
 	}, target, trigger)
 	instance := bridge.AddBridgeWithDst(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge.Bridge) {
@@ -177,6 +193,11 @@ func GetDeviceFiles(ctx *gin.Context) {
 		}
 	}
 	instance.OnFinish = func(bridge *bridge.Bridge) {
+		if called {
+			common.Info(ctx, `READ_FILES`, `success`, ``, map[string]any{
+				`files`: form.Files,
+			})
+		}
 		wait <- false
 	}
 	select {
@@ -185,6 +206,9 @@ func GetDeviceFiles(ctx *gin.Context) {
 		if !called {
 			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
+			common.Warn(ctx, `READ_FILES`, `fail`, `timeout`, map[string]any{
+				`files`: form.Files,
+			})
 			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {
 			<-wait
@@ -203,6 +227,10 @@ func GetDeviceTextFile(ctx *gin.Context) {
 	if !ok {
 		return
 	}
+	if len(form.File) == 0 {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return
+	}
 	bridgeID := utils.GetStrUUID()
 	trigger := utils.GetStrUUID()
 	common.SendPackByUUID(modules.Packet{Code: 0, Act: `uploadTextFile`, Data: gin.H{
@@ -212,11 +240,14 @@ func GetDeviceTextFile(ctx *gin.Context) {
 	wait := make(chan bool)
 	called := false
 	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
-		wait <- false
 		called = true
 		bridge.RemoveBridge(bridgeID)
 		common.RemoveEvent(trigger)
+		common.Warn(ctx, `READ_TEXT_FILE`, `fail`, p.Msg, map[string]any{
+			`file`: form.File,
+		})
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		wait <- false
 	}, target, trigger)
 	instance := bridge.AddBridgeWithDst(nil, bridgeID, ctx)
 	instance.OnPush = func(bridge *bridge.Bridge) {
@@ -239,6 +270,11 @@ func GetDeviceTextFile(ctx *gin.Context) {
 		ctx.Status(http.StatusOK)
 	}
 	instance.OnFinish = func(bridge *bridge.Bridge) {
+		if called {
+			common.Info(ctx, `READ_TEXT_FILE`, `success`, ``, map[string]any{
+				`file`: form.File,
+			})
+		}
 		wait <- false
 	}
 	select {
@@ -247,6 +283,9 @@ func GetDeviceTextFile(ctx *gin.Context) {
 		if !called {
 			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
+			common.Warn(ctx, `READ_TEXT_FILE`, `fail`, `timeout`, map[string]any{
+				`file`: form.File,
+			})
 			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 		} else {
 			<-wait
@@ -266,18 +305,28 @@ func UploadToDevice(ctx *gin.Context) {
 	if !ok {
 		return
 	}
+	if len(form.File) == 0 || len(form.Path) == 0 {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return
+	}
 	bridgeID := utils.GetStrUUID()
 	trigger := utils.GetStrUUID()
 	wait := make(chan bool)
 	called := false
 	response := false
+	fileDest := path.Join(form.Path, form.File)
+	fileSize := ctx.Request.ContentLength
 	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
-		wait <- false
 		called = true
 		response = true
 		bridge.RemoveBridge(bridgeID)
 		common.RemoveEvent(trigger)
+		common.Warn(ctx, `UPLOAD_FILE`, `fail`, p.Msg, map[string]any{
+			`dest`: fileDest,
+			`size`: fileSize,
+		})
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		wait <- false
 	}, target, trigger)
 	instance := bridge.AddBridgeWithSrc(nil, bridgeID, ctx)
 	instance.OnPull = func(bridge *bridge.Bridge) {
@@ -293,6 +342,12 @@ func UploadToDevice(ctx *gin.Context) {
 		dst.Header(`Content-Disposition`, fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, form.File, url.PathEscape(form.File)))
 	}
 	instance.OnFinish = func(bridge *bridge.Bridge) {
+		if called {
+			common.Info(ctx, `UPLOAD_FILE`, `success`, ``, map[string]any{
+				`dest`: fileDest,
+				`size`: fileSize,
+			})
+		}
 		wait <- false
 	}
 	common.SendPackByUUID(modules.Packet{Code: 0, Act: `fetchFile`, Data: gin.H{
@@ -310,6 +365,10 @@ func UploadToDevice(ctx *gin.Context) {
 			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
 			if !response {
+				common.Warn(ctx, `UPLOAD_FILE`, `fail`, `timeout`, map[string]any{
+					`dest`: fileDest,
+					`size`: fileSize,
+				})
 				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
 			}
 		} else {

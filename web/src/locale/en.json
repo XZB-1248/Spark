@@ -25,6 +25,7 @@
 	"terminal": "Terminal",
 	"procMgr": "ProcMgr",
 	"fileMgr": "Explorer",
+	"run": "Run",
 	"screenshot": "Screenshot",
 	"desktop": "Desktop",
 	"lock": "Lock",
@@ -115,6 +116,10 @@
 	"screenshotFailed": "Failed to take screenshot",
 	"screenshotObtainFailed": "Failed to obtain screenshot",
 	"noDisplayFound": "No display found",
+
+	"executionSuccess": "Execution success",
+	"cmdPlaceholder": "Command",
+	"argsPlaceholder": "Arguments (separated by space)",
 
 	"colon": ": "
 }

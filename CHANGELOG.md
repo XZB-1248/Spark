@@ -1,3 +1,15 @@
+## v0.1.6
+
+* Optimize: potential crash problem of explorer.
+* Add: set config through command line arguments.
+* Add: log system.
+
+* 优化：文件管理器可能导致服务崩溃。
+* 添加：支持通过命令行设置相关配置。
+* 新增：日志机制。
+
+
+
 ## v0.1.5
 
 * Optimize: performance of desktop viewer on Windows.

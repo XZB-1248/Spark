@@ -115,17 +115,21 @@ func FetchFile(dir, file, bridge string) error {
 }
 
 func getTempFile(dir, file string) (string, os.FileMode) {
-	exists := true
-	tempFile := ``
-	for i := 0; exists; i++ {
-		tempFile = path.Join(dir, file+`.tmp.`+strconv.Itoa(i))
-		stat, err := os.Stat(tempFile)
-		if os.IsNotExist(err) {
-			exists = false
+	fileMode := os.FileMode(0644)
+	origin := path.Join(dir, file)
+	stat, err := os.Stat(origin)
+	if stat != nil {
+		fileMode = stat.Mode()
+		tempFile := ``
+		for i := 0; i < 5; i++ {
+			tempFile = path.Join(dir, file+`.tmp.`+strconv.Itoa(i))
+			stat, err = os.Stat(tempFile)
+			if os.IsNotExist(err) {
+				return tempFile, fileMode
+			}
 		}
-		return tempFile, stat.Mode()
 	}
-	return tempFile, 0644
+	return origin, fileMode
 }
 
 func RemoveFiles(files []string) error {

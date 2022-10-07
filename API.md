@@ -20,7 +20,7 @@ Example:
 Authorization: Basic WFpCOjEyNDg=
 ```
 
-After basic authentication, server will assign you a `Authorization` cookie.
+After basic authentication, server will assign you an `Authorization` cookie.
 <br />
 You can use this token cookie to authenticate rest of your requests.
 
@@ -121,6 +121,31 @@ Parameters: `:act` and `device` (device ID)
 The `:act` could be `lock`, `logoff`, `hibernate`, `suspend`, `restart`, `shutdown` and `offline`.
 
 For example, when you call `/device/restart`, your device will restart.
+
+```
+{
+    "code": 0
+}
+```
+
+---
+
+### Execute command: `/device/exec`
+
+Parameters: `cmd`, `args` and `device` (device ID)
+
+Example:
+```http request
+POST http://localhost:8000/api/device/exec HTTP/1.1
+Host: localhost:8000
+Content-Length: 116
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36 Edg/101.0.1210.47
+Origin: http://localhost:8000
+Referer: http://localhost:8000/
+
+cmd=taskkill&args=%2Ff%20%2Fim%20regedit.exe&device=bc7e49f8f794f80ffb0032a4ba516c86d76041bf2023e1be6c5dda3b1ee0cf4c
+```
 
 ```
 {

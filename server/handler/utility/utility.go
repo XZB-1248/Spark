@@ -7,6 +7,7 @@ import (
 	"Spark/utils"
 	"Spark/utils/melody"
 	"bytes"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
@@ -40,6 +41,7 @@ func CheckForm(ctx *gin.Context, form any) (string, bool) {
 		ctx.AbortWithStatusJSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
 		return ``, false
 	}
+	ctx.Request = ctx.Request.WithContext(context.WithValue(ctx.Request.Context(), `ConnUUID`, connUUID))
 	return connUUID, true
 }
 
@@ -88,6 +90,12 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 			common.Devices.Remove(exSession)
 		}
 		common.Devices.Set(session.UUID, &pack.Device)
+		common.Info(nil, `CLIENT_ONLINE`, ``, ``, map[string]any{
+			`device`: map[string]any{
+				`name`: pack.Device.Hostname,
+				`ip`:   pack.Device.WAN,
+			},
+		})
 	} else {
 		val, ok := common.Devices.Get(session.UUID)
 		if ok {
@@ -111,35 +119,83 @@ func CheckUpdate(ctx *gin.Context) {
 		Commit string `form:"commit" binding:"required"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		golog.Error(err)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 		return
 	}
 	if form.Commit == config.COMMIT {
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
+		common.Warn(ctx, `CLIENT_UPDATE`, `success`, `latest`, map[string]any{
+			`client`: map[string]any{
+				`os`:     form.OS,
+				`arch`:   form.Arch,
+				`commit`: form.Commit,
+			},
+			`server`: config.COMMIT,
+		})
 		return
 	}
 	tpl, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		common.Warn(ctx, `CLIENT_UPDATE`, `fail`, `no prebuild asset`, map[string]any{
+			`client`: map[string]any{
+				`os`:     form.OS,
+				`arch`:   form.Arch,
+				`commit`: form.Commit,
+			},
+			`server`: config.COMMIT,
+		})
 		return
 	}
 
 	const MaxBodySize = 384 // This is size of client config buffer.
 	if ctx.Request.ContentLength > MaxBodySize {
 		ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1})
+		common.Warn(ctx, `CLIENT_UPDATE`, `fail`, `config too large`, map[string]any{
+			`client`: map[string]any{
+				`os`:     form.OS,
+				`arch`:   form.Arch,
+				`commit`: form.Commit,
+			},
+			`server`: config.COMMIT,
+		})
 		return
 	}
 	body, err := ctx.GetRawData()
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1})
+		common.Warn(ctx, `CLIENT_UPDATE`, `fail`, `read config fail`, map[string]any{
+			`client`: map[string]any{
+				`os`:     form.OS,
+				`arch`:   form.Arch,
+				`commit`: form.Commit,
+			},
+			`server`: config.COMMIT,
+		})
 		return
 	}
 	session := common.CheckClientReq(ctx)
 	if session == nil {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, modules.Packet{Code: 1})
+		common.Warn(ctx, `CLIENT_UPDATE`, `fail`, `check config fail`, map[string]any{
+			`client`: map[string]any{
+				`os`:     form.OS,
+				`arch`:   form.Arch,
+				`commit`: form.Commit,
+			},
+			`server`: config.COMMIT,
+		})
 		return
 	}
+
+	common.Info(ctx, `CLIENT_UPDATE`, `success`, `updating`, map[string]any{
+		`client`: map[string]any{
+			`os`:     form.OS,
+			`arch`:   form.Arch,
+			`commit`: form.Commit,
+		},
+		`server`: config.COMMIT,
+	})
 
 	ctx.Header(`Spark-Commit`, config.COMMIT)
 	ctx.Header(`Accept-Ranges`, `none`)
@@ -171,6 +227,46 @@ func CheckUpdate(ctx *gin.Context) {
 	}
 }
 
+// ExecDeviceCmd execute command on device.
+func ExecDeviceCmd(ctx *gin.Context) {
+	var form struct {
+		Cmd  string `json:"cmd" yaml:"cmd" form:"cmd" binding:"required"`
+		Args string `json:"args" yaml:"args" form:"args"`
+	}
+	target, ok := CheckForm(ctx, &form)
+	if !ok {
+		return
+	}
+	if len(form.Cmd) == 0 {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		return
+	}
+	trigger := utils.GetStrUUID()
+	common.SendPackByUUID(modules.Packet{Code: 0, Act: `execCommand`, Data: gin.H{`cmd`: form.Cmd, `args`: form.Args}, Event: trigger}, target)
+	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
+		if p.Code != 0 {
+			common.Warn(ctx, `EXEC_COMMAND`, `fail`, p.Msg, map[string]any{
+				`cmd`:  form.Cmd,
+				`args`: form.Args,
+			})
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+		} else {
+			common.Info(ctx, `EXEC_COMMAND`, `success`, ``, map[string]any{
+				`cmd`:  form.Cmd,
+				`args`: form.Args,
+			})
+			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
+		}
+	}, target, trigger, 5*time.Second)
+	if !ok {
+		common.Warn(ctx, `EXEC_COMMAND`, `fail`, `timeout`, map[string]any{
+			`cmd`:  form.Cmd,
+			`args`: form.Args,
+		})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+	}
+}
+
 // GetDevices will return all info about all clients.
 func GetDevices(ctx *gin.Context) {
 	devices := map[string]any{}
@@ -199,6 +295,9 @@ func CallDevice(ctx *gin.Context) {
 			}
 		}
 		if !ok {
+			common.Warn(ctx, `CALL_DEVICE`, `fail`, `invalid act`, map[string]any{
+				`act`: act,
+			})
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
 			return
 		}
@@ -211,14 +310,23 @@ func CallDevice(ctx *gin.Context) {
 	common.SendPackByUUID(modules.Packet{Act: act, Event: trigger}, connUUID)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
+			common.Warn(ctx, `CALL_DEVICE`, `fail`, p.Msg, map[string]any{
+				`act`: act,
+			})
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
 		} else {
+			common.Info(ctx, `CALL_DEVICE`, `success`, ``, map[string]any{
+				`act`: act,
+			})
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		}
 	}, connUUID, trigger, 5*time.Second)
 	if !ok {
 		//This means the client is offline.
 		//So we take this as a success.
+		common.Info(ctx, `CALL_DEVICE`, `success`, ``, map[string]any{
+			`act`: act,
+		})
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 	}
 }

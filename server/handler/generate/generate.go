@@ -86,7 +86,7 @@ func GenerateClient(ctx *gin.Context) {
 		return
 	}
 	clientUUID := utils.GetUUID()
-	clientKey, err := common.EncAES(clientUUID, config.Config.StdSalt)
+	clientKey, err := common.EncAES(clientUUID, config.Config.SaltBytes)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
 		return

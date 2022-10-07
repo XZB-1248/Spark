@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"Spark/modules"
-	"Spark/server/common"
+	"Spark/utils"
 	"Spark/utils/cmap"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
@@ -98,7 +98,7 @@ func BridgePush(ctx *gin.Context) {
 			for {
 				eof := false
 				buf := make([]byte, 2<<14)
-				SrcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+				SrcConn.SetReadDeadline(utils.Now.Add(5 * time.Second))
 				n, err := bridge.Src.Request.Body.Read(buf)
 				if n == 0 {
 					break
@@ -109,7 +109,7 @@ func BridgePush(ctx *gin.Context) {
 						break
 					}
 				}
-				DstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
+				DstConn.SetWriteDeadline(utils.Now.Add(10 * time.Second))
 				_, err = bridge.Dst.Writer.Write(buf[:n])
 				if eof || err != nil {
 					break
@@ -152,7 +152,7 @@ func BridgePull(ctx *gin.Context) {
 			for {
 				eof := false
 				buf := make([]byte, 2<<14)
-				SrcConn.SetReadDeadline(common.Now.Add(5 * time.Second))
+				SrcConn.SetReadDeadline(utils.Now.Add(5 * time.Second))
 				n, err := bridge.Src.Request.Body.Read(buf)
 				if n == 0 {
 					break
@@ -163,7 +163,7 @@ func BridgePull(ctx *gin.Context) {
 						break
 					}
 				}
-				DstConn.SetWriteDeadline(common.Now.Add(10 * time.Second))
+				DstConn.SetWriteDeadline(utils.Now.Add(10 * time.Second))
 				_, err = bridge.Dst.Writer.Write(buf[:n])
 				if eof || err != nil {
 					break
@@ -183,7 +183,7 @@ func BridgePull(ctx *gin.Context) {
 
 func AddBridge(ext any, uuid string) *Bridge {
 	bridge := &Bridge{
-		creation: common.Unix,
+		creation: utils.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
@@ -195,7 +195,7 @@ func AddBridge(ext any, uuid string) *Bridge {
 
 func AddBridgeWithSrc(ext any, uuid string, Src *gin.Context) *Bridge {
 	bridge := &Bridge{
-		creation: common.Unix,
+		creation: utils.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},
@@ -208,7 +208,7 @@ func AddBridgeWithSrc(ext any, uuid string, Src *gin.Context) *Bridge {
 
 func AddBridgeWithDst(ext any, uuid string, Dst *gin.Context) *Bridge {
 	bridge := &Bridge{
-		creation: common.Unix,
+		creation: utils.Unix,
 		uuid:     uuid,
 		using:    false,
 		lock:     &sync.Mutex{},

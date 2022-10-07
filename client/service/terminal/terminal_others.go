@@ -5,6 +5,7 @@ package terminal
 import (
 	"Spark/client/common"
 	"Spark/modules"
+	"Spark/utils"
 	"encoding/hex"
 	"errors"
 	"github.com/creack/pty"
@@ -33,7 +34,7 @@ func InitTerminal(pack modules.Packet) error {
 	termSession := &terminal{
 		pty:      ptySession,
 		event:    pack.Event,
-		lastPack: common.Unix,
+		lastPack: utils.Unix,
 	}
 	terminals.Set(pack.Data[`terminal`].(string), termSession)
 	go func() {
@@ -44,7 +45,7 @@ func InitTerminal(pack modules.Packet) error {
 			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]any{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack)
-			termSession.lastPack = common.Unix
+			termSession.lastPack = utils.Unix
 			if err != nil {
 				common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`}, pack)
 				break
@@ -77,7 +78,7 @@ func InputTerminal(pack modules.Packet) error {
 	}
 	terminal := val.(*terminal)
 	terminal.pty.Write(data)
-	terminal.lastPack = common.Unix
+	terminal.lastPack = utils.Unix
 	return nil
 }
 
@@ -140,7 +141,7 @@ func PingTerminal(pack modules.Packet) {
 		return
 	} else {
 		termSession = val.(*terminal)
-		termSession.lastPack = common.Unix
+		termSession.lastPack = utils.Unix
 	}
 }
 

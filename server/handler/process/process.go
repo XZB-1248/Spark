@@ -46,11 +46,20 @@ func KillDeviceProcess(ctx *gin.Context) {
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
+			common.Warn(ctx, `KILL_PROCESS`, `fail`, p.Msg, map[string]any{
+				`pid`: form.Pid,
+			})
 		} else {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
+			common.Info(ctx, `KILL_PROCESS`, `success`, ``, map[string]any{
+				`pid`: form.Pid,
+			})
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
 		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		common.Warn(ctx, `KILL_PROCESS`, `fail`, `timeout`, map[string]any{
+			`pid`: form.Pid,
+		})
 	}
 }

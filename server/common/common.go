@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+const MaxMessageSize = (2 << 15) + 1024
+
 var Melody = melody.New()
 var Devices = cmap.New()
 
@@ -65,6 +67,27 @@ func Decrypt(data []byte, session *melody.Session) ([]byte, bool) {
 		return nil, false
 	}
 	return dec, true
+}
+
+func GetAddrIP(addr net.Addr) string {
+	switch addr.(type) {
+	case *net.TCPAddr:
+		return addr.(*net.TCPAddr).IP.String()
+	case *net.UDPAddr:
+		return addr.(*net.UDPAddr).IP.String()
+	case *net.IPAddr:
+		return addr.(*net.IPAddr).IP.String()
+	default:
+		return addr.String()
+	}
+}
+
+func GetRealIP(ctx *gin.Context) string {
+	addr, ok := ctx.Request.Context().Value(`ClientIP`).(string)
+	if !ok {
+		return GetRemoteAddr(ctx)
+	}
+	return addr
 }
 
 func GetRemoteAddr(ctx *gin.Context) string {

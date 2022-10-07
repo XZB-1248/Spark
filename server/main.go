@@ -28,51 +28,24 @@ import (
 	"Spark/utils/melody"
 	"net/http"
 
-	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/golog"
 )
 
+var blocked = cmap.New()
 var lastRequest = time.Now().Unix()
 
 func main() {
-	golog.SetTimeFormat(`2006/01/02 15:04:05`)
-
-	data, err := os.ReadFile(`./Config.json`)
-	if err != nil {
-		golog.Fatal(`Failed to read config file: `, err)
-		return
-	}
-	err = utils.JSON.Unmarshal(data, &config.Config)
-	if err != nil {
-		golog.Fatal(`Failed to parse config file: `, err)
-		return
-	}
-	if len(config.Config.Salt) > 24 {
-		golog.Fatal(`Length of Salt should be less than 24.`)
-		return
-	}
-	config.Config.StdSalt = []byte(config.Config.Salt)
-	config.Config.StdSalt = append(config.Config.StdSalt, bytes.Repeat([]byte{25}, 24)...)
-	config.Config.StdSalt = config.Config.StdSalt[:24]
-
 	webFS, err := fs.NewWithNamespace(`web`)
 	if err != nil {
-		golog.Fatal(`Failed to load static resources: `, err)
+		common.Fatal(nil, `LOAD_STATIC_RES`, `fail`, err.Error(), nil)
 		return
 	}
-	if config.Config.Debug.Gin {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	gin.SetMode(gin.ReleaseMode)
 	app := gin.New()
 	app.Use(gin.Recovery())
-	if config.Config.Debug.Pprof {
-		pprof.Register(app)
-	}
 	{
-		handler.AuthHandler = authCheck()
+		handler.AuthHandler = checkAuth()
 		handler.InitRouter(app.Group(`/api`))
 		app.Any(`/ws`, wsHandshake)
 		app.NoRoute(handler.AuthHandler, func(ctx *gin.Context) {
@@ -82,7 +55,7 @@ func main() {
 		})
 	}
 
-	common.Melody.Config.MaxMessageSize = 32768 + 1024
+	common.Melody.Config.MaxMessageSize = common.MaxMessageSize
 	common.Melody.HandleConnect(wsOnConnect)
 	common.Melody.HandleMessage(wsOnMessage)
 	common.Melody.HandleMessageBinary(wsOnMessageBinary)
@@ -93,33 +66,43 @@ func main() {
 		Addr:    config.Config.Listen,
 		Handler: app,
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			return context.WithValue(ctx, `Conn`, c)
+			ctx = context.WithValue(ctx, `Conn`, c)
+			ctx = context.WithValue(ctx, `ClientIP`, common.GetAddrIP(c.RemoteAddr()))
+			return ctx
 		},
 	}
-	go func() {
-		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			golog.Fatal(`Failed to bind address: `, err)
+	{
+		go func() {
+			err = srv.ListenAndServe()
+		}()
+		if err != nil {
+			common.Fatal(nil, `SERVICE_INIT`, `fail`, err.Error(), nil)
+		} else {
+			common.Info(nil, `SERVICE_INIT`, ``, ``, map[string]any{
+				`listen`: config.Config.Listen,
+			})
 		}
-	}()
+	}
 	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	golog.Warn(`Server is shutting down ...`)
+	common.Warn(nil, `SERVICE_EXITING`, ``, ``, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		golog.Fatal(`Server shutdown: `, err)
+		common.Warn(nil, `SERVICE_EXIT`, `error`, err.Error(), nil)
 	}
 	<-ctx.Done()
-	golog.Info(`Server exited.`)
+	common.Warn(nil, `SERVICE_EXIT`, `success`, ``, nil)
+	common.CloseLog()
 }
 
 func wsHandshake(ctx *gin.Context) {
 	if !ctx.IsWebsocket() {
 		// When message is too large to transport via websocket,
 		// client will try to send these data via http.
-		const MaxBodySize = 2 << 18 //524288 512KB
+		const MaxBodySize = 2 << 18 // 524288 512KB
 		if ctx.Request.ContentLength > MaxBodySize {
 			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1})
 			return
@@ -145,7 +128,7 @@ func wsHandshake(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	decrypted, err := common.DecAES(clientKey, config.Config.StdSalt)
+	decrypted, err := common.DecAES(clientKey, config.Config.SaltBytes)
 	if err != nil || !bytes.Equal(decrypted, clientUUID) {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -155,7 +138,7 @@ func wsHandshake(ctx *gin.Context) {
 		`Secret`: []string{hex.EncodeToString(secret)},
 	}, gin.H{
 		`Secret`:   secret,
-		`LastPack`: common.Unix,
+		`LastPack`: utils.Unix,
 		`Address`:  common.GetRemoteAddr(ctx),
 	})
 	if err != nil {
@@ -169,7 +152,7 @@ func wsOnConnect(session *melody.Session) {
 	pingDevice(session)
 }
 
-func wsOnMessage(session *melody.Session, bytes []byte) {
+func wsOnMessage(session *melody.Session, _ []byte) {
 	session.Close()
 }
 
@@ -200,7 +183,7 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 		return
 	}
 	if pack.Act == `report` || pack.Act == `setDevice` {
-		session.Set(`LastPack`, common.Unix)
+		session.Set(`LastPack`, utils.Unix)
 		utility.OnDevicePack(data, session)
 		return
 	}
@@ -209,7 +192,7 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 		return
 	}
 	common.CallEvent(pack, session)
-	session.Set(`LastPack`, common.Unix)
+	session.Set(`LastPack`, utils.Unix)
 }
 
 func wsOnDisconnect(session *melody.Session) {
@@ -217,6 +200,18 @@ func wsOnDisconnect(session *melody.Session) {
 		deviceInfo := val.(*modules.Device)
 		terminal.CloseSessionsByDevice(deviceInfo.ID)
 		desktop.CloseSessionsByDevice(deviceInfo.ID)
+		common.Info(nil, `CLIENT_OFFLINE`, ``, ``, map[string]any{
+			`device`: map[string]any{
+				`name`: deviceInfo.Hostname,
+				`ip`:   deviceInfo.WAN,
+			},
+		})
+	} else {
+		common.Info(nil, `CLIENT_OFFLINE`, ``, ``, map[string]any{
+			`device`: map[string]any{
+				`ip`: common.GetAddrIP(session.GetWSConn().UnderlyingConn().RemoteAddr()),
+			},
+		})
 	}
 	common.Devices.Remove(session.UUID)
 }
@@ -231,7 +226,7 @@ func wsHealthCheck(container *melody.Melody) {
 		var pingInterval int64 = 3
 		for range time.NewTicker(3 * time.Second).C {
 			tick += 3
-			if tick >= common.Unix-lastRequest {
+			if tick >= utils.Unix-lastRequest {
 				pingInterval = 3
 			}
 			if tick >= 3 && (tick >= pingInterval || tick >= MaxPingInterval) {
@@ -286,7 +281,7 @@ func pingDevice(s *melody.Session) {
 	}, s.UUID, trigger, 3*time.Second)
 }
 
-func authCheck() gin.HandlerFunc {
+func checkAuth() gin.HandlerFunc {
 	// Token as key and update timestamp as value.
 	// Stores authenticated tokens.
 	tokens := cmap.New()
@@ -300,19 +295,30 @@ func authCheck() gin.HandlerFunc {
 				return true
 			})
 			tokens.Remove(queue...)
+			queue = nil
+
+			blocked.IterCb(func(addr string, v any) bool {
+				if now.Unix() > v.(int64) {
+					queue = append(queue, addr)
+				}
+				return true
+			})
+			blocked.Remove(queue...)
 		}
 	}()
 
 	if config.Config.Auth == nil || len(config.Config.Auth) == 0 {
 		return func(ctx *gin.Context) {
-			lastRequest = common.Unix
+			lastRequest = utils.Unix
 			ctx.Next()
 		}
 	}
+
 	auth := gin.BasicAuth(config.Config.Auth)
 	return func(ctx *gin.Context) {
-		now := common.Unix
+		now := utils.Unix
 		passed := false
+
 		if token, err := ctx.Cookie(`Authorization`); err == nil {
 			if tokens.Has(token) {
 				lastRequest = now
@@ -321,11 +327,32 @@ func authCheck() gin.HandlerFunc {
 				return
 			}
 		}
+
 		if !passed {
+			addr := common.GetRealIP(ctx)
+			if expire, ok := blocked.Get(addr); ok {
+				if now < expire.(int64) {
+					ctx.AbortWithStatusJSON(http.StatusTooManyRequests, modules.Packet{Code: 1})
+					return
+				}
+				blocked.Remove(addr)
+			}
+
 			auth(ctx)
+			user, _, _ := ctx.Request.BasicAuth()
+
 			if ctx.IsAborted() {
+				blocked.Set(addr, now+1)
+				user = utils.If(len(user) == 0, `EMPTY`, user)
+				common.Warn(ctx, `LOGIN_ATTEMPT`, `fail`, ``, map[string]any{
+					`user`: user,
+				})
 				return
 			}
+
+			common.Warn(ctx, `LOGIN_ATTEMPT`, `success`, ``, map[string]any{
+				`user`: user,
+			})
 			token := utils.GetStrUUID()
 			tokens.Set(token, now)
 			ctx.Header(`Set-Cookie`, fmt.Sprintf(`Authorization=%s; Path=/; HttpOnly`, token))
@@ -366,7 +393,7 @@ func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
 	}
 	ctx.Header(`Cache-Control`, `max-age=604800`)
 	ctx.Header(`ETag`, etag)
-	ctx.Header(`Expires`, common.Now.Add(7*24*time.Hour).Format(`Mon, 02 Jan 2006 15:04:05 GMT`))
+	ctx.Header(`Expires`, utils.Now.Add(7*24*time.Hour).Format(`Mon, 02 Jan 2006 15:04:05 GMT`))
 
 	ctx.Writer.Header().Del(`Content-Length`)
 	ctx.Header(`Content-Encoding`, `gzip`)
@@ -386,7 +413,7 @@ func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
 				break
 			}
 		}
-		conn.SetWriteDeadline(common.Now.Add(10 * time.Second))
+		conn.SetWriteDeadline(utils.Now.Add(10 * time.Second))
 		_, err = ctx.Writer.Write(buf[:n])
 		if eof || err != nil {
 			break
@@ -408,6 +435,6 @@ func checkCache(ctx *gin.Context, _ http.FileSystem) bool {
 	}
 	ctx.Header(`ETag`, etag)
 	ctx.Header(`Cache-Control`, `max-age=604800`)
-	ctx.Header(`Expires`, common.Now.Add(7*24*time.Hour).Format(`Mon, 02 Jan 2006 15:04:05 GMT`))
+	ctx.Header(`Expires`, utils.Now.Add(7*24*time.Hour).Format(`Mon, 02 Jan 2006 15:04:05 GMT`))
 	return false
 }
