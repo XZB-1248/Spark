@@ -174,13 +174,13 @@ function overview(props) {
 
     useEffect(() => {
         // Auto update is only available when all modal are closed.
-        if (!desktop && !procMgr && !explorer && !generate && !terminal) {
+        if (!runner && !desktop && !procMgr && !explorer && !generate && !terminal) {
             let id = setInterval(getData, 3000);
             return () => {
                 clearInterval(id);
             };
         }
-    }, [desktop, procMgr, explorer, generate, terminal]);
+    }, [runner, desktop, procMgr, explorer, generate, terminal]);
 
     function getInitColumnsState() {
         let data = localStorage.getItem(`columnsState`);
