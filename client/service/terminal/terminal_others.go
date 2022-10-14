@@ -19,6 +19,7 @@ type terminal struct {
 	lastPack int64
 	event    string
 	pty      *os.File
+	cmd      *exec.Cmd
 }
 
 func init() {
@@ -32,6 +33,7 @@ func InitTerminal(pack modules.Packet) error {
 		return err
 	}
 	termSession := &terminal{
+		cmd:      cmd,
 		pty:      ptySession,
 		event:    pack.Event,
 		lastPack: utils.Unix,
@@ -148,6 +150,10 @@ func PingTerminal(pack modules.Packet) {
 func doKillTerminal(terminal *terminal) {
 	if terminal.pty != nil {
 		terminal.pty.Close()
+	}
+	if terminal.cmd.Process != nil {
+		terminal.cmd.Process.Kill()
+		terminal.cmd.Process.Release()
 	}
 }
 
