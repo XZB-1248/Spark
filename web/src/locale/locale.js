@@ -17,7 +17,7 @@ for (const locale in locales) {
 i18n.init({
     lng: lang,
     fallbackLng: 'en',
-    initImmediate: false,
+    initImmediate: true,
     resources
 });
 

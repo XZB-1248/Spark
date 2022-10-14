@@ -52,14 +52,14 @@ function FileBrowser(props) {
     const columns = [
         {
             key: 'Name',
-            title: i18n.t('fileName'),
+            title: i18n.t('EXPLORER.FILE_NAME'),
             dataIndex: 'name',
             ellipsis: true,
             width: 180
         },
         {
             key: 'Size',
-            title: i18n.t('fileSize'),
+            title: i18n.t('EXPLORER.FILE_SIZE'),
             dataIndex: 'size',
             ellipsis: true,
             width: 60,
@@ -68,11 +68,11 @@ function FileBrowser(props) {
         },
         {
             key: 'Time',
-            title: i18n.t('modifyTime'),
+            title: i18n.t('EXPLORER.MODIFY_TIME'),
             dataIndex: 'time',
             ellipsis: true,
             width: 100,
-            renderText: (ts, file) => file.type === 0 ? dayjs.unix(ts).format(i18n.t('dateTimeFormat')) : '-'
+            renderText: (ts, file) => file.type === 0 ? dayjs.unix(ts).format(i18n.t('EXPLORER.DATE_TIME_FORMAT')) : '-'
         },
         {
             key: 'Option',
@@ -99,16 +99,16 @@ function FileBrowser(props) {
     }, []);
     const alertOptionRenderer = () => (<Space size={16}>
         <Popconfirm
-            title={i18n.t('downloadMultiConfirm')}
+            title={i18n.t('EXPLORER.DOWNLOAD_MULTI_CONFIRM')}
             onConfirm={() => downloadFiles(selectedRowKeys)}
         >
-            <a>{i18n.t('download')}</a>
+            <a>{i18n.t('EXPLORER.DOWNLOAD')}</a>
         </Popconfirm>
         <Popconfirm
-            title={i18n.t('deleteMultiConfirm')}
+            title={i18n.t('EXPLORER.DELETE_MULTI_CONFIRM')}
             onConfirm={() => removeFiles(selectedRowKeys)}
         >
-            <a>{i18n.t('delete')}</a>
+            <a>{i18n.t('EXPLORER.DELETE')}</a>
         </Popconfirm>
     </Space>);
     useEffect(() => {
@@ -124,8 +124,8 @@ function FileBrowser(props) {
 
     function renderOperation(file) {
         let menus = [
-            {key: 'delete', name: i18n.t('delete')},
-            {key: 'editAsText', name: i18n.t('editAsText')},
+            {key: 'delete', name: i18n.t('EXPLORER.DELETE')},
+            {key: 'editAsText', name: i18n.t('EXPLORER.EDIT_AS_TEXT')},
         ];
         if (file.type === 1) {
             menus.pop();
@@ -140,7 +140,7 @@ function FileBrowser(props) {
                 key='download'
                 onClick={() => downloadFiles(file.name)}
             >
-                {i18n.t('download')}
+                {i18n.t('EXPLORER.DOWNLOAD')}
             </a>,
             <TableDropdown
                 key='more'
@@ -152,11 +152,11 @@ function FileBrowser(props) {
     function onDropdownSelect(key, file) {
         switch (key) {
             case 'delete':
-                let content = i18n.t('deleteConfirm');
+                let content = i18n.t('EXPLORER.DELETE_CONFIRM');
                 if (file.type === 0) {
-                    content = content.replace('{0}', i18n.t('file'));
+                    content = content.replace('{0}', i18n.t('EXPLORER.FILE'));
                 } else {
-                    content = content.replace('{0}', i18n.t('folder'));
+                    content = content.replace('{0}', i18n.t('EXPLORER.FOLDER'));
                 }
                 Modal.confirm({
                     icon: <QuestionCircleOutlined />,
@@ -220,7 +220,7 @@ function FileBrowser(props) {
     function textEdit(file) {
         // Only edit text file smaller than 2MB.
         if (file.size > 2 << 20) {
-            message.warn(i18n.t('fileTooLarge'));
+            message.warn(i18n.t('EXPLORER.FILE_TOO_LARGE'));
             return;
         }
         if (editingFile) return;
@@ -265,7 +265,7 @@ function FileBrowser(props) {
     function uploadFile() {
         if (path === '/' || path === '\\' || path.length === 0) {
             if (props.isWindows) {
-                message.error(i18n.t('uploadInvalidPath'));
+                message.error(i18n.t('EXPLORER.UPLOAD_INVALID_PATH'));
                 return;
             }
         }
@@ -286,8 +286,8 @@ function FileBrowser(props) {
             if (exists) {
                 Modal.confirm({
                     autoFocusButton: 'cancel',
-                    content: i18n.t('fileOverwriteConfirm').replace('{0}', file.name),
-                    okText: i18n.t('fileOverwrite'),
+                    content: i18n.t('EXPLORER.OVERWRITE_CONFIRM').replace('{0}', file.name),
+                    okText: i18n.t('EXPLORER.OVERWRITE'),
                     onOk: () => {
                         setUploading(file);
                     },
@@ -317,7 +317,7 @@ function FileBrowser(props) {
                 // It may take an extremely long time to archive volumes.
                 // So we don't allow to download volumes.
                 // Besides, archive volumes may throw an error.
-                message.error(i18n.t('downloadInvalidPath'));
+                message.error(i18n.t('EXPLORER.DOWNLOAD_VOLUMES_ERROR'));
                 return;
             }
         }
@@ -338,7 +338,7 @@ function FileBrowser(props) {
     function removeFiles(items) {
         if (path === '/' || path === '\\' || path.length === 0) {
             if (props.isWindows) {
-                message.error(i18n.t('deleteInvalidPath'));
+                message.error(i18n.t('EXPLORER.DELETE_INVALID_PATH'));
                 return;
             }
         }
@@ -359,7 +359,7 @@ function FileBrowser(props) {
         }).then(res => {
             let data = res.data;
             if (data.code === 0) {
-                message.success(i18n.t('deleteSuccess'));
+                message.success(i18n.t('EXPLORER.DELETE_SUCCESS'));
                 tableRef.current.reload();
             }
         });
@@ -413,7 +413,7 @@ function FileBrowser(props) {
             draggable={draggable}
             maskClosable={false}
             destroyOnClose={true}
-            modalTitle={i18n.t('fileExplorer')}
+            modalTitle={i18n.t('EXPLORER.TITLE')}
             footer={null}
             width={830}
             bodyStyle={{
@@ -442,7 +442,7 @@ function FileBrowser(props) {
                     alwaysShowAlert: true
                 }}
                 tableAlertRender={() =>
-                    i18n.t('fileMultiSelectAlert').
+                    i18n.t('EXPLORER.MULTI_SELECT_LABEL').
                     replace('{0}', String(selectedRowKeys.length)).
                     replace('{1}', String(fileList.length))
                 }
@@ -591,8 +591,8 @@ function TextEditor(props) {
     const editorRef = useRef();
     const fontMenu = (
         <Menu onClick={onFontMenuClick}>
-            <Menu.Item key='enlarge'>{i18n.t('enlarge')}</Menu.Item>
-            <Menu.Item key='shrink'>{i18n.t('shrink')}</Menu.Item>
+            <Menu.Item key='enlarge'>{i18n.t('EXPLORER.ENLARGE')}</Menu.Item>
+            <Menu.Item key='shrink'>{i18n.t('EXPLORER.SHRINK')}</Menu.Item>
         </Menu>
     );
     const editorThemes = {
@@ -643,7 +643,7 @@ function TextEditor(props) {
             editorRef.current.editor.setFontSize(currentFontSize + 1);
         } else if (e.key === 'shrink') {
             if (currentFontSize <= 14) {
-                message.warn(i18n.t('minFontSize'));
+                message.warn(i18n.t('EXPLORER.REACHED_MIN_FONT_SIZE'));
                 return;
             }
             currentFontSize--;
@@ -703,11 +703,11 @@ function TextEditor(props) {
             if (data.code === 0) {
                 fileStatus = 2;
                 window.onbeforeunload = null;
-                message.success(i18n.t('fileSaveSuccess'));
+                message.success(i18n.t('EXPLORER.FILE_SAVE_SUCCESSFULLY'));
                 if (typeof onSave === 'function') onSave();
             }
         }).catch(err => {
-            message.error(i18n.t('fileSaveFailed') + i18n.t('colon') + err.message);
+            message.error(i18n.t('EXPLORER.FILE_SAVE_FAILED') + i18n.t('COMMON.COLON') + err.message);
         }).finally(() => {
             setLoading(false);
         });
@@ -731,19 +731,19 @@ function TextEditor(props) {
                 message={
                     <Space size={16}>
                         <a onClick={onConfirm}>
-                            {i18n.t('save')}
+                            {i18n.t('EXPLORER.SAVE')}
                         </a>
                         <a onClick={()=>editorRef.current.editor.execCommand('find')}>
-                            {i18n.t('search')}
+                            {i18n.t('EXPLORER.SEARCH')}
                         </a>
                         <a onClick={()=>editorRef.current.editor.execCommand('replace')}>
-                            {i18n.t('replace')}
+                            {i18n.t('EXPLORER.REPLACE')}
                         </a>
                         <Dropdown overlay={fontMenu}>
-                            <a>{i18n.t('font')}</a>
+                            <a>{i18n.t('EXPLORER.FONT')}</a>
                         </Dropdown>
                         <Dropdown overlay={themeMenu}>
-                            <a>{i18n.t('theme')}</a>
+                            <a>{i18n.t('EXPLORER.THEME')}</a>
                         </Dropdown>
                     </Space>
                 }
@@ -795,25 +795,25 @@ function TextEditor(props) {
                         key='cancel'
                         onClick={onExitCancel}
                     >
-                        {i18n.t('cancel')}
+                        {i18n.t('EXPLORER.CANCEL')}
                     </Button>,
                     <Button
                         type='danger'
                         key='doNotSave'
                         onClick={onForceCancel.bind(null, false)}
                     >
-                        {i18n.t('fileDoNotSave')}
+                        {i18n.t('EXPLORER.FILE_DO_NOT_SAVE')}
                     </Button>,
                     <Button
                         type='primary'
                         key='save'
                         onClick={onConfirm.bind(null, onForceCancel.bind(null, true))}
                     >
-                        {i18n.t('save')}
+                        {i18n.t('EXPLORER.SAVE')}
                     </Button>
                 ]}
             >
-                {i18n.t('fileNotSaveConfirm')}
+                {i18n.t('EXPLORER.NOT_SAVED_CONFIRM')}
             </Modal>
         </Modal>
     );
@@ -887,7 +887,7 @@ function FileUploader(props) {
             if (data.code === 0) {
                 uploadStatus = 2;
                 setStatus(2);
-                message.success(i18n.t('uploadSuccess'));
+                message.success(i18n.t('EXPLORER.UPLOAD_SUCCESS'));
             } else {
                 uploadStatus = 3;
                 setStatus(3);
@@ -896,11 +896,11 @@ function FileUploader(props) {
             if (axios.isCancel(err)) {
                 uploadStatus = 4;
                 setStatus(4);
-                message.error(i18n.t('uploadAborted'));
+                message.error(i18n.t('EXPLORER.UPLOAD_ABORTED'));
             } else {
                 uploadStatus = 3;
                 setStatus(3);
-                message.error(i18n.t('uploadFailed') + i18n.t('colon') + err.message);
+                message.error(i18n.t('EXPLORER.UPLOAD_FAILED') + i18n.t('COMMON.COLON') + err.message);
             }
         }).finally(() => {
             abortController = null;
@@ -924,7 +924,7 @@ function FileUploader(props) {
         if (status === 1) {
             Modal.confirm({
                 autoFocusButton: 'cancel',
-                content: i18n.t('uploadCancelConfirm'),
+                content: i18n.t('EXPLORER.UPLOAD_CANCEL_CONFIRM'),
                 onOk: () => {
                     abortController.abort();
                 },
@@ -945,13 +945,13 @@ function FileUploader(props) {
             case 1:
                 return percent + '%';
             case 2:
-                return i18n.t('uploadSuccess');
+                return i18n.t('EXPLORER.UPLOAD_SUCCESS');
             case 3:
-                return i18n.t('uploadFailed');
+                return i18n.t('EXPLORER.UPLOAD_FAILED');
             case 4:
-                return i18n.t('uploadAborted');
+                return i18n.t('EXPLORER.UPLOAD_ABORTED');
             default:
-                return i18n.t('upload');
+                return i18n.t('EXPLORER.UPLOAD');
         }
 
     }

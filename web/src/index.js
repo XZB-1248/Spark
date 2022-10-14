@@ -29,7 +29,7 @@ axios.interceptors.response.use(async res => {
 }, err => {
     // console.error(err);
     if (err.code === 'ECONNABORTED') {
-        message.error(i18n.t('requestTimeout'));
+        message.error(i18n.t('COMMON.REQUEST_TIMEOUT'));
         return Promise.reject(err);
     }
     let res = err.response;

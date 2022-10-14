@@ -28,7 +28,7 @@ func RemoveDeviceFiles(ctx *gin.Context) {
 		return
 	}
 	if len(form.Files) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	trigger := utils.GetStrUUID()
@@ -50,7 +50,7 @@ func RemoveDeviceFiles(ctx *gin.Context) {
 		common.Warn(ctx, `REMOVE_FILES`, `fail`, `timeout`, map[string]any{
 			`files`: form.Files,
 		})
-		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 	}
 }
 
@@ -73,7 +73,7 @@ func ListDeviceFiles(ctx *gin.Context) {
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 	}
 }
 
@@ -89,7 +89,7 @@ func GetDeviceFiles(ctx *gin.Context) {
 		return
 	}
 	if len(form.Files) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	bridgeID := utils.GetStrUUID()
@@ -209,7 +209,7 @@ func GetDeviceFiles(ctx *gin.Context) {
 			common.Warn(ctx, `READ_FILES`, `fail`, `timeout`, map[string]any{
 				`files`: form.Files,
 			})
-			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 		} else {
 			<-wait
 		}
@@ -228,7 +228,7 @@ func GetDeviceTextFile(ctx *gin.Context) {
 		return
 	}
 	if len(form.File) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	bridgeID := utils.GetStrUUID()
@@ -286,7 +286,7 @@ func GetDeviceTextFile(ctx *gin.Context) {
 			common.Warn(ctx, `READ_TEXT_FILE`, `fail`, `timeout`, map[string]any{
 				`file`: form.File,
 			})
-			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 		} else {
 			<-wait
 		}
@@ -306,7 +306,7 @@ func UploadToDevice(ctx *gin.Context) {
 		return
 	}
 	if len(form.File) == 0 || len(form.Path) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	bridgeID := utils.GetStrUUID()
@@ -369,7 +369,7 @@ func UploadToDevice(ctx *gin.Context) {
 					`dest`: fileDest,
 					`size`: fileSize,
 				})
-				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 			}
 		} else {
 			<-wait

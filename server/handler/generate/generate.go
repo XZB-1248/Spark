@@ -40,12 +40,12 @@ func CheckClient(ctx *gin.Context) {
 		Secure string `json:"secure" yaml:"secure" form:"secure"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	_, err := os.Stat(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.NO_PREBUILT_FOUND}`})
 		return
 	}
 	_, err = genConfig(clientCfg{
@@ -58,10 +58,10 @@ func CheckClient(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == ErrTooLargeEntity {
-			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
+			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.CONFIG_TOO_LARGE}`})
 			return
 		}
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.CONFIG_GENERATE_FAILED}`})
 		return
 	}
 	ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
@@ -77,18 +77,18 @@ func GenerateClient(ctx *gin.Context) {
 		Secure string `json:"secure" yaml:"secure" form:"secure"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	tpl, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.NO_PREBUILT_FOUND}`})
 		return
 	}
 	clientUUID := utils.GetUUID()
 	clientKey, err := common.EncAES(clientUUID, config.Config.SaltBytes)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.CONFIG_GENERATE_FAILED}`})
 		return
 	}
 	cfgBytes, err := genConfig(clientCfg{
@@ -101,10 +101,10 @@ func GenerateClient(ctx *gin.Context) {
 	})
 	if err != nil {
 		if err == ErrTooLargeEntity {
-			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|tooLargeConfig}`})
+			ctx.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.CONFIG_TOO_LARGE}`})
 			return
 		}
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|configGenerateFailed}`})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.CONFIG_GENERATE_FAILED}`})
 		return
 	}
 	ctx.Header(`Accept-Ranges`, `none`)

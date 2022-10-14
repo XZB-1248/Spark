@@ -53,14 +53,14 @@ function overview(props) {
     const columns = [
         {
             key: 'hostname',
-            title: i18n.t('hostname'),
+            title: i18n.t('OVERVIEW.HOSTNAME'),
             dataIndex: 'hostname',
             ellipsis: true,
             width: 100
         },
         {
             key: 'username',
-            title: i18n.t('username'),
+            title: i18n.t('OVERVIEW.USERNAME'),
             dataIndex: 'username',
             ellipsis: true,
             width: 90
@@ -75,7 +75,7 @@ function overview(props) {
         },
         {
             key: 'cpu_usage',
-            title: i18n.t('cpuUsage'),
+            title: i18n.t('OVERVIEW.CPU_USAGE'),
             dataIndex: 'cpu_usage',
             ellipsis: true,
             render: (_, v) => <UsageBar title={renderCPUStat(v.cpu)} {...v.cpu} />,
@@ -83,7 +83,7 @@ function overview(props) {
         },
         {
             key: 'ram_usage',
-            title: i18n.t('ramUsage'),
+            title: i18n.t('OVERVIEW.RAM_USAGE'),
             dataIndex: 'ram_usage',
             ellipsis: true,
             render: (_, v) => <UsageBar title={renderRAMStat(v.ram)} {...v.ram} />,
@@ -91,7 +91,7 @@ function overview(props) {
         },
         {
             key: 'disk_usage',
-            title: i18n.t('diskUsage'),
+            title: i18n.t('OVERVIEW.DISK_USAGE'),
             dataIndex: 'disk_usage',
             ellipsis: true,
             render: (_, v) => <UsageBar title={renderDiskStat(v.disk)} {...v.disk} />,
@@ -99,21 +99,21 @@ function overview(props) {
         },
         {
             key: 'os',
-            title: i18n.t('os'),
+            title: i18n.t('OVERVIEW.OS'),
             dataIndex: 'os',
             ellipsis: true,
             width: 80
         },
         {
             key: 'arch',
-            title: i18n.t('arch'),
+            title: i18n.t('OVERVIEW.ARCH'),
             dataIndex: 'arch',
             ellipsis: true,
             width: 70
         },
         {
             key: 'ram_total',
-            title: i18n.t('ram'),
+            title: i18n.t('OVERVIEW.RAM'),
             dataIndex: 'ram_total',
             ellipsis: true,
             renderText: formatSize,
@@ -142,7 +142,7 @@ function overview(props) {
         },
         {
             key: 'uptime',
-            title: i18n.t('uptime'),
+            title: i18n.t('OVERVIEW.UPTIME'),
             dataIndex: 'uptime',
             ellipsis: true,
             renderText: tsToTime,
@@ -150,14 +150,14 @@ function overview(props) {
         },
         {
             key: 'net_stat',
-            title: i18n.t('netStat'),
+            title: i18n.t('OVERVIEW.NETWORK'),
             ellipsis: true,
             renderText: (_, v) => renderNetworkIO(v),
             width: 170
         },
         {
             key: 'option',
-            title: i18n.t('operations'),
+            title: i18n.t('OVERVIEW.OPERATIONS'),
             dataIndex: 'id',
             valueType: 'option',
             ellipsis: false,
@@ -218,11 +218,11 @@ function overview(props) {
                 >
                     {model}
                 </div>
-                {i18n.t('cpuUsage') + i18n.t('colon') + usage + '%'}
+                {i18n.t('OVERVIEW.CPU_USAGE') + i18n.t('COMMON.COLON') + usage + '%'}
                 <br />
-                {i18n.t('cpuLogicalCores') + i18n.t('colon') + cores.logical}
+                {i18n.t('OVERVIEW.CPU_LOGICAL_CORES') + i18n.t('COMMON.COLON') + cores.logical}
                 <br />
-                {i18n.t('cpuPhysicalCores') + i18n.t('colon') + cores.physical}
+                {i18n.t('OVERVIEW.CPU_PHYSICAL_CORES') + i18n.t('COMMON.COLON') + cores.physical}
             </div>
         );
     }
@@ -231,13 +231,13 @@ function overview(props) {
         usage = Math.round(usage * 100) / 100;
         return (
             <div>
-                {i18n.t('ramUsage') + i18n.t('colon') + usage + '%'}
+                {i18n.t('OVERVIEW.RAM_USAGE') + i18n.t('COMMON.COLON') + usage + '%'}
                 <br />
-                {i18n.t('free') + i18n.t('colon') + formatSize(total - used)}
+                {i18n.t('OVERVIEW.FREE') + i18n.t('COMMON.COLON') + formatSize(total - used)}
                 <br />
-                {i18n.t('used') + i18n.t('colon') + formatSize(used)}
+                {i18n.t('OVERVIEW.USED') + i18n.t('COMMON.COLON') + formatSize(used)}
                 <br />
-                {i18n.t('total') + i18n.t('colon') + formatSize(total)}
+                {i18n.t('OVERVIEW.TOTAL') + i18n.t('COMMON.COLON') + formatSize(total)}
             </div>
         );
     }
@@ -246,13 +246,13 @@ function overview(props) {
         usage = Math.round(usage * 100) / 100;
         return (
             <div>
-                {i18n.t('diskUsage') + i18n.t('colon') + usage + '%'}
+                {i18n.t('OVERVIEW.DISK_USAGE') + i18n.t('COMMON.COLON') + usage + '%'}
                 <br />
-                {i18n.t('free') + i18n.t('colon') + formatSize(total - used)}
+                {i18n.t('OVERVIEW.FREE') + i18n.t('COMMON.COLON') + formatSize(total - used)}
                 <br />
-                {i18n.t('used') + i18n.t('colon') + formatSize(used)}
+                {i18n.t('OVERVIEW.USED') + i18n.t('COMMON.COLON') + formatSize(used)}
                 <br />
-                {i18n.t('total') + i18n.t('colon') + formatSize(total)}
+                {i18n.t('OVERVIEW.TOTAL') + i18n.t('COMMON.COLON') + formatSize(total)}
             </div>
         );
     }
@@ -273,25 +273,25 @@ function overview(props) {
     }
     function renderOperation(device) {
         let menus = [
-            {key: 'run', name: i18n.t('run')},
-            {key: 'desktop', name: i18n.t('desktop')},
-            {key: 'screenshot', name: i18n.t('screenshot')},
-            {key: 'lock', name: i18n.t('lock')},
-            {key: 'logoff', name: i18n.t('logoff')},
-            {key: 'hibernate', name: i18n.t('hibernate')},
-            {key: 'suspend', name: i18n.t('suspend')},
-            {key: 'restart', name: i18n.t('restart')},
-            {key: 'shutdown', name: i18n.t('shutdown')},
-            {key: 'offline', name: i18n.t('offline')},
+            {key: 'run', name: i18n.t('OVERVIEW.RUN')},
+            {key: 'desktop', name: i18n.t('OVERVIEW.DESKTOP')},
+            {key: 'screenshot', name: i18n.t('OVERVIEW.SCREENSHOT')},
+            {key: 'lock', name: i18n.t('OVERVIEW.LOCK')},
+            {key: 'logoff', name: i18n.t('OVERVIEW.LOGOFF')},
+            {key: 'hibernate', name: i18n.t('OVERVIEW.HIBERNATE')},
+            {key: 'suspend', name: i18n.t('OVERVIEW.SUSPEND')},
+            {key: 'restart', name: i18n.t('OVERVIEW.RESTART')},
+            {key: 'shutdown', name: i18n.t('OVERVIEW.SHUTDOWN')},
+            {key: 'offline', name: i18n.t('OVERVIEW.OFFLINE')},
         ];
         return [
-            <a key='terminal' onClick={setTerminal.bind(null, device)}>{i18n.t('terminal')}</a>,
-            <a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>{i18n.t('procMgr')}</a>,
+            <a key='terminal' onClick={setTerminal.bind(null, device)}>{i18n.t('OVERVIEW.TERMINAL')}</a>,
+            <a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>{i18n.t('OVERVIEW.PROC_MANAGER')}</a>,
             <a key='explorer' onClick={() => {
                 setExplorer(device.id);
                 setIsWindows(device.os === 'windows');
             }}>
-                {i18n.t('fileMgr')}
+                {i18n.t('OVERVIEW.EXPLORER')}
             </a>,
             <TableDropdown
                 key='more'
@@ -324,13 +324,13 @@ function overview(props) {
             return;
         }
         Modal.confirm({
-            title: i18n.t('operationConfirm').replace('{0}', i18n.t(act).toUpperCase()),
+            title: i18n.t('OVERVIEW.OPERATION_CONFIRM').replace('{0}', i18n.t('OVERVIEW.'+act.toUpperCase())),
             icon: <QuestionCircleOutlined/>,
             onOk() {
                 request('/api/device/' + act, {device: device.id}).then(res => {
                     let data = res.data;
                     if (data.code === 0) {
-                        message.success(i18n.t('operationSuccess'));
+                        message.success(i18n.t('OVERVIEW.OPERATION_SUCCESS'));
                         tableRef.current.reload();
                     }
                 });
@@ -340,7 +340,7 @@ function overview(props) {
 
     function toolBar() {
         return (
-            <Button type='primary' onClick={setGenerate.bind(null, true)}>{i18n.t('generate')}</Button>
+            <Button type='primary' onClick={setGenerate.bind(null, true)}>{i18n.t('OVERVIEW.GENERATE')}</Button>
         )
     }
 

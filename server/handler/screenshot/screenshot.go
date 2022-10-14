@@ -49,7 +49,7 @@ func GetScreenshot(ctx *gin.Context) {
 		if !called {
 			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
-			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 			common.Warn(ctx, `TAKE_SCREENSHOT`, `fail`, `timeout`, nil)
 		} else {
 			<-wait

@@ -77,11 +77,11 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 		}
 		if pack.Act == `initDesktop` {
 			if pack.Code != 0 {
-				msg := `${i18n|desktopSessionCreationFailed}`
+				msg := `${i18n|DESKTOP.CREATE_SESSION_FAILED}`
 				if len(pack.Msg) > 0 {
 					msg += `: ` + pack.Msg
 				} else {
-					msg += `${i18n|unknownError}`
+					msg += `${i18n|COMMON.UNKNOWN_ERROR}`
 				}
 				sendPack(modules.Packet{Act: `quit`, Msg: msg}, desktop.srcConn)
 				common.RemoveEvent(desktop.uuid)
@@ -97,7 +97,7 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 			return
 		}
 		if pack.Act == `quitDesktop` {
-			msg := `${i18n|desktopSessionClosed}`
+			msg := `${i18n|DESKTOP.SESSION_CLOSED}`
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
 			}
@@ -115,19 +115,19 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 func onDesktopConnect(session *melody.Session) {
 	device, ok := session.Get(`Device`)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|desktopSessionCreationFailed}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|DESKTOP.CREATE_SESSION_FAILED}`}, session)
 		session.Close()
 		return
 	}
 	connUUID, ok := common.CheckDevice(device.(string), ``)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
 		session.Close()
 		return
 	}
 	deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
 		session.Close()
 		return
 	}
@@ -238,7 +238,7 @@ func CloseSessionsByDevice(deviceID string) {
 			return true
 		}
 		if desktop.device == deviceID {
-			sendPack(modules.Packet{Act: `quit`, Msg: `${i18n|desktopSessionClosed}`}, desktop.srcConn)
+			sendPack(modules.Packet{Act: `quit`, Msg: `${i18n|DESKTOP.SESSION_CLOSED}`}, desktop.srcConn)
 			queue = append(queue, session)
 			return false
 		}

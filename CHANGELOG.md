@@ -1,3 +1,13 @@
+## v0.1.7
+
+* Optimize: i18n format.
+* Fix: won't kill shell process after exit.
+
+* 优化：国际化格式。
+* 修复：退出后不会自动结束 shell 进程。
+
+
+
 ## v0.1.6
 
 * Optimize: potential crash problem of explorer.

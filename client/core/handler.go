@@ -119,7 +119,7 @@ func shutdown(pack modules.Packet, wsConn *common.Conn) {
 func screenshot(pack modules.Packet, wsConn *common.Conn) {
 	var bridge string
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
@@ -171,19 +171,19 @@ func listFiles(pack modules.Packet, wsConn *common.Conn) {
 func fetchFile(pack modules.Packet, wsConn *common.Conn) {
 	var path, filename, bridge string
 	if val, ok := pack.GetData(`path`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`}, pack)
 		return
 	} else {
 		path = val.(string)
 	}
 	if val, ok := pack.GetData(`file`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		filename = val.(string)
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
@@ -197,7 +197,7 @@ func fetchFile(pack modules.Packet, wsConn *common.Conn) {
 func removeFiles(pack modules.Packet, wsConn *common.Conn) {
 	var files []string
 	if val, ok := pack.Data[`files`]; !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`}, pack)
 		return
 	} else {
 		slice := val.([]any)
@@ -208,7 +208,7 @@ func removeFiles(pack modules.Packet, wsConn *common.Conn) {
 			}
 		}
 		if len(files) == 0 {
-			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
+			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`}, pack)
 			return
 		}
 	}
@@ -227,7 +227,7 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 		bridge     string
 	)
 	if val, ok := pack.Data[`files`]; !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`}, pack)
 		return
 	} else {
 		slice := val.([]any)
@@ -238,12 +238,12 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 			}
 		}
 		if len(files) == 0 {
-			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
+			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`}, pack)
 			return
 		}
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
@@ -273,13 +273,13 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 func uploadTextFile(pack modules.Packet, wsConn *common.Conn) {
 	var path, bridge string
 	if val, ok := pack.GetData(`file`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|fileOrDirNotExist}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`}, pack)
 		return
 	} else {
 		path = val.(string)
 	}
 	if val, ok := pack.GetData(`bridge`, reflect.String); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		bridge = val.(string)
@@ -306,7 +306,7 @@ func killProcess(pack modules.Packet, wsConn *common.Conn) {
 		err error
 	)
 	if val, ok := pack.GetData(`pid`, reflect.Float64); !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		pid = int32(val.(float64))
@@ -344,13 +344,13 @@ func execCommand(pack modules.Packet, wsConn *common.Conn) {
 	var proc *exec.Cmd
 	var cmd, args string
 	if val, ok := pack.Data[`cmd`]; !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		cmd = val.(string)
 	}
 	if val, ok := pack.Data[`args`]; !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidParameter}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 		return
 	} else {
 		args = val.(string)

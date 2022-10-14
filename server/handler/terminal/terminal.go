@@ -68,11 +68,11 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
 		if pack.Act == `initTerminal` {
 			if pack.Code != 0 {
-				msg := `${i18n|terminalSessionCreationFailed}`
+				msg := `${i18n|TERMINAL.CREATE_SESSION_FAILED}`
 				if len(pack.Msg) > 0 {
 					msg += `: ` + pack.Msg
 				} else {
-					msg += `${i18n|unknownError}`
+					msg += `${i18n|COMMON.UNKNOWN_ERROR}`
 				}
 				sendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
 				common.RemoveEvent(terminal.uuid)
@@ -88,7 +88,7 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 			return
 		}
 		if pack.Act == `quitTerminal` {
-			msg := `${i18n|terminalSessionClosed}`
+			msg := `${i18n|TERMINAL.SESSION_CLOSED}`
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
 			}
@@ -116,19 +116,19 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 func onTerminalConnect(session *melody.Session) {
 	device, ok := session.Get(`Device`)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|terminalSessionCreationFailed}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|TERMINAL.CREATE_SESSION_FAILED}`}, session)
 		session.Close()
 		return
 	}
 	connUUID, ok := common.CheckDevice(device.(string), ``)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
 		session.Close()
 		return
 	}
 	deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|deviceNotExists}`}, session)
+		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
 		session.Close()
 		return
 	}

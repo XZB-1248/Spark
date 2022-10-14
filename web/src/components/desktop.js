@@ -15,7 +15,7 @@ let ticker = 0;
 let frames = 0;
 let bytes = 0;
 let ticks = 0;
-let title = i18n.t('desktop');
+let title = i18n.t('DESKTOP.TITLE');
 function ScreenModal(props) {
     const [bandwidth, setBandwidth] = useState(0);
     const [fps, setFps] = useState(0);
@@ -58,16 +58,16 @@ function ScreenModal(props) {
             ws.onclose = () => {
                 if (conn) {
                     conn = false;
-                    message.warn(i18n.t('disconnected'));
+                    message.warn(i18n.t('COMMON.DISCONNECTED'));
                 }
             };
             ws.onerror = (e) => {
                 console.error(e);
                 if (conn) {
                     conn = false;
-                    message.warn(i18n.t('disconnected'));
+                    message.warn(i18n.t('COMMON.DISCONNECTED'));
                 } else {
-                    message.warn(i18n.t('connectFailed'));
+                    message.warn(i18n.t('COMMON.CONNECTION_FAILED'));
                 }
             };
             clearInterval(ticker);
@@ -124,8 +124,14 @@ function ScreenModal(props) {
             return;
         }
         if (op === 2) {
-            canvas.width = dv.getUint16(1, false);
-            canvas.height = dv.getUint16(3, false);
+            let width = dv.getUint16(1, false);
+            let height = dv.getUint16(3, false);
+            if (width === 0 || height === 0) {
+                message.warn(i18n.t('DESKTOP.NO_DISPLAY_FOUND'));
+                return;
+            }
+            canvas.width = width;
+            canvas.height = height;
             return;
         }
         if (op === 0) frames++;
@@ -160,11 +166,11 @@ function ScreenModal(props) {
             data = JSON.parse(data);
         } catch (_) {}
         if (data?.act === 'warn') {
-            message.warn(data.msg ? translate(data.msg) : i18n.t('unknownError'));
+            message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
             return;
         }
         if (data?.act === 'quit') {
-            message.warn(data.msg ? translate(data.msg) : i18n.t('unknownError'));
+            message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
             conn = false;
             ws.close();
         }

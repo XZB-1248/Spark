@@ -47,7 +47,7 @@ function tsToTime(ts) {
     let hours = Math.floor(ts / 3600);
     ts %= 3600;
     let minutes = Math.floor(ts / 60);
-    return `${String(hours) + i18n.t('hours') + ' ' + String(minutes) + i18n.t('minutes')}`;
+    return `${String(hours) + i18n.t('COMMON.HOURS') + ' ' + String(minutes) + i18n.t('COMMON.MINUTES')}`;
 }
 
 function getBaseURL(ws, suffix) {
@@ -93,7 +93,7 @@ function post(url, data, ext) {
 }
 
 function translate(text) {
-    return text.replace(/\$\{i18n\|([a-zA-Z0-9]+)\}/g, (match, key) => {
+    return text.replace(/\$\{i18n\|([a-zA-Z0-9_.]+)\}/g, (match, key) => {
         return i18n.t(key);
     });
 }
@@ -113,7 +113,7 @@ function catchBlobReq(err) {
             try {
                 data = JSON.parse(str);
             } catch (e) { }
-            message.warn(data.msg ? translate(data.msg) : i18n.t('requestFailed'));
+            message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.REQUEST_FAILED'));
         });
     }
 }

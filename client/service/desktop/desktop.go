@@ -293,7 +293,7 @@ func InitDesktop(pack modules.Packet) error {
 		return err
 	}
 	if val, ok := pack.GetData(`desktop`, reflect.String); !ok {
-		return errors.New(`${i18n|invalidParameter}`)
+		return errors.New(`${i18n|COMMON.INVALID_PARAMETER}`)
 	} else {
 		uuid = val.(string)
 	}
@@ -302,18 +302,22 @@ func InitDesktop(pack modules.Packet) error {
 		rawEvent: rawEvent,
 		lastPack: utils.Unix,
 		escape:   false,
-		channel:  make(chan message, 4),
+		channel:  make(chan message, 3),
 		lock:     &sync.Mutex{},
 	}
 	{
-		// set resolution of desktop
+		var rect image.Rectangle
 		if screenshot.NumActiveDisplays() == 0 {
-			common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|noDisplayFound}`}, pack)
-			return errors.New(`${i18n|noDisplayFound}`)
+			rect = screenshot.GetDisplayBounds(0)
+			if rect.Dx() == 0 || rect.Dy() == 0 {
+				common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|DESKTOP.NO_DISPLAY_FOUND}`}, pack)
+				return errors.New(`${i18n|DESKTOP.NO_DISPLAY_FOUND}`)
+			}
+		} else {
+			rect = screenshot.GetDisplayBounds(0)
 		}
 		buf := append([]byte{34, 22, 19, 17, 20, 02}, rawEvent...)
 		data := make([]byte, 4)
-		rect := screenshot.GetDisplayBounds(0)
 		binary.BigEndian.PutUint16(data[:2], uint16(rect.Dx()))
 		binary.BigEndian.PutUint16(data[2:], uint16(rect.Dy()))
 		buf = append(buf, data...)

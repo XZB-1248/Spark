@@ -29,16 +29,16 @@ func CheckForm(ctx *gin.Context, form any) (string, bool) {
 		Device string `json:"device" yaml:"device" form:"device"`
 	}
 	if form != nil && ctx.ShouldBind(form) != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return ``, false
 	}
 	if ctx.ShouldBind(&base) != nil || (len(base.Conn) == 0 && len(base.Device) == 0) {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return ``, false
 	}
 	connUUID, ok := common.CheckDevice(base.Device, base.Conn)
 	if !ok {
-		ctx.AbortWithStatusJSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|deviceNotExists}`})
+		ctx.AbortWithStatusJSON(http.StatusBadGateway, modules.Packet{Code: 1, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`})
 		return ``, false
 	}
 	ctx.Request = ctx.Request.WithContext(context.WithValue(ctx.Request.Context(), `ConnUUID`, connUUID))
@@ -119,7 +119,7 @@ func CheckUpdate(ctx *gin.Context) {
 		Commit string `form:"commit" binding:"required"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	if form.Commit == config.COMMIT {
@@ -136,7 +136,7 @@ func CheckUpdate(ctx *gin.Context) {
 	}
 	tpl, err := os.Open(fmt.Sprintf(config.BuiltPath, form.OS, form.Arch))
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|osOrArchNotPrebuilt}`})
+		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.NO_PREBUILT_FOUND}`})
 		common.Warn(ctx, `CLIENT_UPDATE`, `fail`, `no prebuild asset`, map[string]any{
 			`client`: map[string]any{
 				`os`:     form.OS,
@@ -238,7 +238,7 @@ func ExecDeviceCmd(ctx *gin.Context) {
 		return
 	}
 	if len(form.Cmd) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	trigger := utils.GetStrUUID()
@@ -263,7 +263,7 @@ func ExecDeviceCmd(ctx *gin.Context) {
 			`cmd`:  form.Cmd,
 			`args`: form.Args,
 		})
-		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 	}
 }
 
@@ -282,7 +282,7 @@ func GetDevices(ctx *gin.Context) {
 func CallDevice(ctx *gin.Context) {
 	act := ctx.Param(`act`)
 	if len(act) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	{
@@ -298,7 +298,7 @@ func CallDevice(ctx *gin.Context) {
 			common.Warn(ctx, `CALL_DEVICE`, `fail`, `invalid act`, map[string]any{
 				`act`: act,
 			})
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 			return
 		}
 	}

@@ -41,7 +41,7 @@ Authorization: Basic WFpCOjEyNDg=
 ```
 {
     "code": -1,
-    "msg": "${i18n|invalidParameter}"
+    "msg": "${i18n|COMMON.INVALID_PARAMETER}"
 }
 ```
 ```
@@ -55,7 +55,7 @@ Authorization: Basic WFpCOjEyNDg=
 ```
 {
     "code": 1,
-    "msg": "${i18n|deviceNotExists}"
+    "msg": "${i18n|COMMON.DEVICE_NOT_EXIST}"
 }
 ```
 
@@ -169,7 +169,7 @@ cmd=taskkill&args=%2Ff%20%2Fim%20regedit.exe&device=bc7e49f8f794f80ffb0032a4ba51
 ```
 {
     "code": 1,
-    "msg": "${i18n|noDisplayFound}"
+    "msg": "${i18n|DESKTOP.NO_DISPLAY_FOUND}"
 }
 ```
 
@@ -188,7 +188,7 @@ cmd=taskkill&args=%2Ff%20%2Fim%20regedit.exe&device=bc7e49f8f794f80ffb0032a4ba51
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -208,7 +208,7 @@ cmd=taskkill&args=%2Ff%20%2Fim%20regedit.exe&device=bc7e49f8f794f80ffb0032a4ba51
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -249,7 +249,7 @@ Hello World.
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -289,7 +289,7 @@ Hello World.
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -343,6 +343,6 @@ Hello World.
 ```
 {
     "code": 1,
-    "msg": "${i18n|deviceNotExists}"
+    "msg": "${i18n|COMMON.DEVICE_NOT_EXIST}"
 }
 ```

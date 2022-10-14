@@ -62,12 +62,12 @@ func CheckBridge(ctx *gin.Context) *Bridge {
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
 		golog.Error(err)
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidParameter}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return nil
 	}
 	val, ok := bridges.Get(form.Bridge)
 	if !ok {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|invalidBridgeID}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_BRIDGE_ID}`})
 		return nil
 	}
 	return val.(*Bridge)
@@ -81,7 +81,7 @@ func BridgePush(ctx *gin.Context) {
 	bridge.lock.Lock()
 	if bridge.using || (bridge.Src != nil && bridge.Dst != nil) {
 		bridge.lock.Unlock()
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|COMMON.BRIDGE_IN_USE}`})
 		return
 	}
 	bridge.Src = ctx
@@ -135,7 +135,7 @@ func BridgePull(ctx *gin.Context) {
 	bridge.lock.Lock()
 	if bridge.using || (bridge.Src != nil && bridge.Dst != nil) {
 		bridge.lock.Unlock()
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|bridgeAlreadyInUse}`})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: 1, Msg: `${i18n|COMMON.BRIDGE_IN_USE}`})
 		return
 	}
 	bridge.Dst = ctx

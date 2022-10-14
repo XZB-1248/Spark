@@ -135,7 +135,7 @@ func getTempFile(dir, file string) (string, os.FileMode) {
 func RemoveFiles(files []string) error {
 	for i := 0; i < len(files); i++ {
 		if files[i] == `\` || files[i] == `/` || len(files[i]) == 0 {
-			return errors.New(`${i18n|fileOrDirNotExist}`)
+			return errors.New(`${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}`)
 		}
 		err := os.RemoveAll(files[i])
 		if err != nil {
@@ -192,7 +192,7 @@ func uploadSingle(path string, start, end int64, writer *io.PipeWriter, req *req
 		`FileSize`: strconv.FormatInt(size, 10),
 	})
 	if size < end {
-		return errors.New(`${i18n|invalidFileSize}`)
+		return errors.New(`${i18n|EXPLORER.UPLOAD_FAILED}`)
 	}
 	if end == 0 {
 		req.RawRequest.ContentLength = size - start
@@ -400,7 +400,7 @@ func UploadTextFile(path, bridge string) error {
 	size := stat.Size()
 	// Check if size larger than 2MB.
 	if size > 2<<20 {
-		return errors.New(`${i18n|fileTooLarge}`)
+		return errors.New(`${i18n|EXPLORER.FILE_TOO_LARGE}`)
 	}
 	uploadReq.SetHeaders(map[string]string{
 		`FileName`: stat.Name(),
@@ -415,7 +415,7 @@ func UploadTextFile(path, bridge string) error {
 		return err
 	}
 	if !utf8.Valid(buf) {
-		return errors.New(`${i18n|fileEncodingUnsupported}`)
+		return errors.New(`${i18n|EXPLORER.UNSUPPORTED_ENCODING}`)
 	}
 
 	url := config.GetBaseURL(false) + `/api/bridge/push`

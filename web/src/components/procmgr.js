@@ -12,7 +12,7 @@ function ProcessMgr(props) {
     const columns = [
         {
             key: 'Name',
-            title: i18n.t('procName'),
+            title: i18n.t('PROCMGR.PROCESS'),
             dataIndex: 'name',
             ellipsis: true,
             width: 120
@@ -56,10 +56,10 @@ function ProcessMgr(props) {
         return [
             <Popconfirm
                 key='kill'
-                title={i18n.t('confirmKillProc')}
+                title={i18n.t('PROCMGR.KILL_PROCESS_CONFIRM')}
                 onConfirm={killProcess.bind(null, proc.pid)}
             >
-                <a>{i18n.t('killProc')}</a>
+                <a>{i18n.t('PROCMGR.KILL_PROCESS')}</a>
             </Popconfirm>
         ];
     }
@@ -68,7 +68,7 @@ function ProcessMgr(props) {
         request(`/api/device/process/kill`, {pid: pid, device: props.device}).then(res => {
             let data = res.data;
             if (data.code === 0) {
-                message.success(i18n.t('killProcSuccess'));
+                message.success(i18n.t('PROCMGR.KILL_PROCESS_SUCCESSFULLY'));
                 tableRef.current.reload();
             }
         });
@@ -95,7 +95,7 @@ function ProcessMgr(props) {
             draggable={true}
             maskClosable={false}
             destroyOnClose={true}
-            modalTitle={i18n.t('processManager')}
+            modalTitle={i18n.t('PROCMGR.TITLE')}
             footer={null}
             width={400}
             bodyStyle={{

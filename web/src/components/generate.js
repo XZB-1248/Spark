@@ -52,7 +52,7 @@ function Generate(props) {
                 <ProFormText
                     width="md"
                     name="host"
-                    label={i18n.t('host')}
+                    label={i18n.t('GENERATOR.HOST')}
                     rules={[{
                         required: true
                     }]}
@@ -60,7 +60,7 @@ function Generate(props) {
                 <ProFormDigit
                     width="md"
                     name="port"
-                    label={i18n.t('port')}
+                    label={i18n.t('GENERATOR.PORT')}
                     min={1}
                     max={65535}
                     rules={[{
@@ -72,7 +72,7 @@ function Generate(props) {
                 <ProFormText
                     width="md"
                     name="path"
-                    label={i18n.t('path')}
+                    label={i18n.t('GENERATOR.PATH')}
                     rules={[{
                         required: true
                     }]}
@@ -80,7 +80,7 @@ function Generate(props) {
                 <ProFormCascader
                     width="md"
                     name="ArchOS"
-                    label={i18n.t('osArch')}
+                    label={i18n.t('GENERATOR.OS_ARCH')}
                     request={() => prebuilt}
                     rules={[{
                         required: true

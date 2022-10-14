@@ -39,7 +39,7 @@ All responses are JSON encoded.
 ```
 {
     "code": -1,
-    "msg": "${i18n|invalidParameter}"
+    "msg": "${i18n|COMMON.INVALID_PARAMETER}"
 }
 ```
 ```
@@ -53,7 +53,7 @@ All responses are JSON encoded.
 ```
 {
     "code": 1,
-    "msg": "${i18n|deviceNotExists}"
+    "msg": "${i18n|COMMON.DEVICE_NOT_EXIST}"
 }
 ```
 
@@ -166,7 +166,7 @@ If failed, then the following response are given.
 ```
 {
     "code": 1,
-    "msg": "${i18n|noDisplayFound}"
+    "msg": "${i18n|DESKTOP.NO_DISPLAY_FOUND}"
 }
 ```
 
@@ -185,7 +185,7 @@ A zip file is given if multiple files (including directory) are given.
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -205,7 +205,7 @@ If files exist and are deleted successfully, then `code` will be `0`.
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -246,7 +246,7 @@ And `D:\Test.txt` will be created with the content of `Hello World.`.
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -284,7 +284,7 @@ If `path` is empty, then it gives you volumes list (windows) or gives files on `
 ```
 {
     "code": 1,
-    "msg": "${i18n|fileOrDirNotExist}"
+    "msg": "${i18n|EXPLORER.FILE_OR_DIR_NOT_EXIST}"
 }
 ```
 
@@ -337,6 +337,6 @@ Parameters: `pid` and `device` (device ID)
 ```
 {
     "code": 1,
-    "msg": "${i18n|deviceNotExists}"
+    "msg": "${i18n|COMMON.DEVICE_NOT_EXIST}"
 }
 ```

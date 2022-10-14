@@ -40,7 +40,7 @@ func (wsConn *Conn) SendData(data []byte) error {
 	Mutex.Lock()
 	defer Mutex.Unlock()
 	if WSConn == nil {
-		return errors.New(`${i18n|wsClosed}`)
+		return errors.New(`${i18n|COMMON.DISCONNECTED}`)
 	}
 	wsConn.SetWriteDeadline(utils.Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})
@@ -66,7 +66,7 @@ func (wsConn *Conn) SendPack(pack any) error {
 		return err
 	}
 	if WSConn == nil {
-		return errors.New(`${i18n|wsClosed}`)
+		return errors.New(`${i18n|COMMON.DISCONNECTED}`)
 	}
 	wsConn.SetWriteDeadline(utils.Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})

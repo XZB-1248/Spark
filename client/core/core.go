@@ -106,7 +106,7 @@ func reportWS(wsConn *common.Conn) error {
 		return err
 	}
 	if pack.Code != 0 {
-		return errors.New(`${i18n|unknownError}`)
+		return errors.New(`${i18n|COMMON.UNKNOWN_ERROR}`)
 	}
 	return nil
 }
@@ -126,7 +126,7 @@ func checkUpdate(wsConn *common.Conn) error {
 		return err
 	}
 	if resp == nil {
-		return errors.New(`${i18n|unknownError}`)
+		return errors.New(`${i18n|COMMON.UNKNOWN_ERROR}`)
 	}
 	if strings.HasPrefix(resp.GetContentType(), `application/octet-stream`) {
 		body := resp.Bytes()
@@ -192,7 +192,7 @@ func handleWS(wsConn *common.Conn) error {
 
 func handleAct(pack modules.Packet, wsConn *common.Conn) {
 	if act, ok := handlers[pack.Act]; !ok {
-		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|actionNotImplemented}`}, pack)
+		wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.OPERATION_NOT_SUPPORTED}`}, pack)
 	} else {
 		defer func() {
 			if r := recover(); r != nil {

@@ -27,7 +27,7 @@ func ListDeviceProcesses(ctx *gin.Context) {
 		}
 	}, connUUID, trigger, 5*time.Second)
 	if !ok {
-		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 	}
 }
 
@@ -57,7 +57,7 @@ func KillDeviceProcess(ctx *gin.Context) {
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
-		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|responseTimeout}`})
+		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
 		common.Warn(ctx, `KILL_PROCESS`, `fail`, `timeout`, map[string]any{
 			`pid`: form.Pid,
 		})

@@ -15,7 +15,7 @@ func GetScreenshot(bridge string) error {
 	writer := new(bytes.Buffer)
 	num := screenshot.NumActiveDisplays()
 	if num == 0 {
-		err := errors.New(`${i18n|noDisplayFound}`)
+		err := errors.New(`${i18n|DESKTOP.NO_DISPLAY_FOUND}`)
 		return err
 	}
 	img, err := screenshot.CaptureDisplay(0)

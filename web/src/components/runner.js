@@ -10,7 +10,7 @@ function Runner(props) {
         let basePath = location.origin + location.pathname + 'api/device/';
         request(basePath + 'exec', form).then(res => {
             if (res.data.code === 0) {
-                message.success(i18n.t('executionSuccess'));
+                message.success(i18n.t('RUNNER.EXECUTION_SUCCESS'));
             }
         });
     }
@@ -21,7 +21,7 @@ function Runner(props) {
                 destroyOnClose: true,
                 maskClosable: false,
             }}
-            title={i18n.t('run')}
+            title={i18n.t('RUNNER.TITLE')}
             width={380}
             onFinish={onFinish}
             onVisibleChange={visible => {
@@ -35,7 +35,7 @@ function Runner(props) {
             <ProFormText
                 width="md"
                 name="cmd"
-                label={i18n.t('cmdPlaceholder')}
+                label={i18n.t('RUNNER.CMD_PLACEHOLDER')}
                 rules={[{
                     required: true
                 }]}
@@ -43,7 +43,7 @@ function Runner(props) {
             <ProFormText
                 width="md"
                 name="args"
-                label={i18n.t('argsPlaceholder')}
+                label={i18n.t('RUNNER.ARGS_PLACEHOLDER')}
             />
         </ModalForm>
     )

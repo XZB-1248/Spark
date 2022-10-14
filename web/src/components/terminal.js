@@ -77,14 +77,14 @@ class TerminalModal extends React.Component {
                     return;
                 }
                 if (data?.act === 'warn') {
-                    message.warn(data.msg ? translate(data.msg) : i18n.t('unknownError'));
+                    message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
                 }
             }
         }
         this.ws.onclose = (e) => {
             if (this.conn) {
                 this.conn = false;
-                this.term.write(`\n${i18n.t('disconnected')}\n`);
+                this.term.write(`\n${i18n.t('COMMON.DISCONNECTED')}\n`);
                 this.secret = CryptoJS.enc.Hex.parse(genRandHex(32));
             }
         }
@@ -92,10 +92,10 @@ class TerminalModal extends React.Component {
             console.error(e);
             if (this.conn) {
                 this.conn = false;
-                this.term.write(`\n${i18n.t('disconnected')}\n`);
+                this.term.write(`\n${i18n.t('COMMON.DISCONNECTED')}\n`);
                 this.secret = CryptoJS.enc.Hex.parse(genRandHex(32));
             } else {
-                this.term.write(`\n${i18n.t('connectFailed')}\n`);
+                this.term.write(`\n${i18n.t('COMMON.CONNECTION_FAILED')}\n`);
             }
         }
         return termEv;
@@ -117,7 +117,7 @@ class TerminalModal extends React.Component {
         return function (e) {
             if (!this.conn) {
                 if (e === '\r' || e === '\n' || e === ' ') {
-                    this.term.write(`\n${i18n.t('reconnecting')}\n`);
+                    this.term.write(`\n${i18n.t('COMMON.RECONNECTING')}\n`);
                     this.termEv = this.initialize(this.termEv);
                 }
                 return;
@@ -219,7 +219,7 @@ class TerminalModal extends React.Component {
         return function (e) {
             if (!this.conn) {
                 if (e === '\r' || e === ' ') {
-                    this.term.write(`\n${i18n.t('reconnecting')}\n`);
+                    this.term.write(`\n${i18n.t('COMMON.RECONNECTING')}\n`);
                     this.termEv = this.initialize(this.termEv);
                 }
                 return;
@@ -334,7 +334,7 @@ class TerminalModal extends React.Component {
             <DraggableModal
                 draggable={true}
                 maskClosable={false}
-                modalTitle={i18n.t('terminal')}
+                modalTitle={i18n.t('TERMINAL.TITLE')}
                 visible={this.props.visible}
                 onCancel={this.props.onCancel}
                 destroyOnClose={false}

@@ -12,11 +12,11 @@ func init() {
 }
 
 func Lock() error {
-	return errors.New(`${i18n|operationNotSupported}`)
+	return errors.New(`${i18n|COMMON.OPERATION_NOT_SUPPORTED}`)
 }
 
 func Logoff() error {
-	return errors.New(`${i18n|operationNotSupported}`)
+	return errors.New(`${i18n|COMMON.OPERATION_NOT_SUPPORTED}`)
 }
 
 func Hibernate() error {
