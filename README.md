@@ -1,3 +1,7 @@
+#### [English] [[中文]](./README.ZH.md) [[API Document]](./API.md) [[API文档]](./API.ZH.md)
+
+---
+
 <h1 align="center">Spark</h1>
 
 **Spark** is a free, safe, open-source, web-based, cross-platform and full-featured RAT (Remote Administration Tool)
@@ -5,8 +9,6 @@ that allow you to control all your devices via browser anywhere.
 
 We **won't** collect any data, thus the server will never self-upgrade. Your clients will only communicate with your
 server forever.
-
-### [English] [[中文]](./README.ZH.md) [[API Document]](./API.md) [[API文档]](./API.ZH.md)
 
 ---
 
@@ -22,7 +24,7 @@ server forever.
 
 ---
 
-## **Disclaimer**
+## Disclaimer
 
 **THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.**
 <br />
@@ -36,19 +38,28 @@ server forever.
 
 ---
 
-## **Quick start**
+## Quick start
 
-Only local installation are available yet.
+### binary
 
-### Local installation
-* Get prebuilt executable file from [Releases](https://github.com/XZB-1248/Spark/releases) page.
-* Extract all files and **do not** delete `built` directory.
-* Create a configuration file named `config.json` and set your own salt.
+* Download executable from [releases](https://github.com/XZB-1248/Spark/releases).
+* Following [this](#Configuration) to complete configuration.
+* Run executable and browse to `http://IP:Port` to access the web interface.
+* Generate a client and run it on your target device.
+* Enjoy!
+
+---
+
+## Configuration
+
+Configuration file `config.json` should be placed in the same directory as the executable file.
+<br />
+Example:
 
   ```json
   {
       "listen": ":8000",
-      "salt": "some random string length <= 24",
+      "salt": "123456abcdefg",
       "auth": {
           "username": "password"
       },
@@ -60,13 +71,22 @@ Only local installation are available yet.
   }
   ```
 
-* Run it and browse the address:port you've just set, for example: `http://localhost:8000/`.
-* Generate client online and execute it on your device.
-* Now you can control your device.
+* `listen` `required`, format: `IP:Port`
+* `salt` `required`, length <= 32
+  * after modification, you need to re-generate all clients
+* `auth` `required`, format: `username:password`
+  * hashed-password is highly recommended
+  * format: `$algorithm$hashed-password`, example: `$sha256$123456abcdefg`
+  * supported algorithms: `sha256`, `sha512`, `bcrypt`
+  * if you don't follow the format, password will be treated as plain-text
+* `log` `optional`
+  * `level` `optional`, possible value: `disable`, `fatal`, `error`, `warn`, `info`, `debug`
+  * `path` `optional`, default: `./logs`
+  * `days` `optional`, default: `7`
 
 ---
 
-## **Features**
+## Features
 
 | Feature/OS      | Windows | Linux | MacOS |
 |-----------------|---------|-------|-------|
@@ -112,7 +132,7 @@ Only local installation are available yet.
 
 ---
 
-## **Development**
+## Development
 
 ### note
 
