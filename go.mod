@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/creack/pty v1.1.18
 	github.com/denisbrodbeck/machineid v1.0.1
-	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gorilla/websocket v1.5.0
 	github.com/imroc/req/v3 v3.8.2
@@ -16,7 +15,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.2
 )
 
-require github.com/kirides/screencapture v0.0.0-20211101142135-282f3f7e0f33 // indirect
+require github.com/kirides/screencapture v0.0.0-20211101142135-282f3f7e0f33
 
 require (
 	github.com/gen2brain/shm v0.0.0-20210511105953-083dbc7d9d83 // indirect
@@ -44,6 +43,6 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20220111093109-d55c255bac03 // indirect
 	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

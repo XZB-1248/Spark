@@ -126,10 +126,7 @@ function ScreenModal(props) {
         if (op === 2) {
             let width = dv.getUint16(1, false);
             let height = dv.getUint16(3, false);
-            if (width === 0 || height === 0) {
-                message.warn(i18n.t('DESKTOP.NO_DISPLAY_FOUND'));
-                return;
-            }
+            if (width === 0 || height === 0) return;
             canvas.width = width;
             canvas.height = height;
             return;

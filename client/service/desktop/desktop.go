@@ -28,9 +28,9 @@ type session struct {
 	lock     *sync.Mutex
 }
 type message struct {
-	t    int
-	info string
-	data *[]*[]byte
+	t     int
+	info  string
+	frame *[]*[]byte
 }
 
 // +---------+---------+----------+----------+------------+---------+---------+---------+---------+-------+
@@ -62,7 +62,8 @@ var lock = &sync.Mutex{}
 var working = false
 var sessions = cmap.New()
 var prevDesktop *image.RGBA
-var ErrNoImage = errors.New(`no image yet`)
+var displayBounds image.Rectangle
+var ErrNoImage = errors.New(`DESKTOP.NO_IMAGE_YET`)
 
 func init() {
 	go healthCheck()
@@ -73,18 +74,18 @@ func worker() {
 	lock.Lock()
 	if working {
 		lock.Unlock()
+		runtime.UnlockOSThread()
 		return
 	}
 	working = true
 	lock.Unlock()
+
 	var (
 		screen screen
-		bounds image.Rectangle
 		img    *image.RGBA
 		err    error
 		errors int
 	)
-	bounds = screenshot.GetDisplayBounds(displayIndex)
 	screen.init(displayIndex)
 	for working {
 		if sessions.Count() == 0 {
@@ -93,8 +94,8 @@ func worker() {
 			lock.Unlock()
 			break
 		}
-		img = image.NewRGBA(bounds)
-		err = screen.capture(img, bounds)
+		img = image.NewRGBA(displayBounds)
+		err = screen.capture(img, displayBounds)
 		if err != nil {
 			if err == ErrNoImage {
 				return
@@ -112,7 +113,7 @@ func worker() {
 					desktop := t.(*session)
 					desktop.lock.Lock()
 					if !desktop.escape {
-						desktop.channel <- message{t: 0, data: &diff}
+						desktop.channel <- message{t: 0, frame: &diff}
 					}
 					desktop.lock.Unlock()
 					return true
@@ -306,22 +307,15 @@ func InitDesktop(pack modules.Packet) error {
 		lock:     &sync.Mutex{},
 	}
 	{
-		var rect image.Rectangle
+		displayBounds = screenshot.GetDisplayBounds(displayIndex)
 		if screenshot.NumActiveDisplays() == 0 {
-			rect = screenshot.GetDisplayBounds(0)
-			if rect.Dx() == 0 || rect.Dy() == 0 {
+			if displayBounds.Dx() == 0 || displayBounds.Dy() == 0 {
+				close(desktop.channel)
 				common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|DESKTOP.NO_DISPLAY_FOUND}`}, pack)
 				return errors.New(`${i18n|DESKTOP.NO_DISPLAY_FOUND}`)
 			}
-		} else {
-			rect = screenshot.GetDisplayBounds(0)
 		}
-		buf := append([]byte{34, 22, 19, 17, 20, 02}, rawEvent...)
-		data := make([]byte, 4)
-		binary.BigEndian.PutUint16(data[:2], uint16(rect.Dx()))
-		binary.BigEndian.PutUint16(data[2:], uint16(rect.Dy()))
-		buf = append(buf, data...)
-		common.WSConn.SendData(buf)
+		desktop.channel <- message{t: 2}
 	}
 	go handleDesktop(pack, uuid, desktop)
 	if !working {
@@ -330,7 +324,7 @@ func InitDesktop(pack modules.Packet) error {
 	} else {
 		img := splitFullImage(prevDesktop, compress)
 		desktop.lock.Lock()
-		desktop.channel <- message{t: 0, data: &img}
+		desktop.channel <- message{t: 0, frame: &img}
 		desktop.lock.Unlock()
 		sessions.Set(uuid, desktop)
 	}
@@ -371,7 +365,7 @@ func KillDesktop(pack modules.Packet) {
 	desktop.escape = true
 	desktop.rawEvent = nil
 	desktop.lock.Unlock()
-	common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|desktopClosed}`}, pack)
+	common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|DESKTOP.SESSION_CLOSED}`}, pack)
 }
 
 func GetDesktop(pack modules.Packet) {
@@ -392,7 +386,7 @@ func GetDesktop(pack modules.Packet) {
 		img := splitFullImage(prevDesktop, compress)
 		lock.Unlock()
 		desktop.lock.Lock()
-		desktop.channel <- message{t: 0, data: &img}
+		desktop.channel <- message{t: 0, frame: &img}
 		desktop.lock.Unlock()
 	}
 }
@@ -411,7 +405,7 @@ func handleDesktop(pack modules.Packet, uuid string, desktop *session) {
 			// send image
 			if msg.t == 0 {
 				buf := append([]byte{34, 22, 19, 17, 20, 00}, desktop.rawEvent...)
-				for _, slice := range *msg.data {
+				for _, slice := range *msg.frame {
 					if len(buf)+len(*slice) >= common.MaxMessageSize {
 						if common.WSConn.SendData(buf) != nil {
 							break
@@ -423,6 +417,16 @@ func handleDesktop(pack modules.Packet, uuid string, desktop *session) {
 				common.WSConn.SendData(buf)
 				buf = nil
 				continue
+			}
+			// set resolution
+			if msg.t == 2 {
+				buf := append([]byte{34, 22, 19, 17, 20, 02}, desktop.rawEvent...)
+				data := make([]byte, 4)
+				binary.BigEndian.PutUint16(data[:2], uint16(displayBounds.Dx()))
+				binary.BigEndian.PutUint16(data[2:], uint16(displayBounds.Dy()))
+				buf = append(buf, data...)
+				common.WSConn.SendData(buf)
+				break
 			}
 		case <-time.After(time.Second * 5):
 		default:

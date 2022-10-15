@@ -259,7 +259,7 @@ func uploadFiles(pack modules.Packet, wsConn *common.Conn) {
 			}
 		}
 		if end > 0 && end < start {
-			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|invalidFileRange}`}, pack)
+			wsConn.SendCallback(modules.Packet{Code: 1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`}, pack)
 			return
 		}
 	}
