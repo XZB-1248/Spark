@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	ErrEntityInvalid      = errors.New(`entity is not valid`)
-	ErrFailedVerification = errors.New(`failed to verify entity`)
+	ErrEntityInvalid      = errors.New(`common.ENTITY_INVALID`)
+	ErrFailedVerification = errors.New(`common.ENTITY_CHECK_FAILED`)
 	JSON                  = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"Spark/modules"
+	"Spark/server/auth"
 	"Spark/server/common"
 	"Spark/server/config"
 	"Spark/server/handler"
@@ -314,7 +315,7 @@ func checkAuth() gin.HandlerFunc {
 		}
 	}
 
-	auth := gin.BasicAuth(config.Config.Auth)
+	auth := auth.BasicAuth(config.Config.Auth, ``)
 	return func(ctx *gin.Context) {
 		now := utils.Unix
 		passed := false
@@ -339,7 +340,7 @@ func checkAuth() gin.HandlerFunc {
 			}
 
 			auth(ctx)
-			user, _, _ := ctx.Request.BasicAuth()
+			user := ctx.GetString(`user`)
 
 			if ctx.IsAborted() {
 				blocked.Set(addr, now+1)
