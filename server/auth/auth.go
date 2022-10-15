@@ -37,7 +37,7 @@ func BasicAuth(accounts map[string]string, realm string) gin.HandlerFunc {
 	if len(realm) == 0 {
 		realm = `Authorization Required`
 	}
-	reg := regexp.MustCompile(`^\$([a-zA-Z0-9]+)\$([a-zA-Z0-9]+)$`)
+	reg := regexp.MustCompile(`^\$([a-zA-Z0-9]+)\$(.*)$`)
 	stdAccounts := make(map[string]cipher)
 	for user, pass := range accounts {
 		if match := reg.FindStringSubmatch(pass); len(match) > 0 {
