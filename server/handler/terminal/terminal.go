@@ -66,7 +66,7 @@ func InitTerminal(ctx *gin.Context) {
 // device need to send a packet to browser terminal
 func terminalEventWrapper(terminal *terminal) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
-		if pack.Act == `initTerminal` {
+		if pack.Act == `TERMINAL_INIT` {
 			if pack.Code != 0 {
 				msg := `${i18n|TERMINAL.CREATE_SESSION_FAILED}`
 				if len(pack.Msg) > 0 {
@@ -74,7 +74,7 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 				} else {
 					msg += `${i18n|COMMON.UNKNOWN_ERROR}`
 				}
-				sendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
+				sendPack(modules.Packet{Act: `WARN`, Msg: msg}, terminal.session)
 				common.RemoveEvent(terminal.uuid)
 				terminal.session.Close()
 				common.Warn(terminal.session, `TERMINAL_INIT`, `fail`, msg, map[string]any{
@@ -87,12 +87,12 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 			}
 			return
 		}
-		if pack.Act == `quitTerminal` {
+		if pack.Act == `TERMINAL_QUIT` {
 			msg := `${i18n|TERMINAL.SESSION_CLOSED}`
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
 			}
-			sendPack(modules.Packet{Act: `warn`, Msg: msg}, terminal.session)
+			sendPack(modules.Packet{Act: `WARN`, Msg: msg}, terminal.session)
 			common.RemoveEvent(terminal.uuid)
 			terminal.session.Close()
 			common.Info(terminal.session, `TERMINAL_QUIT`, ``, msg, map[string]any{
@@ -100,12 +100,12 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 			})
 			return
 		}
-		if pack.Act == `outputTerminal` {
+		if pack.Act == `TERMINAL_OUTPUT` {
 			if pack.Data == nil {
 				return
 			}
 			if output, ok := pack.Data[`output`]; ok {
-				sendPack(modules.Packet{Act: `outputTerminal`, Data: gin.H{
+				sendPack(modules.Packet{Act: `TERMINAL_OUTPUT`, Data: gin.H{
 					`output`: output,
 				}}, terminal.session)
 			}
@@ -116,19 +116,19 @@ func terminalEventWrapper(terminal *terminal) common.EventCallback {
 func onTerminalConnect(session *melody.Session) {
 	device, ok := session.Get(`Device`)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|TERMINAL.CREATE_SESSION_FAILED}`}, session)
+		sendPack(modules.Packet{Act: `WARN`, Msg: `${i18n|TERMINAL.CREATE_SESSION_FAILED}`}, session)
 		session.Close()
 		return
 	}
 	connUUID, ok := common.CheckDevice(device.(string), ``)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
+		sendPack(modules.Packet{Act: `WARN`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
 		session.Close()
 		return
 	}
 	deviceConn, ok := common.Melody.GetSessionByUUID(connUUID)
 	if !ok {
-		sendPack(modules.Packet{Act: `warn`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
+		sendPack(modules.Packet{Act: `WARN`, Msg: `${i18n|COMMON.DEVICE_NOT_EXIST}`}, session)
 		session.Close()
 		return
 	}
@@ -141,7 +141,7 @@ func onTerminalConnect(session *melody.Session) {
 	}
 	session.Set(`Terminal`, terminal)
 	common.AddEvent(terminalEventWrapper(terminal), connUUID, termUUID)
-	common.SendPack(modules.Packet{Act: `initTerminal`, Data: gin.H{
+	common.SendPack(modules.Packet{Act: `TERMINAL_INIT`, Data: gin.H{
 		`terminal`: termUUID,
 	}, Event: termUUID}, deviceConn)
 	common.Info(terminal.session, `TERMINAL_CONN`, `success`, ``, map[string]any{
@@ -163,7 +163,7 @@ func onTerminalMessage(session *melody.Session, data []byte) {
 	}
 	terminal := val.(*terminal)
 	session.Set(`LastPack`, utils.Unix)
-	if pack.Act == `inputTerminal` {
+	if pack.Act == `TERMINAL_INPUT` {
 		if pack.Data == nil {
 			return
 		}
@@ -173,20 +173,20 @@ func onTerminalMessage(session *melody.Session, data []byte) {
 				`deviceConn`: terminal.deviceConn,
 				`input`:      utils.BytesToString(rawInput),
 			})
-			common.SendPack(modules.Packet{Act: `inputTerminal`, Data: gin.H{
+			common.SendPack(modules.Packet{Act: `TERMINAL_INPUT`, Data: gin.H{
 				`input`:    input,
 				`terminal`: terminal.uuid,
 			}, Event: terminal.uuid}, terminal.deviceConn)
 		}
 		return
 	}
-	if pack.Act == `resizeTerminal` {
+	if pack.Act == `TERMINAL_RESIZE` {
 		if pack.Data == nil {
 			return
 		}
 		if width, ok := pack.Data[`width`]; ok {
 			if height, ok := pack.Data[`height`]; ok {
-				common.SendPack(modules.Packet{Act: `resizeTerminal`, Data: gin.H{
+				common.SendPack(modules.Packet{Act: `TERMINAL_RESIZE`, Data: gin.H{
 					`width`:    width,
 					`height`:   height,
 					`terminal`: terminal.uuid,
@@ -195,23 +195,23 @@ func onTerminalMessage(session *melody.Session, data []byte) {
 		}
 		return
 	}
-	if pack.Act == `killTerminal` {
+	if pack.Act == `TERMINAL_KILL` {
 		if pack.Data == nil {
 			return
 		}
 		common.Info(terminal.session, `TERMINAL_KILL`, `success`, ``, map[string]any{
 			`deviceConn`: terminal.deviceConn,
 		})
-		common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
+		common.SendPack(modules.Packet{Act: `TERMINAL_KILL`, Data: gin.H{
 			`terminal`: terminal.uuid,
 		}, Event: terminal.uuid}, terminal.deviceConn)
 		return
 	}
-	if pack.Act == `ping` {
+	if pack.Act == `PING` {
 		if pack.Data == nil {
 			return
 		}
-		common.SendPack(modules.Packet{Act: `pingTerminal`, Data: gin.H{
+		common.SendPack(modules.Packet{Act: `TERMINAL_PING`, Data: gin.H{
 			`terminal`: terminal.uuid,
 		}, Event: terminal.uuid}, terminal.deviceConn)
 		return
@@ -229,7 +229,7 @@ func onTerminalDisconnect(session *melody.Session) {
 	if !ok {
 		return
 	}
-	common.SendPack(modules.Packet{Act: `killTerminal`, Data: gin.H{
+	common.SendPack(modules.Packet{Act: `TERMINAL_KILL`, Data: gin.H{
 		`terminal`: terminal.uuid,
 	}, Event: terminal.uuid}, terminal.deviceConn)
 	common.RemoveEvent(terminal.uuid)

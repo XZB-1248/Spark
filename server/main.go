@@ -183,7 +183,7 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 		session.CloseWithMsg(melody.FormatCloseMessage(1000, `invalid request`))
 		return
 	}
-	if pack.Act == `report` || pack.Act == `setDevice` {
+	if pack.Act == `DEVICE_UP` || pack.Act == `DEVICE_UPDATE` {
 		session.Set(`LastPack`, utils.Unix)
 		utility.OnDevicePack(data, session)
 		return
@@ -272,7 +272,7 @@ func wsHealthCheck(container *melody.Melody) {
 func pingDevice(s *melody.Session) {
 	t := time.Now().UnixMilli()
 	trigger := utils.GetStrUUID()
-	common.SendPack(modules.Packet{Act: `ping`, Event: trigger}, s)
+	common.SendPack(modules.Packet{Act: `PING`, Event: trigger}, s)
 	common.AddEventOnce(func(packet modules.Packet, session *melody.Session) {
 		val, ok := common.Devices.Get(s.UUID)
 		if ok {

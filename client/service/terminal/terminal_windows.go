@@ -66,13 +66,13 @@ func InitTerminal(pack modules.Packet) error {
 			n, err := rc.Read(buffer)
 			buffer = buffer[:n]
 
-			common.WSConn.SendCallback(modules.Packet{Act: `outputTerminal`, Data: map[string]any{
+			common.WSConn.SendCallback(modules.Packet{Act: `TERMINAL_OUTPUT`, Data: map[string]any{
 				`output`: hex.EncodeToString(buffer),
 			}}, pack)
 			termSession.lastPack = utils.Unix
 			if err != nil {
 				termSession.stop = true
-				common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`}, pack)
+				common.WSConn.SendCallback(modules.Packet{Act: `TERMINAL_QUIT`}, pack)
 				break
 			}
 		}
@@ -106,7 +106,7 @@ func InputTerminal(pack modules.Packet) error {
 	termUUID := val.(string)
 	val, ok = terminals.Get(termUUID)
 	if !ok {
-		common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|TERMINAL.SESSION_CLOSED}`}, pack)
+		common.WSConn.SendCallback(modules.Packet{Act: `TERMINAL_QUIT`, Msg: `${i18n|TERMINAL.SESSION_CLOSED}`}, pack)
 		return nil
 	}
 	terminal := val.(*terminal)
@@ -127,7 +127,7 @@ func KillTerminal(pack modules.Packet) error {
 	termUUID := val.(string)
 	val, ok = terminals.Get(termUUID)
 	if !ok {
-		common.WSConn.SendCallback(modules.Packet{Act: `quitTerminal`, Msg: `${i18n|TERMINAL.SESSION_CLOSED}`}, pack)
+		common.WSConn.SendCallback(modules.Packet{Act: `TERMINAL_QUIT`, Msg: `${i18n|TERMINAL.SESSION_CLOSED}`}, pack)
 		return nil
 	}
 	terminal := val.(*terminal)

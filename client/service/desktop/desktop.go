@@ -55,6 +55,7 @@ type message struct {
 const fpsLimit = 10
 const compress = true
 const blockSize = 64
+const frameBuffer = 3
 const displayIndex = 0
 const imageQuality = 70
 
@@ -113,6 +114,12 @@ func worker() {
 					desktop := t.(*session)
 					desktop.lock.Lock()
 					if !desktop.escape {
+						if len(desktop.channel) >= frameBuffer {
+							select {
+							case <-desktop.channel:
+							default:
+							}
+						}
 						desktop.channel <- message{t: 0, frame: &diff}
 					}
 					desktop.lock.Unlock()
@@ -311,7 +318,7 @@ func InitDesktop(pack modules.Packet) error {
 		if screenshot.NumActiveDisplays() == 0 {
 			if displayBounds.Dx() == 0 || displayBounds.Dy() == 0 {
 				close(desktop.channel)
-				common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|DESKTOP.NO_DISPLAY_FOUND}`}, pack)
+				common.WSConn.SendCallback(modules.Packet{Act: `DESKTOP_QUIT`, Msg: `${i18n|DESKTOP.NO_DISPLAY_FOUND}`}, pack)
 				return errors.New(`${i18n|DESKTOP.NO_DISPLAY_FOUND}`)
 			}
 		}
@@ -365,7 +372,7 @@ func KillDesktop(pack modules.Packet) {
 	desktop.escape = true
 	desktop.rawEvent = nil
 	desktop.lock.Unlock()
-	common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: `${i18n|DESKTOP.SESSION_CLOSED}`}, pack)
+	common.WSConn.SendCallback(modules.Packet{Act: `DESKTOP_QUIT`, Msg: `${i18n|DESKTOP.SESSION_CLOSED}`}, pack)
 }
 
 func GetDesktop(pack modules.Packet) {
@@ -397,7 +404,7 @@ func handleDesktop(pack modules.Packet, uuid string, desktop *session) {
 		case msg, ok := <-desktop.channel:
 			// send error info
 			if msg.t == 1 || !ok {
-				common.WSConn.SendCallback(modules.Packet{Act: `quitDesktop`, Msg: msg.info}, pack)
+				common.WSConn.SendCallback(modules.Packet{Act: `DESKTOP_QUIT`, Msg: msg.info}, pack)
 				desktop.escape = true
 				sessions.Remove(uuid)
 				break

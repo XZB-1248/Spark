@@ -18,7 +18,7 @@ func ListDeviceProcesses(ctx *gin.Context) {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Act: `listProcesses`, Event: trigger}, connUUID)
+	common.SendPackByUUID(modules.Packet{Act: `PROCESSES_LIST`, Event: trigger}, connUUID)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -42,23 +42,23 @@ func KillDeviceProcess(ctx *gin.Context) {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `killProcess`, Data: gin.H{`pid`: form.Pid}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Act: `PROCESS_KILL`, Data: gin.H{`pid`: form.Pid}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
-			common.Warn(ctx, `KILL_PROCESS`, `fail`, p.Msg, map[string]any{
+			common.Warn(ctx, `PROCESS_KILL`, `fail`, p.Msg, map[string]any{
 				`pid`: form.Pid,
 			})
 		} else {
 			ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
-			common.Info(ctx, `KILL_PROCESS`, `success`, ``, map[string]any{
+			common.Info(ctx, `PROCESS_KILL`, `success`, ``, map[string]any{
 				`pid`: form.Pid,
 			})
 		}
 	}, target, trigger, 5*time.Second)
 	if !ok {
 		ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
-		common.Warn(ctx, `KILL_PROCESS`, `fail`, `timeout`, map[string]any{
+		common.Warn(ctx, `PROCESS_KILL`, `fail`, `timeout`, map[string]any{
 			`pid`: form.Pid,
 		})
 	}

@@ -966,10 +966,10 @@ function FileUploader(props) {
             maskClosable={false}
             destroyOnClose={true}
             confirmLoading={status === 1}
-            okText={i18n.t(status === 1 ? 'uploading' : 'upload')}
+            okText={i18n.t(status === 1 ? 'EXPLORER.UPLOADING' : 'EXPLORER.UPLOAD')}
             onOk={onConfirm}
             onCancel={onCancel}
-            modalTitle={i18n.t(status === 1 ? 'uploading' : 'upload')}
+            modalTitle={i18n.t(status === 1 ? 'EXPLORER.UPLOADING' : 'EXPLORER.UPLOAD')}
             okButtonProps={{disabled: status !== 0}}
             cancelButtonProps={{disabled: status > 1}}
             width={550}

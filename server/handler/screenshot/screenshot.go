@@ -22,13 +22,13 @@ func GetScreenshot(ctx *gin.Context) {
 	trigger := utils.GetStrUUID()
 	wait := make(chan bool)
 	called := false
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `screenshot`, Data: gin.H{`bridge`: bridgeID}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Act: `SCREENSHOT`, Data: gin.H{`bridge`: bridgeID}, Event: trigger}, target)
 	common.AddEvent(func(p modules.Packet, _ *melody.Session) {
 		called = true
 		bridge.RemoveBridge(bridgeID)
 		common.RemoveEvent(trigger)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
-		common.Warn(ctx, `TAKE_SCREENSHOT`, `fail`, p.Msg, nil)
+		common.Warn(ctx, `SCREENSHOT`, `fail`, p.Msg, nil)
 		wait <- false
 	}, target, trigger)
 	instance := bridge.AddBridgeWithDst(nil, bridgeID, ctx)
@@ -39,7 +39,7 @@ func GetScreenshot(ctx *gin.Context) {
 	}
 	instance.OnFinish = func(bridge *bridge.Bridge) {
 		if called {
-			common.Info(ctx, `TAKE_SCREENSHOT`, `success`, ``, nil)
+			common.Info(ctx, `SCREENSHOT`, `success`, ``, nil)
 		}
 		wait <- false
 	}
@@ -50,7 +50,7 @@ func GetScreenshot(ctx *gin.Context) {
 			bridge.RemoveBridge(bridgeID)
 			common.RemoveEvent(trigger)
 			ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, modules.Packet{Code: 1, Msg: `${i18n|COMMON.RESPONSE_TIMEOUT}`})
-			common.Warn(ctx, `TAKE_SCREENSHOT`, `fail`, `timeout`, nil)
+			common.Warn(ctx, `SCREENSHOT`, `fail`, `timeout`, nil)
 		} else {
 			<-wait
 		}

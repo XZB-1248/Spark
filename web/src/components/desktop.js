@@ -80,7 +80,7 @@ function ScreenModal(props) {
                 if (ticks > 10 && conn) {
                     ticks = 0;
                     ws.send(encrypt({
-                        act: 'pingDesktop'
+                        act: 'DESKTOP_PING'
                     }, secret));
                 }
             }, 1000);
@@ -109,7 +109,7 @@ function ScreenModal(props) {
                 construct(canvas);
             } else {
                 ws.send(encrypt({
-                    act: 'getDesktop'
+                    act: 'DESKTOP_SHOT'
                 }, secret));
             }
         }
@@ -162,11 +162,11 @@ function ScreenModal(props) {
         try {
             data = JSON.parse(data);
         } catch (_) {}
-        if (data?.act === 'warn') {
+        if (data?.act === 'WARN') {
             message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
             return;
         }
-        if (data?.act === 'quit') {
+        if (data?.act === 'QUIT') {
             message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
             conn = false;
             ws.close();

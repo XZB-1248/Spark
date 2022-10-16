@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -68,7 +69,7 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 		pack.Device.WAN = `Unknown`
 	}
 
-	if pack.Act == `report` {
+	if pack.Act == `DEVICE_UP` {
 		// Check if this device has already connected.
 		// If so, then find the session and let client quit.
 		// This will keep only one connection remained per device.
@@ -79,7 +80,7 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 				exSession = uuid
 				target, ok := common.Melody.GetSessionByUUID(uuid)
 				if ok {
-					common.SendPack(modules.Packet{Act: `offline`}, target)
+					common.SendPack(modules.Packet{Act: `OFFLINE`}, target)
 					target.Close()
 				}
 				return false
@@ -242,7 +243,7 @@ func ExecDeviceCmd(ctx *gin.Context) {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `execCommand`, Data: gin.H{`cmd`: form.Cmd, `args`: form.Args}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Act: `COMMAND_EXEC`, Data: gin.H{`cmd`: form.Cmd, `args`: form.Args}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			common.Warn(ctx, `EXEC_COMMAND`, `fail`, p.Msg, map[string]any{
@@ -280,13 +281,13 @@ func GetDevices(ctx *gin.Context) {
 
 // CallDevice will call client with command from browser.
 func CallDevice(ctx *gin.Context) {
-	act := ctx.Param(`act`)
+	act := strings.ToUpper(ctx.Param(`act`))
 	if len(act) == 0 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
 	{
-		actions := []string{`lock`, `logoff`, `hibernate`, `suspend`, `restart`, `shutdown`, `offline`}
+		actions := []string{`LOCK`, `LOGOFF`, `HIBERNATE`, `SUSPEND`, `RESTART`, `SHUTDOWN`, `OFFLINE`}
 		ok := false
 		for _, v := range actions {
 			if v == act {
@@ -366,7 +367,7 @@ func SimpleDecrypt(data []byte, session *melody.Session) ([]byte, bool) {
 func WSHealthCheck(container *melody.Melody, sender Sender) {
 	const MaxIdleSeconds = 300
 	ping := func(uuid string, s *melody.Session) {
-		if !sender(modules.Packet{Act: `ping`}, s) {
+		if !sender(modules.Packet{Act: `PING`}, s) {
 			s.Close()
 		}
 	}

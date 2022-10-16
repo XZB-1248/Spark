@@ -56,7 +56,7 @@ class TerminalModal extends React.Component {
                 data = JSON.parse(data);
             } catch (_) {}
             if (this.conn) {
-                if (data?.act === 'outputTerminal') {
+                if (data?.act === 'TERMINAL_OUTPUT') {
                     data = ab2str(hex2buf(data?.data?.output));
                     if (buffer.output.length > 0) {
                         data = buffer.output + data;
@@ -76,7 +76,7 @@ class TerminalModal extends React.Component {
                     this.term.write(data);
                     return;
                 }
-                if (data?.act === 'warn') {
+                if (data?.act === 'WARN') {
                     message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
                 }
             }
@@ -251,7 +251,7 @@ class TerminalModal extends React.Component {
     sendInput(input) {
         if (this.conn) {
             this.sendData({
-                act: 'inputTerminal',
+                act: 'TERMINAL_INPUT',
                 data: {
                     input: CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input))
                 }
@@ -268,9 +268,7 @@ class TerminalModal extends React.Component {
         if (prevProps.visible) {
             clearInterval(this.ticker);
             if (this.conn) {
-                this.sendData({
-                    act: 'killTerminal'
-                });
+                this.sendData({act: 'TERMINAL_KILL'});
                 this.ws.close();
             }
             this?.termEv?.dispose();
@@ -291,7 +289,7 @@ class TerminalModal extends React.Component {
                 this.termEv = this.initialize(null);
                 this.ticker = setInterval(function () {
                     if (this.conn) {
-                        this.sendData({act: 'ping'});
+                        this.sendData({act: 'PING'});
                     }
                 }, 10000);
             }
@@ -315,7 +313,7 @@ class TerminalModal extends React.Component {
 
         if (this.conn) {
             this.sendData({
-                act: 'resizeTerminal',
+                act: 'TERMINAL_RESIZE',
                 data: {
                     width: cols,
                     height: rows

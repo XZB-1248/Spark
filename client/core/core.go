@@ -85,7 +85,7 @@ func reportWS(wsConn *common.Conn) error {
 	if err != nil {
 		return err
 	}
-	pack := modules.CommonPack{Act: `report`, Data: *device}
+	pack := modules.CommonPack{Act: `DEVICE_UP`, Data: *device}
 	err = wsConn.SendPack(pack)
 	common.WSConn.SetWriteDeadline(time.Time{})
 	if err != nil {

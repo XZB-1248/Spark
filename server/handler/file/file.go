@@ -32,7 +32,7 @@ func RemoveDeviceFiles(ctx *gin.Context) {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `removeFiles`, Data: gin.H{`files`: form.Files}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Act: `FILES_REMOVE`, Data: gin.H{`files`: form.Files}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			common.Warn(ctx, `REMOVE_FILES`, `fail`, p.Msg, map[string]any{
@@ -64,7 +64,7 @@ func ListDeviceFiles(ctx *gin.Context) {
 		return
 	}
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Act: `listFiles`, Data: gin.H{`path`: form.Path}, Event: trigger}, target)
+	common.SendPackByUUID(modules.Packet{Act: `FILES_LIST`, Data: gin.H{`path`: form.Path}, Event: trigger}, target)
 	ok = common.AddEventOnce(func(p modules.Packet, _ *melody.Session) {
 		if p.Code != 0 {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, modules.Packet{Code: 1, Msg: p.Msg})
@@ -132,7 +132,7 @@ func GetDeviceFiles(ctx *gin.Context) {
 			command[`start`] = rangeStart
 			partial = true
 		}
-		common.SendPackByUUID(modules.Packet{Code: 0, Act: `uploadFiles`, Data: command, Event: trigger}, target)
+		common.SendPackByUUID(modules.Packet{Act: `FILES_UPLOAD`, Data: command, Event: trigger}, target)
 	}
 	wait := make(chan bool)
 	called := false
@@ -233,7 +233,7 @@ func GetDeviceTextFile(ctx *gin.Context) {
 	}
 	bridgeID := utils.GetStrUUID()
 	trigger := utils.GetStrUUID()
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `uploadTextFile`, Data: gin.H{
+	common.SendPackByUUID(modules.Packet{Act: `FILE_UPLOAD_TEXT`, Data: gin.H{
 		`file`:   form.File,
 		`bridge`: bridgeID,
 	}, Event: trigger}, target)
@@ -350,7 +350,7 @@ func UploadToDevice(ctx *gin.Context) {
 		}
 		wait <- false
 	}
-	common.SendPackByUUID(modules.Packet{Code: 0, Act: `fetchFile`, Data: gin.H{
+	common.SendPackByUUID(modules.Packet{Act: `FILES_FETCH`, Data: gin.H{
 		`path`:   form.Path,
 		`file`:   form.File,
 		`bridge`: bridgeID,
