@@ -12,7 +12,6 @@ import (
 	"crypto/cipher"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/kataras/golog"
 	"net/http"
 	"os"
 	"strconv"
@@ -57,7 +56,6 @@ func OnDevicePack(data []byte, session *melody.Session) error {
 	}
 	err := utils.JSON.Unmarshal(data, &pack)
 	if err != nil {
-		golog.Error(err)
 		session.Close()
 		return err
 	}

@@ -27,18 +27,18 @@ func init() {
 	// Convert first 2 bytes to int, which is the length of the encrypted config.
 	dataLen := int(big.NewInt(0).SetBytes([]byte(config.ConfigBuffer[:2])).Uint64())
 	if dataLen > len(config.ConfigBuffer)-2 {
-		os.Exit(0)
+		os.Exit(1)
 		return
 	}
 	cfgBytes := utils.StringToBytes(config.ConfigBuffer, 2, 2+dataLen)
 	cfgBytes, err := decrypt(cfgBytes[16:], cfgBytes[:16])
 	if err != nil {
-		os.Exit(0)
+		os.Exit(1)
 		return
 	}
 	err = utils.JSON.Unmarshal(cfgBytes, &config.Config)
 	if err != nil {
-		os.Exit(0)
+		os.Exit(1)
 		return
 	}
 	if strings.HasSuffix(config.Config.Path, `/`) {

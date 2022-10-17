@@ -31,7 +31,7 @@ func init() {
 		logFile := fmt.Sprintf(`%s/%s.log`, config.Config.Log.Path, now.Format(`2006-01-02`))
 		logWriter, err = os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 		if err != nil {
-			golog.Warn(`Failed to open log file: %v`, err)
+			golog.Warn(getLog(nil, `LOG_INIT`, `fail`, err.Error(), nil))
 		}
 		golog.SetOutput(io.MultiWriter(os.Stdout, logWriter))
 

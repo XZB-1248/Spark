@@ -1,5 +1,5 @@
 import React, {createRef} from "react";
-import {message} from "antd";
+import {Button, Dropdown, Menu, message, Space} from "antd";
 import {Terminal} from "xterm";
 import {WebLinksAddon} from "xterm-addon-web-links";
 import {FitAddon} from "xterm-addon-fit";
@@ -15,7 +15,9 @@ class TerminalModal extends React.Component {
     constructor(props) {
         super(props);
         this.ticker = 0;
+        this.os = props.device.os;
         this.ws = null;
+        this.ctrl = false;
         this.conn = false;
         this.opened = false;
         this.termRef = createRef();
@@ -30,6 +32,7 @@ class TerminalModal extends React.Component {
             fontSize: 16,
             logLevel: "off",
         });
+        this.extKeyRef = React.createRef();
         this.doResize.call(this);
     }
 
@@ -39,7 +42,7 @@ class TerminalModal extends React.Component {
         let termEv = null;
         // Windows doesn't support pty, so we still use traditional way.
         // And we need to handle arrow events manually.
-        if (this.props.device.os === 'windows') {
+        if (this.os === 'windows') {
             termEv = this.term.onData(this.onWindowsInput.call(this, buffer));
         } else {
             termEv = this.term.onData(this.onUnixOSInput.call(this, buffer));
@@ -173,7 +176,7 @@ class TerminalModal extends React.Component {
                         this.term.clear();
                     } else {
                         this.term.write('\n');
-                        this.sendInput(cmd + '\n');
+                        this.sendWindowsInput(cmd + '\n');
                         buffer.content = cmd + '\n';
                     }
                     if (cmd.length > 0) history.push(cmd);
@@ -224,7 +227,7 @@ class TerminalModal extends React.Component {
                 }
                 return;
             }
-            this.sendInput(e);
+            this.sendUnixOSInput(e);
         }.bind(this);
     }
 
@@ -248,8 +251,32 @@ class TerminalModal extends React.Component {
         return ab2str(ws2ua(decrypted.ciphertext).buffer);
     }
 
-    sendInput(input) {
+    sendWindowsInput(input) {
         if (this.conn) {
+            this.sendData({
+                act: 'TERMINAL_INPUT',
+                data: {
+                    input: CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input))
+                }
+            });
+        }
+    }
+    sendUnixOSInput(input) {
+        if (this.conn) {
+            if (this.ctrl && input.length === 1) {
+                let charCode = input.charCodeAt(0);
+                if (charCode >= 0x61 && charCode <= 0x7A) {
+                    charCode -= 0x60;
+                    this.ctrl = false;
+                    this.extKeyRef.current.setCtl(false);
+                } else if (charCode >= 0x40 && charCode <= 0x5F) {
+                    charCode -= 0x40;
+                    this.ctrl = false;
+                    this.extKeyRef.current.setCtl(false);
+                }
+                input = String.fromCharCode(charCode);
+            }
+            console.log(CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input)));
             this.sendData({
                 act: 'TERMINAL_INPUT',
                 data: {
@@ -282,7 +309,6 @@ class TerminalModal extends React.Component {
                     this.term.loadAddon(new WebLinksAddon());
                     this.term.open(this.termRef.current);
                     this.fit.fit();
-                    this.term.focus();
                     window.onresize = this.onResize.bind(this);
                 }
                 this.term.clear();
@@ -292,6 +318,7 @@ class TerminalModal extends React.Component {
                         this.sendData({act: 'PING'});
                     }
                 }, 10000);
+                this.term.focus();
             }
         }
     }
@@ -327,6 +354,15 @@ class TerminalModal extends React.Component {
         }
     }
 
+    onCtrl(val) {
+        this.ctrl = val;
+        this?.term?.focus?.();
+    }
+    onExtKey(val) {
+        this.sendUnixOSInput(val);
+        this?.term?.focus?.();
+    }
+
     render() {
         return (
             <DraggableModal
@@ -335,16 +371,95 @@ class TerminalModal extends React.Component {
                 modalTitle={i18n.t('TERMINAL.TITLE')}
                 visible={this.props.visible}
                 onCancel={this.props.onCancel}
+                bodyStyle={{padding: 12}}
                 destroyOnClose={false}
                 footer={null}
-                height={150}
+                height={200}
                 width={900}
             >
+                <ExtKeyboard
+                    ref={this.extKeyRef}
+                    onCtrl={this.onCtrl.bind(this)}
+                    onExtKey={this.onExtKey.bind(this)}
+                />
                 <div
                     ref={this.termRef}
                 />
             </DraggableModal>
         )
+    }
+}
+
+class ExtKeyboard extends React.Component {
+    constructor(props) {
+        super(props);
+        this.fnKeys = [
+            {key: '\x1B\x4F\x50', label: 'F1'},
+            {key: '\x1B\x4F\x51', label: 'F2'},
+            {key: '\x1B\x4F\x52', label: 'F3'},
+            {key: '\x1B\x4F\x53', label: 'F4'},
+            {key: '\x1B\x5B\x31\x35\x7E', label: 'F5'},
+            {key: '\x1B\x5B\x31\x37\x7E', label: 'F6'},
+            {key: '\x1B\x5B\x31\x38\x7E', label: 'F7'},
+            {key: '\x1B\x5B\x31\x39\x7E', label: 'F8'},
+            {key: '\x1B\x5B\x32\x30\x7E', label: 'F9'},
+            {key: '\x1B\x5B\x32\x31\x7E', label: 'F10'},
+            {key: '\x1B\x5B\x32\x33\x7E', label: 'F11'},
+            {key: '\x1B\x5B\x32\x34\x7E', label: 'F12'},
+        ];
+        this.fnMenu = (
+            <Menu onClick={this.onFnKey.bind(this)}>
+                {this.fnKeys.map(e =>
+                    <Menu.Item key={e.key}>
+                        {e.label}
+                    </Menu.Item>
+                )}
+            </Menu>
+        );
+        this.state = {ctrl: false};
+    }
+
+    onCtrl() {
+        this.setState({ctrl: !this.state.ctrl});
+        this.props.onCtrl(!this.state.ctrl);
+    }
+    onExtKey(key) {
+        this.props.onExtKey(key);
+    }
+    onFnKey(e) {
+        this.props.onExtKey(e.key);
+    }
+
+    setCtl(val) {
+        this.setState({ctrl: val});
+    }
+
+    render() {
+        return (
+            <Space style={{paddingBottom: 12}}>
+                <Button
+                    type={this.state.ctrl?'primary':'default'}
+                    onClick={this.onCtrl.bind(this)}
+                >
+                    CTRL
+                </Button>
+                <Button
+                    onClick={this.onExtKey.bind(this, '\x1b')}
+                >
+                    ESC
+                </Button>
+                <Button
+                    onClick={this.onExtKey.bind(this, '\x09')}
+                >
+                    TAB
+                </Button>
+                <Dropdown.Button
+                    overlay={this.fnMenu}
+                >
+                    {i18n.t('TERMINAL.FUNCTION_KEYS')}
+                </Dropdown.Button>
+            </Space>
+        );
     }
 }
 

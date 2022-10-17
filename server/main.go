@@ -30,7 +30,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kataras/golog"
 )
 
 var blocked = cmap.New()
@@ -143,7 +142,6 @@ func wsHandshake(ctx *gin.Context) {
 		`Address`:  common.GetRemoteAddr(ctx),
 	})
 	if err != nil {
-		golog.Error(err)
 		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}

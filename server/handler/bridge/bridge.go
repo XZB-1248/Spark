@@ -5,7 +5,6 @@ import (
 	"Spark/utils"
 	"Spark/utils/cmap"
 	"github.com/gin-gonic/gin"
-	"github.com/kataras/golog"
 	"io"
 	"net"
 	"net/http"
@@ -61,7 +60,6 @@ func CheckBridge(ctx *gin.Context) *Bridge {
 		Bridge string `json:"bridge" yaml:"bridge" form:"bridge" binding:"required"`
 	}
 	if err := ctx.ShouldBind(&form); err != nil {
-		golog.Error(err)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return nil
 	}
