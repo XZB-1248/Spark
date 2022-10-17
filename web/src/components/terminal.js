@@ -336,9 +336,9 @@ function TerminalModal(props) {
         }
         ctrl = val;
     }
-    function onExtKey(val) {
+    function onExtKey(val, focus) {
         sendUnixOSInput(val);
-        term?.focus?.();
+        if (focus) term?.focus?.();
     }
 
     return (
@@ -362,6 +362,10 @@ function TerminalModal(props) {
                 visible={os!=='windows'}
             />
             <div
+                style={{
+                    padding: '0 5px',
+                    backgroundColor: '#000',
+                }}
                 ref={termRef}
             />
         </DraggableModal>
@@ -404,10 +408,10 @@ class ExtKeyboard extends React.Component {
         this.props.onCtrl(!this.state.ctrl);
     }
     onExtKey(key) {
-        this.props.onExtKey(key);
+        this.props.onExtKey(key, true);
     }
     onFnKey(e) {
-        this.props.onExtKey(e.key);
+        this.props.onExtKey(e.key, false);
     }
 
     setCtrl(val) {

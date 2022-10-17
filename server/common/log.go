@@ -27,7 +27,7 @@ func init() {
 			return
 		}
 		os.Mkdir(config.Config.Log.Path, 0666)
-		now := utils.Now.Add(time.Second)
+		now := utils.Now.Add(time.Minute)
 		logFile := fmt.Sprintf(`%s/%s.log`, config.Config.Log.Path, now.Format(`2006-01-02`))
 		logWriter, err = os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 		if err != nil {
@@ -35,14 +35,16 @@ func init() {
 		}
 		golog.SetOutput(io.MultiWriter(os.Stdout, logWriter))
 
-		staleDate := time.Unix(now.Unix()-int64(config.Config.Log.Days*86400)-86400, 0)
+		staleDate := time.Unix(now.Unix()-int64(config.Config.Log.Days*86400), 0)
 		staleLog := fmt.Sprintf(`%s/%s.log`, config.Config.Log.Path, staleDate.Format(`2006-01-02`))
 		os.Remove(staleLog)
 	}
 	setLogDst()
 	go func() {
 		waitSecs := 86400 - (utils.Now.Hour()*3600 + utils.Now.Minute()*60 + utils.Now.Second())
-		<-time.After(time.Duration(waitSecs) * time.Second)
+		if waitSecs > 0 {
+			<-time.After(time.Duration(waitSecs) * time.Second)
+		}
 		setLogDst()
 		for range time.NewTicker(time.Second * 86400).C {
 			setLogDst()

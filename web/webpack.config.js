@@ -76,7 +76,7 @@ module.exports = (env, args) => {
                 test: /\.js$|\.css$|\.html$/,
                 filename: "[file].gz",
                 algorithm: "gzip",
-                threshold: 256 * 1024,
+                threshold: 128 * 1024,
                 compressionOptions: {
                     level: 9
                 }
