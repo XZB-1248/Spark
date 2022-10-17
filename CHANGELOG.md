@@ -1,3 +1,15 @@
+## v0.1.8
+
+* Add: hashed-password authentication.
+* Add: function keyboard for terminal.
+* Fix: file editor fullscreen problem on Safari.
+
+* 新增：身份验证的密码已支持加密。
+* 新增：终端中已支持功能按键。
+* 修复：Safari浏览器下文件编辑器的全屏问题。
+
+
+
 ## v0.1.7
 
 * Optimize: i18n format.
