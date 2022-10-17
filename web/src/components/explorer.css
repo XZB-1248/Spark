@@ -18,6 +18,7 @@ a {
 }
 
 .ant-pro-table-list-toolbar {
+    overflow: hidden;
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
@@ -31,12 +32,14 @@ a {
 }
 
 .editor-modal, .editor-modal > .ant-modal-content {
-    height: 100vh;
-    width: 100vw;
-    margin: 0;
     top: 0;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 .editor-modal > .ant-modal-content > .ant-modal-body {
-    height: calc(100vh - 110px);
+    height: calc(100% - 110px);
 }

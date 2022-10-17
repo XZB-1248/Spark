@@ -324,7 +324,7 @@ function TerminalModal(props) {
     }
     function onResize() {
         if (typeof doResize === 'function') {
-            debounce(doResize.bind(this), 70);
+            debounce(doResize, 70);
         }
     }
 
