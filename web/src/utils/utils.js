@@ -2,6 +2,7 @@ import axios from "axios";
 import Qs from "qs";
 import i18n, {getLang} from "../locale/locale";
 import {message} from "antd";
+import CryptoJS from "crypto-js";
 
 let orderCompare;
 try {
@@ -190,4 +191,25 @@ function ws2ua(wordArray) {
     return result;
 }
 
-export {post, request, waitTime, formatSize, tsToTime, getBaseURL, genRandHex, translate, preventClose, catchBlobReq, hex2buf, ab2str, ws2ua, orderCompare};
+function encrypt(data, secret) {
+    let json = JSON.stringify(data);
+    json = CryptoJS.enc.Utf8.parse(json);
+    let encrypted = CryptoJS.AES.encrypt(json, secret, {
+        mode: CryptoJS.mode.CTR,
+        iv: secret,
+        padding: CryptoJS.pad.NoPadding
+    });
+    return ws2ua(encrypted.ciphertext);
+}
+
+function decrypt(data, secret) {
+    data = CryptoJS.lib.WordArray.create(data);
+    let decrypted = CryptoJS.AES.encrypt(data, secret, {
+        mode: CryptoJS.mode.CTR,
+        iv: secret,
+        padding: CryptoJS.pad.NoPadding
+    });
+    return ab2str(ws2ua(decrypted.ciphertext).buffer);
+}
+
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, genRandHex, translate, preventClose, catchBlobReq, hex2buf, ab2str, ws2ua, encrypt, decrypt, orderCompare};

@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {ab2str, formatSize, genRandHex, getBaseURL, translate, ws2ua} from "../utils/utils";
+import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate} from "../utils/utils";
 import i18n from "../locale/locale";
 import DraggableModal from "./modal";
 import CryptoJS from "crypto-js";
@@ -206,26 +206,6 @@ function ScreenModal(props) {
             />
         </DraggableModal>
     );
-}
-
-function encrypt(data, secret) {
-    let json = JSON.stringify(data);
-    json = CryptoJS.enc.Utf8.parse(json);
-    let encrypted = CryptoJS.AES.encrypt(json, secret, {
-        mode: CryptoJS.mode.CTR,
-        iv: secret,
-        padding: CryptoJS.pad.NoPadding
-    });
-    return ws2ua(encrypted.ciphertext);
-}
-function decrypt(data, secret) {
-    data = CryptoJS.lib.WordArray.create(data);
-    let decrypted = CryptoJS.AES.encrypt(data, secret, {
-        mode: CryptoJS.mode.CTR,
-        iv: secret,
-        padding: CryptoJS.pad.NoPadding
-    });
-    return ab2str(ws2ua(decrypted.ciphertext).buffer);
 }
 
 export default ScreenModal;
