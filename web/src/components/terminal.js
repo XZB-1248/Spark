@@ -69,7 +69,7 @@ function TerminalModal(props) {
         ws = null;
         conn = false;
     }
-    
+
     function initialize(ev) {
         ev?.dispose();
         let buffer = { content: '', output: '' };
@@ -290,6 +290,7 @@ function TerminalModal(props) {
                 }
                 input = String.fromCharCode(charCode);
             }
+            console.log(CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input)));
             sendData({
                 act: 'TERMINAL_INPUT',
                 data: {
@@ -422,22 +423,46 @@ class ExtKeyboard extends React.Component {
         if (!this.visible) return null;
         return (
             <Space style={{paddingBottom: 12}}>
-                <Button
-                    type={this.state.ctrl?'primary':'default'}
-                    onClick={this.onCtrl.bind(this)}
-                >
-                    CTRL
-                </Button>
-                <Button
-                    onClick={this.onExtKey.bind(this, '\x1B')}
-                >
-                    ESC
-                </Button>
-                <Button
-                    onClick={this.onExtKey.bind(this, '\x09')}
-                >
-                    TAB
-                </Button>
+                <>
+                    <Button
+                        type={this.state.ctrl?'primary':'default'}
+                        onClick={this.onCtrl.bind(this)}
+                    >
+                        CTRL
+                    </Button>
+                    <Button
+                        onClick={this.onExtKey.bind(this, '\x1B')}
+                    >
+                        ESC
+                    </Button>
+                    <Button
+                        onClick={this.onExtKey.bind(this, '\x09')}
+                    >
+                        TAB
+                    </Button>
+                </>
+                <>
+                    <Button
+                        onClick={this.onExtKey.bind(this, '\x1B\x5B\x41')}
+                    >
+                        ⬆
+                    </Button>
+                    <Button
+                        onClick={this.onExtKey.bind(this, '\x1B\x5B\x42')}
+                    >
+                        ⬇
+                    </Button>
+                    <Button
+                        onClick={this.onExtKey.bind(this, '\x1B\x5B\x43')}
+                    >
+                        ➡
+                    </Button>
+                    <Button
+                        onClick={this.onExtKey.bind(this, '\x1B\x5B\x44')}
+                    >
+                        ⬅
+                    </Button>
+                </>
                 <Dropdown.Button
                     overlay={this.fnMenu}
                 >
