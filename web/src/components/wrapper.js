@@ -7,35 +7,36 @@ import {ConfigProvider} from "antd";
 import './wrapper.css';
 
 function wrapper(props) {
-    return (
-        <ProLayout
-            loading={false}
-            title='Spark'
-            layout='top'
-            navTheme='light'
-            collapsed={true}
-            fixedHeader={true}
-            contentWidth='fluid'
-            collapsedButtonRender={Title}
-        >
-            <PageContainer>
-                <ConfigProvider locale={getLang()==='zh-CN'?zhCN:en}>
-                    {props.children}
-                </ConfigProvider>
-            </PageContainer>
-        </ProLayout>
-    );
-};
+	return (
+		<ProLayout
+			loading={false}
+			title='Spark'
+			logo={null}
+			layout='top'
+			navTheme='light'
+			collapsed={true}
+			fixedHeader={true}
+			contentWidth='fluid'
+			collapsedButtonRender={Title}
+		>
+			<PageContainer>
+				<ConfigProvider locale={getLang()==='zh-CN'?zhCN:en}>
+					{props.children}
+				</ConfigProvider>
+			</PageContainer>
+		</ProLayout>
+	);
+}
 function Title() {
-    return (
-        <div
-            style={{
-                userSelect: 'none',
-                fontWeight: 500
-            }}
-        >
-            Spark
-        </div>
-    )
+	return (
+		<div
+			style={{
+				userSelect: 'none',
+				fontWeight: 500
+			}}
+		>
+			Spark
+		</div>
+	)
 }
 export default wrapper;

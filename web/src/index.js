@@ -14,41 +14,41 @@ import {translate} from "./utils/utils";
 
 axios.defaults.baseURL = '.';
 axios.interceptors.response.use(async res => {
-    let data = res.data;
-    if (data.hasOwnProperty('code')) {
-        if (data.code !== 0){
-            message.warn(translate(data.msg));
-        } else {
-            // The first request will ask user to provide user/pass.
-            // If set timeout at the beginning, then timeout warning
-            // might be triggered before authentication finished.
-            axios.defaults.timeout = 5000;
-        }
-    }
-    return Promise.resolve(res);
+	let data = res.data;
+	if (data.hasOwnProperty('code')) {
+		if (data.code !== 0){
+			message.warn(translate(data.msg));
+		} else {
+			// The first request will ask user to provide user/pass.
+			// If set timeout at the beginning, then timeout warning
+			// might be triggered before authentication finished.
+			axios.defaults.timeout = 5000;
+		}
+	}
+	return Promise.resolve(res);
 }, err => {
-    // console.error(err);
-    if (err.code === 'ECONNABORTED') {
-        message.error(i18n.t('COMMON.REQUEST_TIMEOUT'));
-        return Promise.reject(err);
-    }
-    let res = err.response;
-    let data = res?.data ?? {};
-    if (data.hasOwnProperty('code') && data.hasOwnProperty('msg')) {
-        if (data.code !== 0){
-            message.warn(translate(data.msg));
-            return Promise.resolve(res);
-        }
-    }
-    return Promise.reject(err);
+	// console.error(err);
+	if (err.code === 'ECONNABORTED') {
+		message.error(i18n.t('COMMON.REQUEST_TIMEOUT'));
+		return Promise.reject(err);
+	}
+	let res = err.response;
+	let data = res?.data ?? {};
+	if (data.hasOwnProperty('code') && data.hasOwnProperty('msg')) {
+		if (data.code !== 0){
+			message.warn(translate(data.msg));
+			return Promise.resolve(res);
+		}
+	}
+	return Promise.reject(err);
 });
 
 ReactDOM.render(
-    <Router>
-        <Routes>
-            <Route path="/" element={<Wrapper><Overview/></Wrapper>}/>
-            <Route path="*" element={<Err/>}/>
-        </Routes>
-    </Router>,
-    document.getElementById('root')
+	<Router>
+		<Routes>
+			<Route path="/" element={<Wrapper><Overview/></Wrapper>}/>
+			<Route path="*" element={<Err/>}/>
+		</Routes>
+	</Router>,
+	document.getElementById('root')
 );

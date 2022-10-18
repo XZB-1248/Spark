@@ -1,45 +1,45 @@
 a {
-    user-select: none;
+	user-select: none;
 }
 
 .file-row {
-    user-select: none;
-    cursor: pointer;
+	user-select: none;
+	cursor: pointer;
 }
 
 .ant-table-body {
-    max-height: 300px;
-    min-height: 300px;
+	max-height: 300px;
+	min-height: 300px;
 }
 
 .ant-breadcrumb {
-    overflow-x: hidden;
-    white-space: nowrap;
+	overflow-x: hidden;
+	white-space: nowrap;
 }
 
 .ant-pro-table-list-toolbar {
-    overflow: hidden;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+	overflow: hidden;
+	-ms-overflow-style: none;
+	scrollbar-width: none;
 }
 
 .ant-pro-table-list-toolbar::-webkit-scrollbar {
-    display: none;
+	display: none;
 }
 
 .upload-progress-square > .ant-progress-outer > .ant-progress-inner {
-    border-radius: 0 !important;
+	border-radius: 0 !important;
 }
 
 .editor-modal, .editor-modal > .ant-modal-content {
-    top: 0;
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100% !important;
-    max-width: 100% !important;
+	top: 0;
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	width: 100% !important;
+	max-width: 100% !important;
 }
 
 .editor-modal > .ant-modal-content > .ant-modal-body {
-    height: calc(100% - 110px);
+	height: calc(100% - 110px);
 }
