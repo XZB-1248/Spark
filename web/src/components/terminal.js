@@ -364,8 +364,8 @@ function TerminalModal(props) {
 			/>
 			<div
 				style={{
-					padding: '0 5px',
-					backgroundColor: '#000',
+					padding: '0 0 0 5px',
+					backgroundColor: '#000'
 				}}
 				ref={termRef}
 			/>

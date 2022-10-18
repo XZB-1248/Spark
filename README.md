@@ -72,9 +72,9 @@ Example:
   ```
 
 * `listen` `required`, format: `IP:Port`
-* `salt` `required`, length <= 32
+* `salt` `required`, length <= 24
   * after modification, you need to re-generate all clients
-* `auth` `required`, format: `username:password`
+* `auth` `optional`, format: `username:password`
   * hashed-password is highly recommended
   * format: `$algorithm$hashed-password`, example: `$sha256$123456abcdefg`
   * supported algorithms: `sha256`, `sha512`, `bcrypt`

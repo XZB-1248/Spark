@@ -32,7 +32,7 @@
 	"OVERVIEW.NETWORK": "Network",
 	"OVERVIEW.OPERATIONS": "Operations",
 	"OVERVIEW.TERMINAL": "Terminal",
-	"OVERVIEW.PROC_MANAGER": "Process Manager",
+	"OVERVIEW.PROC_MANAGER": "Process",
 	"OVERVIEW.EXPLORER": "Explorer",
 	"OVERVIEW.RUN": "Run",
 	"OVERVIEW.SCREENSHOT": "Screenshot",
@@ -44,7 +44,7 @@
 	"OVERVIEW.RESTART": "Restart",
 	"OVERVIEW.SHUTDOWN": "Shutdown",
 	"OVERVIEW.OFFLINE": "Offline",
-	"OVERVIEW.GENERATE": "Generate client",
+	"OVERVIEW.GENERATE": "Generate Client",
 	"OVERVIEW.OPERATION_CONFIRM": "Are you sure to {0} this device?",
 	"OVERVIEW.OPERATION_SUCCESS": "Operation executed",
 
