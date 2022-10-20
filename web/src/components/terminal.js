@@ -1,4 +1,4 @@
-import React, {createRef, useCallback, useEffect} from "react";
+import React, {createRef, useCallback} from "react";
 import {Button, Dropdown, Menu, message, Space} from "antd";
 import {Terminal} from "xterm";
 import {WebLinksAddon} from "xterm-addon-web-links";
@@ -290,7 +290,6 @@ function TerminalModal(props) {
 				}
 				input = String.fromCharCode(charCode);
 			}
-			console.log(CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input)));
 			sendData({
 				act: 'TERMINAL_INPUT',
 				data: {
@@ -378,7 +377,7 @@ class ExtKeyboard extends React.Component {
 		super(props);
 		this.visible = props.visible;
 		if (!this.visible) return;
-		this.fnKeys = [
+		this.funcKeys = [
 			{key: '\x1B\x4F\x50', label: 'F1'},
 			{key: '\x1B\x4F\x51', label: 'F2'},
 			{key: '\x1B\x4F\x52', label: 'F3'},
@@ -392,9 +391,26 @@ class ExtKeyboard extends React.Component {
 			{key: '\x1B\x5B\x32\x33\x7E', label: 'F11'},
 			{key: '\x1B\x5B\x32\x34\x7E', label: 'F12'},
 		];
-		this.fnMenu = (
-			<Menu onClick={this.onFnKey.bind(this)}>
-				{this.fnKeys.map(e =>
+		this.specialKeys = [
+			{key: '\x1B\x5B\x31\x7E', label: 'HOME'},
+			{key: '\x1B\x5B\x32\x7E', label: 'INS'},
+			{key: '\x1B\x5B\x33\x7E', label: 'DEL'},
+			{key: '\x1B\x5B\x34\x7E', label: 'END'},
+			{key: '\x1B\x5B\x35\x7E', label: 'PGUP'},
+			{key: '\x1B\x5B\x36\x7E', label: 'PGDN'},
+		];
+		this.funcMenu = (
+			<Menu onClick={this.onKey.bind(this)}>
+				{this.funcKeys.map(e =>
+					<Menu.Item key={e.key}>
+						{e.label}
+					</Menu.Item>
+				)}
+			</Menu>
+		);
+		this.specialMenu = (
+			<Menu onClick={this.onKey.bind(this)}>
+				{this.specialKeys.map(e =>
 					<Menu.Item key={e.key}>
 						{e.label}
 					</Menu.Item>
@@ -408,11 +424,11 @@ class ExtKeyboard extends React.Component {
 		this.setState({ctrl: !this.state.ctrl});
 		this.props.onCtrl(!this.state.ctrl);
 	}
+	onKey(e) {
+		this.props.onExtKey(e.key, false);
+	}
 	onExtKey(key) {
 		this.props.onExtKey(key, true);
-	}
-	onFnKey(e) {
-		this.props.onExtKey(e.key, false);
 	}
 
 	setCtrl(val) {
@@ -464,7 +480,12 @@ class ExtKeyboard extends React.Component {
 					</Button>
 				</>
 				<Dropdown.Button
-					overlay={this.fnMenu}
+					overlay={this.specialMenu}
+				>
+					{i18n.t('TERMINAL.SPECIAL_KEYS')}
+				</Dropdown.Button>
+				<Dropdown.Button
+					overlay={this.funcMenu}
 				>
 					{i18n.t('TERMINAL.FUNCTION_KEYS')}
 				</Dropdown.Button>

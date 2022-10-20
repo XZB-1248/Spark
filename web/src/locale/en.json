@@ -109,6 +109,7 @@
 	"TERMINAL.TITLE": "Terminal",
 	"TERMINAL.CREATE_SESSION_FAILED": "Failed to create terminal session",
 	"TERMINAL.SESSION_CLOSED": "Terminal session closed",
+	"TERMINAL.SPECIAL_KEYS": "Special Keys",
 	"TERMINAL.FUNCTION_KEYS": "Function Keys",
 
 	"DESKTOP.TITLE": "Desktop",

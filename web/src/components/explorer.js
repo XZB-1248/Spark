@@ -124,8 +124,8 @@ function FileBrowser(props) {
 
 	function renderOperation(file) {
 		let menus = [
-			{key: 'delete', name: i18n.t('EXPLORER.DELETE')},
 			{key: 'editAsText', name: i18n.t('EXPLORER.EDIT_AS_TEXT')},
+			{key: 'delete', name: i18n.t('EXPLORER.DELETE')},
 		];
 		if (file.type === 1) {
 			menus.pop();

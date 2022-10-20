@@ -7,7 +7,6 @@ import (
 	"Spark/modules"
 	"Spark/utils"
 	"encoding/hex"
-	"errors"
 	"github.com/creack/pty"
 	"os"
 	"os/exec"
@@ -16,20 +15,26 @@ import (
 )
 
 type terminal struct {
+	escape   bool
 	lastPack int64
 	event    string
 	pty      *os.File
 	cmd      *exec.Cmd
 }
 
+var defaultShell = ``
+
 func init() {
 	go healthCheck()
 }
 
 func InitTerminal(pack modules.Packet) error {
-	cmd := exec.Command(getTerminal())
+	// try to get shell
+	// if shell is not found or unavailable, then fallback to `sh`
+	cmd := exec.Command(getTerminal(false))
 	ptySession, err := pty.Start(cmd)
 	if err != nil {
+		defaultShell = getTerminal(true)
 		return err
 	}
 	termSession := &terminal{
@@ -37,10 +42,11 @@ func InitTerminal(pack modules.Packet) error {
 		pty:      ptySession,
 		event:    pack.Event,
 		lastPack: utils.Unix,
+		escape:   false,
 	}
 	terminals.Set(pack.Data[`terminal`].(string), termSession)
 	go func() {
-		for {
+		for !termSession.escape {
 			buffer := make([]byte, 512)
 			n, err := ptySession.Read(buffer)
 			buffer = buffer[:n]
@@ -49,6 +55,10 @@ func InitTerminal(pack modules.Packet) error {
 			}}, pack)
 			termSession.lastPack = utils.Unix
 			if err != nil {
+				if !termSession.escape {
+					termSession.escape = true
+					doKillTerminal(termSession)
+				}
 				common.WSConn.SendCallback(modules.Packet{Act: `TERMINAL_QUIT`}, pack)
 				break
 			}
@@ -148,21 +158,34 @@ func PingTerminal(pack modules.Packet) {
 }
 
 func doKillTerminal(terminal *terminal) {
+	terminal.escape = true
 	if terminal.pty != nil {
 		terminal.pty.Close()
 	}
 	if terminal.cmd.Process != nil {
 		terminal.cmd.Process.Kill()
+		terminal.cmd.Process.Wait()
 		terminal.cmd.Process.Release()
+		terminal.cmd.Process = nil
 	}
 }
 
-func getTerminal() string {
-	sh := []string{`/bin/zsh`, `/bin/bash`, `/bin/sh`}
-	for i := 0; i < len(sh); i++ {
-		_, err := os.Stat(sh[i])
-		if !errors.Is(err, os.ErrNotExist) {
-			return sh[i]
+func getTerminal(sh bool) string {
+	shellTable := []string{`zsh`, `bash`, `sh`}
+	if sh {
+		shPath, err := exec.LookPath(`sh`)
+		if err != nil {
+			return `sh`
+		}
+		return shPath
+	} else if len(defaultShell) > 0 {
+		return defaultShell
+	}
+	for i := 0; i < len(shellTable); i++ {
+		shellPath, err := exec.LookPath(shellTable[i])
+		if err == nil {
+			defaultShell = shellPath
+			return shellPath
 		}
 	}
 	return `sh`

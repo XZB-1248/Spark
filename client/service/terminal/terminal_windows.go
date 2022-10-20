@@ -158,6 +158,7 @@ func doKillTerminal(terminal *terminal) {
 	(*terminal.stdin).Close()
 	if terminal.cmd.Process != nil {
 		terminal.cmd.Process.Kill()
+		terminal.cmd.Process.Wait()
 		terminal.cmd.Process.Release()
 	}
 }

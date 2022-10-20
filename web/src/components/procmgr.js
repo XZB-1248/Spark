@@ -97,7 +97,7 @@ function ProcessMgr(props) {
 			destroyOnClose={true}
 			modalTitle={i18n.t('PROCMGR.TITLE')}
 			footer={null}
-			width={400}
+			width={500}
 			bodyStyle={{
 				padding: 0
 			}}
