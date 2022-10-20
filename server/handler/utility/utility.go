@@ -146,6 +146,7 @@ func CheckUpdate(ctx *gin.Context) {
 		})
 		return
 	}
+	defer tpl.Close()
 
 	const MaxBodySize = 384 // This is size of client config buffer.
 	if ctx.Request.ContentLength > MaxBodySize {

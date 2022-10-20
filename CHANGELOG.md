@@ -1,3 +1,13 @@
+## v0.1.9
+
+* Add: special keys for terminal.
+* Fix: defunct process remains after terminal exit.
+
+* 新增：终端支持特殊按键。
+* 修复：终端退出后shell进程依然存活。
+
+
+
 ## v0.1.8
 
 * Add: hashed-password authentication.

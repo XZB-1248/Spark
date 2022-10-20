@@ -377,11 +377,11 @@ func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
 	if err != nil {
 		return false
 	}
+	defer file.Close()
 
 	file.Seek(0, io.SeekStart)
 	conn, ok := ctx.Request.Context().Value(`Conn`).(net.Conn)
 	if !ok {
-		file.Close()
 		return false
 	}
 
@@ -419,7 +419,6 @@ func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
 		}
 	}
 	conn.SetWriteDeadline(time.Time{})
-	file.Close()
 	ctx.Done()
 	return true
 }

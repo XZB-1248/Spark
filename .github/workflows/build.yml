@@ -37,13 +37,13 @@ jobs:
           go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/darwin_amd64 Spark/client
 
       - name: Upload prebuilt client (darwin_arm64)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: darwin_arm64
           path: ./built/darwin_arm64
 
       - name: Upload prebuilt client (darwin_amd64)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: darwin_amd64
           path: ./built/darwin_amd64

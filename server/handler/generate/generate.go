@@ -85,6 +85,7 @@ func GenerateClient(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, modules.Packet{Code: 1, Msg: `${i18n|GENERATOR.NO_PREBUILT_FOUND}`})
 		return
 	}
+	defer tpl.Close()
 	clientUUID := utils.GetUUID()
 	clientKey, err := common.EncAES(clientUUID, config.Config.SaltBytes)
 	if err != nil {
@@ -138,7 +139,7 @@ func GenerateClient(ctx *gin.Context) {
 	}
 	if len(prevBuffer) > 0 {
 		ctx.Writer.Write(prevBuffer)
-		prevBuffer = []byte{}
+		prevBuffer = nil
 	}
 }
 
