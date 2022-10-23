@@ -128,7 +128,7 @@ function FileBrowser(props) {
 			{key: 'delete', name: i18n.t('EXPLORER.DELETE')},
 		];
 		if (file.type === 1) {
-			menus.pop();
+			menus.shift();
 		} else if (file.type === 2) {
 			return [];
 		}
