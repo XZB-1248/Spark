@@ -158,20 +158,38 @@ func wsOnMessage(session *melody.Session, _ []byte) {
 func wsOnMessageBinary(session *melody.Session, data []byte) {
 	var pack modules.Packet
 
-	{
-		dataLen := len(data)
-		if dataLen >= 22 {
-			if bytes.Equal(data[:5], []byte{34, 22, 19, 17, 20}) {
-				event := hex.EncodeToString(data[6:22])
-				copy(data[6:], data[22:])
-				common.CallEvent(modules.Packet{
-					Event: event,
-					Data: gin.H{
-						`data`: utils.GetSlicePrefix(&data, dataLen-16),
-					},
-				}, session)
-				return
+	dataLen := len(data)
+	if dataLen > 24 {
+		if service, op, isBinary := utils.CheckBinaryPack(data); isBinary {
+			switch service {
+			case 20:
+				switch op {
+				case 00, 01, 02, 03:
+					event := hex.EncodeToString(data[6:22])
+					copy(data[6:], data[22:])
+					common.CallEvent(modules.Packet{
+						Act:   `RAW_DATA_ARRIVE`,
+						Event: event,
+						Data: gin.H{
+							`data`: utils.GetSlicePrefix(&data, dataLen-16),
+						},
+					}, session)
+				}
+			case 21:
+				switch op {
+				case 00, 01:
+					event := hex.EncodeToString(data[6:22])
+					copy(data[6:], data[22:])
+					common.CallEvent(modules.Packet{
+						Act:   `RAW_DATA_ARRIVE`,
+						Event: event,
+						Data: gin.H{
+							`data`: utils.GetSlicePrefix(&data, dataLen-16),
+						},
+					}, session)
+				}
 			}
+			return
 		}
 	}
 

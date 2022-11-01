@@ -1,8 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate} from "../utils/utils";
+import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate, hex2ua, ua2hex} from "../utils/utils";
 import i18n from "../locale/locale";
 import DraggableModal from "./modal";
-import CryptoJS from "crypto-js";
 import {Button, message} from "antd";
 import {FullscreenOutlined, ReloadOutlined} from "@ant-design/icons";
 
@@ -20,15 +19,15 @@ function ScreenModal(props) {
 	const [bandwidth, setBandwidth] = useState(0);
 	const [fps, setFps] = useState(0);
 	const canvasRef = useCallback((e) => {
-		if (e && props.visible && !conn) {
+		if (e && props.open && !conn) {
 			canvas = e;
 			initCanvas(canvas);
 			construct(canvas);
 		}
 	}, [props]);
 	useEffect(() => {
-		if (props.visible) {
-			secret = CryptoJS.enc.Hex.parse(genRandHex(32));
+		if (props.open) {
+			secret = hex2ua(genRandHex(32));
 		} else {
 			if (ws && conn) {
 				clearInterval(ticker);
@@ -36,7 +35,7 @@ function ScreenModal(props) {
 				conn = false;
 			}
 		}
-	}, [props.visible, props.device]);
+	}, [props.open, props.device]);
 
 	function initCanvas() {
 		if (!canvas) return;
@@ -47,7 +46,7 @@ function ScreenModal(props) {
 			if (ws !== null && conn) {
 				ws.close();
 			}
-			ws = new WebSocket(getBaseURL(true, `api/device/desktop?device=${props.device.id}&secret=${secret}`));
+			ws = new WebSocket(getBaseURL(true, `api/device/desktop?device=${props.device.id}&secret=${ua2hex(secret)}`));
 			ws.binaryType = 'arraybuffer';
 			ws.onopen = () => {
 				conn = true;
@@ -79,9 +78,9 @@ function ScreenModal(props) {
 				ticks++;
 				if (ticks > 10 && conn) {
 					ticks = 0;
-					ws.send(encrypt({
+					sendData({
 						act: 'DESKTOP_PING'
-					}, secret));
+					});
 				}
 			}, 1000);
 		}
@@ -101,16 +100,16 @@ function ScreenModal(props) {
 		} catch {}
 	}
 	function refresh() {
-		if (canvas && props.visible) {
+		if (canvas && props.open) {
 			if (!conn) {
 				canvas.width = 1920;
 				canvas.height = 1080;
 				initCanvas(canvas);
 				construct(canvas);
 			} else {
-				ws.send(encrypt({
+				sendData({
 					act: 'DESKTOP_SHOT'
-				}, secret));
+				});
 			}
 		}
 	}
@@ -124,8 +123,8 @@ function ScreenModal(props) {
 			return;
 		}
 		if (op === 2) {
-			let width = dv.getUint16(1, false);
-			let height = dv.getUint16(3, false);
+			let width = dv.getUint16(3, false);
+			let height = dv.getUint16(5, false);
 			if (width === 0 || height === 0) return;
 			canvas.width = width;
 			canvas.height = height;
@@ -135,12 +134,13 @@ function ScreenModal(props) {
 		bytes += ab.byteLength;
 		let offset = 1;
 		while (offset < ab.byteLength) {
-			let it = dv.getUint16(offset + 0, false); // image type
-			let il = dv.getUint16(offset + 2, false); // image length
+			let bl = dv.getUint16(offset + 0, false); // body length
+			let it = dv.getUint16(offset + 2, false); // image type
 			let dx = dv.getUint16(offset + 4, false); // image block x
 			let dy = dv.getUint16(offset + 6, false); // image block y
 			let bw = dv.getUint16(offset + 8, false); // image block width
 			let bh = dv.getUint16(offset + 10, false); // image block height
+			let il = bl - 10; // image length
 			offset += 12;
 			updateImage(ab.slice(offset, offset + il), it, dx, dy, bw, bh, canvasCtx);
 			offset += il;
@@ -170,6 +170,17 @@ function ScreenModal(props) {
 			message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
 			conn = false;
 			ws.close();
+		}
+	}
+
+	function sendData(data) {
+		if (conn) {
+			let body = encrypt(data, secret);
+			let buffer = new Uint8Array(body.length + 8);
+			buffer.set(new Uint8Array([34, 22, 19, 17, 20, 3]), 0);
+			buffer.set(new Uint8Array([body.length >> 8, body.length & 0xFF]), 6);
+			buffer.set(body, 8);
+			ws.send(buffer);
 		}
 	}
 

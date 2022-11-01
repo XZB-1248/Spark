@@ -41,6 +41,16 @@ func Max[T int | int32 | int64 | uint | uint32 | uint64 | float32 | float64](a, 
 	return b
 }
 
+func XOR(data []byte, key []byte) []byte {
+	if len(key) == 0 {
+		return data
+	}
+	for i := 0; i < len(data); i++ {
+		data[i] = data[i] ^ key[i%len(key)]
+	}
+	return data
+}
+
 func GenRandByte(n int) []byte {
 	secBuffer := make([]byte, n)
 	rand.Reader.Read(secBuffer)
@@ -184,4 +194,15 @@ func GetSliceChunk[T any](data *[]T, start, end int) *[]T {
 		Len:  end - start,
 		Cap:  end - start,
 	}))
+}
+
+func CheckBinaryPack(data []byte) (byte, byte, bool) {
+	if len(data) >= 8 {
+		if bytes.Equal(data[:4], []byte{34, 22, 19, 17}) {
+			if data[4] == 20 || data[4] == 21 {
+				return data[4], data[5], true
+			}
+		}
+	}
+	return 0, 0, false
 }

@@ -4,6 +4,7 @@ import (
 	"Spark/client/config"
 	"Spark/modules"
 	"Spark/utils"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	ws "github.com/gorilla/websocket"
@@ -71,6 +72,25 @@ func (wsConn *Conn) SendPack(pack any) error {
 	wsConn.SetWriteDeadline(utils.Now.Add(5 * time.Second))
 	defer wsConn.SetWriteDeadline(time.Time{})
 	return wsConn.WriteMessage(ws.BinaryMessage, data)
+}
+
+func (wsConn *Conn) SendRawData(event, data []byte, service byte, op byte) error {
+	Mutex.Lock()
+	defer Mutex.Unlock()
+	if WSConn == nil {
+		return errors.New(`${i18n|COMMON.DISCONNECTED}`)
+	}
+	buffer := make([]byte, 24)
+	copy(buffer[6:22], event)
+	copy(buffer[:4], []byte{34, 22, 19, 17})
+	buffer[4] = service
+	buffer[5] = op
+	binary.BigEndian.PutUint16(buffer[22:24], uint16(len(data)))
+	buffer = append(buffer, data...)
+
+	wsConn.SetWriteDeadline(utils.Now.Add(5 * time.Second))
+	defer wsConn.SetWriteDeadline(time.Time{})
+	return wsConn.WriteMessage(ws.BinaryMessage, buffer)
 }
 
 func (wsConn *Conn) SendCallback(pack, prev modules.Packet) error {

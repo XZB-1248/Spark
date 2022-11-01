@@ -161,6 +161,18 @@ func handleWS(wsConn *common.Conn) error {
 			golog.Error(err)
 			return nil
 		}
+		if service, op, isBinary := utils.CheckBinaryPack(data); isBinary && len(data) > 24 {
+			event := hex.EncodeToString(data[6:22])
+			switch service {
+			case 20:
+			case 21:
+				switch op {
+				case 0:
+					inputRawTerminal(data[24:], event)
+				}
+			}
+			continue
+		}
 		data, err = utils.Decrypt(data, wsConn.GetSecret())
 		if err != nil {
 			golog.Error(err)

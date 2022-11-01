@@ -1,48 +1,62 @@
-import React, {createRef, useCallback} from "react";
+import React, {createRef, useCallback, useState} from "react";
 import {Button, Dropdown, Menu, message, Space} from "antd";
 import {Terminal} from "xterm";
 import {WebLinksAddon} from "xterm-addon-web-links";
 import {FitAddon} from "xterm-addon-fit";
 import debounce from 'lodash/debounce';
-import CryptoJS from 'crypto-js';
 import wcwidth from 'wcwidth';
 import "xterm/css/xterm.css";
 import i18n from "../locale/locale";
-import {encrypt, decrypt, ab2str, genRandHex, getBaseURL, hex2buf, translate} from "../utils/utils";
+import {
+	decrypt, encrypt, genRandHex, getBaseURL,
+	hex2ua, str2hex, str2ua, translate,
+	ua2hex, ua2str
+} from "../utils/utils";
 import DraggableModal from "./modal";
+const Zmodem = require("../vendors/zmodem.js/zmodem");
 
-let ws = null;
+let zsentry = null;
+let zsession = null;
+
+let webLinks = null;
 let fit = null;
 let term = null;
 let termEv = null;
+let secret = null;
+
+let ws = null;
 let ctrl = false;
 let conn = false;
 let ticker = 0;
+let buffer = {content: '', output: ''};
+
 function TerminalModal(props) {
 	let os = props.device.os;
 	let extKeyRef = createRef();
-	let secret = CryptoJS.enc.Hex.parse(genRandHex(32));
 	let termRef = useCallback(e => {
 		if (e !== null) {
 			termRef.current = e;
-			if (props.visible) {
-				ctrl = false;
+			if (props.open) {
+				secret = hex2ua(genRandHex(32));
+				fit = new FitAddon();
+				webLinks = new WebLinksAddon();
 				term = new Terminal({
 					convertEol: true,
+					allowProposedApi: true,
 					allowTransparency: false,
 					cursorBlink: true,
 					cursorStyle: "block",
 					fontFamily: "Hack, monospace",
 					fontSize: 16,
 					logLevel: "off",
-				})
-				fit = new FitAddon();
+				});
 				termEv = initialize(null);
 				term.loadAddon(fit);
-				term.loadAddon(new WebLinksAddon());
 				term.open(termRef.current);
 				fit.fit();
 				term.clear();
+				term.loadAddon(webLinks);
+
 				window.onresize = onResize;
 				ticker = setInterval(() => {
 					if (conn) sendData({act: 'PING'});
@@ -51,10 +65,15 @@ function TerminalModal(props) {
 				doResize();
 			}
 		}
-	}, [props.visible]);
+	}, [props.open]);
 
 	function afterClose() {
 		clearInterval(ticker);
+		if (zsession) {
+			zsession._last_header_name = 'ZRINIT';
+			zsession.close();
+			zsession = null;
+		}
 		if (conn) {
 			sendData({act: 'TERMINAL_KILL'});
 			ws.onclose = null;
@@ -64,65 +83,47 @@ function TerminalModal(props) {
 		termEv = null;
 		fit?.dispose();
 		fit = null;
+		webLinks?.dispose();
+		webLinks = null;
+		zsentry = null;
 		term?.dispose();
 		term = null;
 		ws = null;
 		conn = false;
+		ctrl = false;
 	}
 
 	function initialize(ev) {
 		ev?.dispose();
-		let buffer = { content: '', output: '' };
+		buffer = {content: '', output: ''};
 		let termEv = null;
 		// Windows doesn't support pty, so we still use traditional way.
 		// And we need to handle arrow events manually.
 		if (os === 'windows') {
-			termEv = term.onData(onWindowsInput.call(this, buffer));
+			termEv = term.onData(onWindowsInput(buffer));
 		} else {
-			termEv = term.onData(onUnixOSInput.call(this, buffer));
+			initZmodem();
+			termEv = term.onData(onUnixOSInput(buffer));
 		}
 
-		ws = new WebSocket(getBaseURL(true, `api/device/terminal?device=${props.device.id}&secret=${secret}`));
+		ws = new WebSocket(getBaseURL(true, `api/device/terminal?device=${props.device.id}&secret=${ua2hex(secret)}`));
 		ws.binaryType = 'arraybuffer';
 		ws.onopen = () => {
 			conn = true;
 		}
 		ws.onmessage = (e) => {
-			let data = decrypt(e.data, secret);
-			try {
-				data = JSON.parse(data);
-			} catch (_) {}
-			if (conn) {
-				if (data?.act === 'TERMINAL_OUTPUT') {
-					data = ab2str(hex2buf(data?.data?.output));
-					if (buffer.output.length > 0) {
-						data = buffer.output + data;
-						buffer.output = '';
-					}
-					if (buffer.content.length > 0) {
-						if (data.length > buffer.content.length) {
-							if (data.startsWith(buffer.content)) {
-								data = data.substring(buffer.content.length);
-								buffer.content = '';
-							}
-						} else {
-							buffer.output = data;
-							return;
-						}
-					}
-					term.write(data);
-					return;
-				}
-				if (data?.act === 'WARN') {
-					message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
-				}
-			}
+			onWsMessage(e.data, buffer);
 		}
 		ws.onclose = (e) => {
 			if (conn) {
 				conn = false;
 				term.write(`\n${i18n.t('COMMON.DISCONNECTED')}\n`);
-				secret = CryptoJS.enc.Hex.parse(genRandHex(32));
+				secret = hex2ua(genRandHex(32));
+				if (zsession !== null) {
+					zsession._last_header_name = 'ZRINIT';
+					zsession.close();
+					zsession = null;
+				}
 			}
 		}
 		ws.onerror = (e) => {
@@ -130,13 +131,81 @@ function TerminalModal(props) {
 			if (conn) {
 				conn = false;
 				term.write(`\n${i18n.t('COMMON.DISCONNECTED')}\n`);
-				secret = CryptoJS.enc.Hex.parse(genRandHex(32));
+				secret = hex2ua(genRandHex(32));
+				if (zsession !== null) {
+					zsession._last_header_name = 'ZRINIT';
+					zsession.close();
+					zsession = null;
+				}
 			} else {
 				term.write(`\n${i18n.t('COMMON.CONNECTION_FAILED')}\n`);
 			}
 		}
 		return termEv;
 	}
+	function onWsMessage(data) {
+		data = new Uint8Array(data);
+		if (data[0] === 34 && data[1] === 22 && data[2] === 19 && data[3] === 17 && data[4] === 21 && data[5] === 0) {
+			data = data.slice(8);
+			if (zsentry === null) {
+				onOutput(ua2str(data));
+			} else {
+				try {
+					zsentry.consume(data);
+				} catch (e) {
+					console.error(e);
+				}
+			}
+		} else {
+			data = decrypt(data, secret);
+			try {
+				data = JSON.parse(data);
+			} catch (_) {}
+			if (conn) {
+				if (data?.act === 'TERMINAL_OUTPUT') {
+					data = hex2ua(data?.data?.output);
+					if (zsentry === null) {
+						onOutput(ua2str(data));
+					} else {
+						try {
+							zsentry.consume(data);
+						} catch (e) {
+							console.error(e);
+						}
+					}
+					return;
+				}
+				if (data?.act === 'WARN') {
+					message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
+					return;
+				}
+				if (data?.act === 'QUIT') {
+					message.warn(data.msg ? translate(data.msg) : i18n.t('COMMON.UNKNOWN_ERROR'));
+					ws.close();
+					return;
+				}
+			}
+		}
+	}
+	function onOutput(data) {
+		if (buffer.output.length > 0) {
+			data = buffer.output + data;
+			buffer.output = '';
+		}
+		if (buffer.content.length > 0) {
+			if (data.length >= buffer.content.length) {
+				if (data.startsWith(buffer.content)) {
+					data = data.substring(buffer.content.length);
+					buffer.content = '';
+				}
+			} else {
+				buffer.output = data;
+				return
+			}
+		}
+		term.write(data);
+	}
+
 	function onWindowsInput(buffer) {
 		let cmd = '';
 		let index = 0;
@@ -144,13 +213,6 @@ function TerminalModal(props) {
 		let history = [];
 		let tempCmd = '';
 		let tempCursor = 0;
-		function clearTerm() {
-			let before = cmd.substring(0, cursor);
-			let after = cmd.substring(cursor);
-			term.write('\b'.repeat(wcwidth(before)));
-			term.write(' '.repeat(wcwidth(cmd)));
-			term.write('\b'.repeat(wcwidth(cmd)));
-		}
 		return function (e) {
 			if (!conn) {
 				if (e === '\r' || e === '\n' || e === ' ') {
@@ -167,7 +229,7 @@ function TerminalModal(props) {
 							tempCursor = cursor;
 						}
 						index--;
-						clearTerm.call(this);
+						clearTerm();
 						cmd = history[index];
 						cursor = cmd.length;
 						term.write(cmd);
@@ -176,12 +238,12 @@ function TerminalModal(props) {
 				case '\x1B\x5B\x42': // down arrow.
 					if (index + 1 < history.length) {
 						index++;
-						clearTerm.call(this);
+						clearTerm();
 						cmd = history[index];
 						cursor = cmd.length;
 						term.write(cmd);
 					} else if (index + 1 <= history.length) {
-						clearTerm.call(this);
+						clearTerm();
 						index++;
 						cmd = tempCmd;
 						cursor = tempCursor;
@@ -199,14 +261,14 @@ function TerminalModal(props) {
 					break;
 				case '\x1B\x5B\x44': // left arrow.
 					if (cursor > 0) {
-						term.write('\x1B\x5B\x44'.repeat(wcwidth(cmd[cursor-1])));
+						term.write('\x1B\x5B\x44'.repeat(wcwidth(cmd[cursor - 1])));
 						cursor--;
 					}
 					break;
 				case '\r':
 				case '\n':
 					if (cmd === 'clear' || cmd === 'cls') {
-						clearTerm.call(this);
+						clearTerm();
 						term.clear();
 					} else {
 						term.write('\n');
@@ -228,7 +290,7 @@ function TerminalModal(props) {
 						cursor--;
 						let charWidth = wcwidth(cmd[cursor]);
 						let before = cmd.substring(0, cursor);
-						let after = cmd.substring(cursor+1);
+						let after = cmd.substring(cursor + 1);
 						cmd = before + after;
 						term.write('\b'.repeat(charWidth));
 						term.write(after + ' '.repeat(charWidth));
@@ -251,6 +313,14 @@ function TerminalModal(props) {
 					}
 			}
 		};
+
+		function clearTerm() {
+			let before = cmd.substring(0, cursor);
+			let after = cmd.substring(cursor);
+			term.write('\b'.repeat(wcwidth(before)));
+			term.write(' '.repeat(wcwidth(cmd)));
+			term.write('\b'.repeat(wcwidth(cmd)));
+		}
 	}
 	function onUnixOSInput(_) {
 		return function (e) {
@@ -264,13 +334,134 @@ function TerminalModal(props) {
 			sendUnixOSInput(e);
 		};
 	}
+	function initZmodem() {
+		const clear = () => {
+			extKeyRef.current.setFileSelect(false);
+			zsession._last_header_name = 'ZRINIT';
+			zsession.close();
+			zsession = null;
+		};
+		zsentry = new Zmodem.Sentry({
+			on_retract: () => {},
+			on_detect: detection => {
+				if (zsession !== null) {
+					clear();
+				}
+				zsession = detection.confirm();
+				if (zsession.type === 'send') {
+					uploadFile(zsession);
+				} else {
+					downloadFile(zsession);
+				}
+			},
+			to_terminal: data => {
+				onOutput(ua2str(new Uint8Array(data)));
+			},
+			sender: data => {
+				sendData(new Uint8Array(data), true);
+			}
+		});
+
+		function uploadFile() {
+			return new Promise((resolve, reject) => {
+				let uploader = document.getElementById('file-uploader');
+				let hasFile = false;
+				uploader.onchange = e => {
+					extKeyRef.current.setFileSelect(false);
+					if (zsession === null) {
+						e.target.value = null;
+						message.warn(i18n.t('TERMINAL.ZMODEM_UPLOADER_CALL_TIMEOUT'));
+						return;
+					}
+					let file = e.target.files[0];
+					if (file === undefined) {
+						term.write("\n" + i18n.t('TERMINAL.ZMODEM_UPLOADER_NO_FILE') + "\n");
+						clear();
+						reject('NO_FILE_SELECTED');
+						return;
+					}
+					hasFile = true;
+					e.target.value = null;
+					term.write("\n" + file.name + "\t" + i18n.t('TERMINAL.ZMODEM_TRANSFER_START') + "\n");
+					Zmodem.Browser.send_files(zsession, [file], {
+						on_offer_response: (file, xfer) => {
+							if (!xfer) {
+								term.write(file.name + "\t" + i18n.t('TERMINAL.ZMODEM_TRANSFER_REJECTED') + "\n");
+								reject('TRANSFER_REJECTED');
+							}
+						},
+						on_file_complete: () => {
+							term.write(file.name + "\t" + i18n.t('TERMINAL.ZMODEM_TRANSFER_SUCCESS') + "\n");
+							resolve();
+						}
+					}).catch(e => {
+						console.error(e);
+						term.write(file.name + "\t" + i18n.t('TERMINAL.ZMODEM_TRANSFER_FAILED') + "\n");
+						reject(e);
+					}).finally(() => {
+						clear();
+					});
+				};
+				term.write("\n" + i18n.t('TERMINAL.ZMODEM_UPLOADER_TIP'));
+				term.write("\n" + i18n.t('TERMINAL.ZMODEM_UPLOADER_WARNING') + "\n");
+				extKeyRef.current.setFileSelect(() => {
+					uploader.click();
+				});
+				uploader.click();
+				setTimeout(() => {
+					if (!hasFile) {
+						term.write("\n" + i18n.t('TERMINAL.ZMODEM_UPLOADER_CALL_TIMEOUT') + "\n");
+						clear();
+						reject('UPLOADER_CALL_TIMEOUT');
+					}
+				}, 10000);
+			});
+		}
+		function downloadFile() {
+			return new Promise((resolve, reject) => {
+				let resolved = false;
+				let rejected = false;
+				zsession.on('offer', xfer => {
+					let detail = xfer.get_details();
+					if (detail.size > 16 * 1024 * 1024) {
+						xfer.skip();
+						term.write("\n" + detail.name + "\t" + i18n.t('TERMINAL.ZMODEM_FILE_TOO_LARGE') + "\n");
+					} else {
+						let filename = detail.name;
+						let content = [];
+						xfer.on('input', data => {
+							content.push(new Uint8Array(data));
+						});
+						xfer.accept().then(() => {
+							Zmodem.Browser.save_to_disk(content, filename);
+							term.write("\n" + detail.name + "\t" + i18n.t('TERMINAL.ZMODEM_TRANSFER_SUCCESS') + "\n");
+							resolved = true;
+							resolve();
+						}).catch(e => {
+							console.error(e);
+							term.write("\n" + detail.name + "\t" + i18n.t('TERMINAL.ZMODEM_TRANSFER_FAILED') + "\n");
+							rejected = true;
+							reject();
+						});
+					}
+				});
+				zsession.on('session_end', () => {
+					zsession = null;
+					if (!resolved && !rejected) {
+						reject();
+					}
+				});
+				zsession.start();
+			});
+		}
+	}
 
 	function sendWindowsInput(input) {
 		if (conn) {
 			sendData({
 				act: 'TERMINAL_INPUT',
 				data: {
-					input: CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input))
+					input: str2hex(input)
 				}
 			});
 		}
@@ -293,14 +484,33 @@ function TerminalModal(props) {
 			sendData({
 				act: 'TERMINAL_INPUT',
 				data: {
-					input: CryptoJS.enc.Hex.stringify(CryptoJS.enc.Utf8.parse(input))
+					input: str2hex(input)
 				}
 			});
 		}
 	}
-	function sendData(data) {
+	function sendData(data, raw) {
 		if (conn) {
-			ws.send(encrypt(data, secret));
+			let body = [];
+			if (raw) {
+				if (data.length > 65536) {
+					let offset = 0;
+					while (offset < data.length) {
+						let chunk = data.slice(offset, offset + 65536);
+						sendData(chunk, true);
+						offset += chunk.length;
+					}
+				} else {
+					body = data;
+				}
+			} else {
+				body = encrypt(str2ua(JSON.stringify(data)), secret);
+			}
+			let buffer = new Uint8Array(body.length + 8);
+			buffer.set(new Uint8Array([34, 22, 19, 17, 21, raw ? 0 : 1]), 0);
+			buffer.set(new Uint8Array([body.length >> 8, body.length & 0xFF]), 6);
+			buffer.set(body, 8);
+			ws.send(buffer);
 		}
 	}
 
@@ -316,8 +526,8 @@ function TerminalModal(props) {
 			sendData({
 				act: 'TERMINAL_RESIZE',
 				data: {
-					width: cols,
-					height: rows
+					cols: cols,
+					rows: rows
 				}
 			});
 		}
@@ -346,20 +556,20 @@ function TerminalModal(props) {
 			draggable={true}
 			maskClosable={false}
 			modalTitle={i18n.t('TERMINAL.TITLE')}
-			visible={props.visible}
+			open={props.open}
 			onCancel={props.onCancel}
 			bodyStyle={{padding: 12}}
 			afterClose={afterClose}
 			destroyOnClose={true}
 			footer={null}
-			height={200}
+			height={250}
 			width={900}
 		>
 			<ExtKeyboard
 				ref={extKeyRef}
 				onCtrl={onCtrl}
 				onExtKey={onExtKey}
-				visible={os!=='windows'}
+				open={os !== 'windows'}
 			/>
 			<div
 				style={{
@@ -368,6 +578,11 @@ function TerminalModal(props) {
 				}}
 				ref={termRef}
 			/>
+			<input
+				id='file-uploader'
+				type='file'
+				style={{display: 'none'}}
+			/>
 		</DraggableModal>
 	)
 }
@@ -375,8 +590,8 @@ function TerminalModal(props) {
 class ExtKeyboard extends React.Component {
 	constructor(props) {
 		super(props);
-		this.visible = props.visible;
-		if (!this.visible) return;
+		this.open = props.open;
+		if (!this.open) return;
 		this.funcKeys = [
 			{key: '\x1B\x4F\x50', label: 'F1'},
 			{key: '\x1B\x4F\x51', label: 'F2'},
@@ -417,7 +632,10 @@ class ExtKeyboard extends React.Component {
 				)}
 			</Menu>
 		);
-		this.state = {ctrl: false};
+		this.state = {
+			ctrl: false,
+			fileSelect: false,
+		};
 	}
 
 	onCtrl() {
@@ -430,18 +648,26 @@ class ExtKeyboard extends React.Component {
 	onExtKey(key) {
 		this.props.onExtKey(key, true);
 	}
+	onFileSelect() {
+		if (typeof this.state.fileSelect === 'function') {
+			this.state.fileSelect();
+		}
+	}
 
 	setCtrl(val) {
 		this.setState({ctrl: val});
 	}
+	setFileSelect(cb) {
+		this.setState({fileSelect: cb});
+	}
 
 	render() {
-		if (!this.visible) return null;
+		if (!this.open) return null;
 		return (
 			<Space style={{paddingBottom: 12}}>
 				<>
 					<Button
-						type={this.state.ctrl?'primary':'default'}
+						type={this.state.ctrl ? 'primary' : 'default'}
 						onClick={this.onCtrl.bind(this)}
 					>
 						CTRL
@@ -489,6 +715,13 @@ class ExtKeyboard extends React.Component {
 				>
 					{i18n.t('TERMINAL.FUNCTION_KEYS')}
 				</Dropdown.Button>
+				{
+					this.state.fileSelect?(
+						<Button onClick={this.onFileSelect.bind(this)}>
+							选择文件
+						</Button>
+					):null
+				}
 			</Space>
 		);
 	}

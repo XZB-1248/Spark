@@ -370,3 +370,7 @@ func execCommand(pack modules.Packet, wsConn *common.Conn) {
 		proc.Process.Release()
 	}
 }
+
+func inputRawTerminal(pack []byte, event string) {
+	terminal.InputRawTerminal(pack, event)
+}

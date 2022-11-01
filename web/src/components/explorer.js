@@ -1,30 +1,23 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
-import {
-	Alert,
-	Breadcrumb,
-	Button,
-	Dropdown,
-	Image,
-	Menu,
-	message,
-	Modal,
-	Popconfirm,
-	Progress,
-	Space,
-	Spin
-} from "antd";
 import ProTable, {TableDropdown} from "@ant-design/pro-table";
-import {catchBlobReq, formatSize, orderCompare, post, preventClose, request, waitTime} from "../utils/utils";
+import {
+	Alert, Breadcrumb, Button,
+	Dropdown, Image, Menu,
+	message, Modal, Popconfirm,
+	Progress, Space, Spin, Typography
+} from "antd";
+import {
+	catchBlobReq, formatSize,
+	orderCompare, post, request,
+	preventClose, waitTime
+} from "../utils/utils";
 import dayjs from "dayjs";
 import i18n from "../locale/locale";
 import {VList} from "virtuallist-antd";
 import {
-	CloseOutlined, FullscreenOutlined,
-	HomeOutlined,
-	LoadingOutlined,
-	QuestionCircleOutlined,
-	ReloadOutlined,
-	UploadOutlined
+	CloseOutlined, HomeOutlined,
+	LoadingOutlined, QuestionCircleOutlined,
+	ReloadOutlined, UploadOutlined
 } from "@ant-design/icons";
 import axios from "axios";
 import Qs from "qs";
@@ -68,7 +61,7 @@ function FileBrowser(props) {
 		},
 		{
 			key: 'Time',
-			title: i18n.t('EXPLORER.MODIFY_TIME'),
+			title: i18n.t('EXPLORER.DATE_MODIFIED'),
 			dataIndex: 'time',
 			ellipsis: true,
 			width: 100,
@@ -94,7 +87,8 @@ function FileBrowser(props) {
 	const tableRef = useRef();
 	const virtualTable = useMemo(() => {
 		return VList({
-			height: 300
+			height: 300,
+			vid: 'file-table',
 		})
 	}, []);
 	const alertOptionRenderer = () => (<Space size={16}>
@@ -116,11 +110,11 @@ function FileBrowser(props) {
 			position = '/';
 			setPath(`/`);
 		}
-		if (props.visible) {
+		if (props.open) {
 			fileList = [];
 			setLoading(false);
 		}
-	}, [props.device, props.visible]);
+	}, [props.device, props.open]);
 
 	function renderOperation(file) {
 		let menus = [
@@ -269,7 +263,7 @@ function FileBrowser(props) {
 				return;
 			}
 		}
-		document.getElementById('uploader').click();
+		document.getElementById('file-uploader').click();
 	}
 	function onFileChange(e) {
 		let file = e.target.files[0];
@@ -472,10 +466,10 @@ function FileBrowser(props) {
 				onClick={uploadFile}
 			/>
 			<input
-				id='uploader'
+				id='file-uploader'
 				type='file'
-				style={{display: 'none'}}
 				onChange={onFileChange}
+				style={{display: 'none'}}
 			/>
 			<TextEditor
 				path={path}
@@ -490,11 +484,12 @@ function FileBrowser(props) {
 				}}
 			/>
 			<FileUploader
+				open={uploading}
 				path={path}
 				file={uploading}
 				device={props.device}
 				onSuccess={onUploadSuccess}
-				onCanel={onUploadCancel}
+				onCancel={onUploadCancel}
 			/>
 			<Image
 				preview={{
@@ -587,7 +582,7 @@ function TextEditor(props) {
 	const [editorTheme, setEditorTheme] = useState(editorConfig.theme);
 	const [editorMode, setEditorMode] = useState('text');
 	const [loading, setLoading] = useState(false);
-	const [visible, setVisible] = useState(props.file);
+	const [open, setOpen] = useState(props.file);
 	const editorRef = useRef();
 	const fontMenu = (
 		<Menu onClick={onFontMenuClick}>
@@ -626,7 +621,7 @@ function TextEditor(props) {
 			} catch (e) {
 				require('ace-builds/src-min-noconflict/mode-text');
 			}
-			setVisible(true);
+			setOpen(true);
 			setFileContent(props.content);
 			setEditorMode(fileMode);
 		}
@@ -662,7 +657,7 @@ function TextEditor(props) {
 	function onForceCancel(reload) {
 		setCancelConfirm(false);
 		setTimeout(() => {
-			setVisible(false);
+			setOpen(false);
 			setFileContent('');
 			window.onbeforeunload = null;
 			props.onCancel(reload);
@@ -676,7 +671,7 @@ function TextEditor(props) {
 		if (fileStatus === 1) {
 			setCancelConfirm(true);
 		} else {
-			setVisible(false);
+			setOpen(false);
 			setFileContent('');
 			window.onbeforeunload = null;
 			props.onCancel(fileStatus === 2);
@@ -718,7 +713,7 @@ function TextEditor(props) {
 			title={props.file}
 			mask={false}
 			keyboard={false}
-			visible={visible}
+			open={open}
 			maskClosable={false}
 			className='editor-modal'
 			closeIcon={loading ? <Spin indicator={<LoadingOutlined />} /> : <CloseOutlined />}
@@ -771,7 +766,7 @@ function TextEditor(props) {
 				}]}
 				value={fileContent}
 				onChange={val => {
-					if (!visible) return;
+					if (!open) return;
 					if (val.length === fileContent.length) {
 						if (val === fileContent) return;
 					}
@@ -788,7 +783,7 @@ function TextEditor(props) {
 			/>
 			<Modal
 				closable={true}
-				visible={cancelConfirm}
+				open={cancelConfirm}
 				onCancel={onExitCancel}
 				footer={[
 					<Button
@@ -841,7 +836,7 @@ function setEditorConfig(config) {
 
 let abortController = null;
 function FileUploader(props) {
-	const [visible, setVisible] = useState(!!props.file);
+	const [open, setOpen] = useState(!!props.file);
 	const [percent, setPercent] = useState(0);
 	const [status, setStatus] = useState(0);
 	// 0: ready, 1: uploading, 2: success, 3: fail, 4: cancel
@@ -849,7 +844,7 @@ function FileUploader(props) {
 	useEffect(() => {
 		setStatus(0);
 		if (props.file) {
-			setVisible(true);
+			setOpen(true);
 			setPercent(0);
 		}
 	}, [props.file]);
@@ -906,19 +901,19 @@ function FileUploader(props) {
 			abortController = null;
 			window.onbeforeunload = null;
 			setTimeout(() => {
-				setVisible(false);
+				setOpen(false);
 				if (uploadStatus === 2) {
 					props.onSuccess();
 				} else {
-					props.onCanel();
+					props.onCancel();
 				}
 			}, 1500);
 		});
 	}
 	function onCancel() {
 		if (status === 0) {
-			setVisible(false);
-			setTimeout(props.onCanel, 300);
+			setOpen(false);
+			setTimeout(props.onCancel, 300);
 			return;
 		}
 		if (status === 1) {
@@ -935,8 +930,8 @@ function FileUploader(props) {
 			return;
 		}
 		setTimeout(() => {
-			setVisible(false);
-			setTimeout(props.onCanel, 300);
+			setOpen(false);
+			setTimeout(props.onCancel, 300);
 		}, 1500);
 	}
 
@@ -953,41 +948,50 @@ function FileUploader(props) {
 			default:
 				return i18n.t('EXPLORER.UPLOAD');
 		}
-
 	}
 
 	return (
 		<DraggableModal
 			centered
 			draggable
-			visible={visible}
+			open={open}
 			closable={false}
 			keyboard={false}
 			maskClosable={false}
 			destroyOnClose={true}
 			confirmLoading={status === 1}
 			okText={i18n.t(status === 1 ? 'EXPLORER.UPLOADING' : 'EXPLORER.UPLOAD')}
-			onOk={onConfirm}
-			onCancel={onCancel}
 			modalTitle={i18n.t(status === 1 ? 'EXPLORER.UPLOADING' : 'EXPLORER.UPLOAD')}
 			okButtonProps={{disabled: status !== 0}}
 			cancelButtonProps={{disabled: status > 1}}
+			onCancel={onCancel}
+			onOk={onConfirm}
 			width={550}
 		>
-			<>
+			<div>
                 <span
 					style={{
+						whiteSpace: 'nowrap',
 						fontSize: '20px',
 						marginRight: '10px',
 					}}
 				>
                     {getDescription()}
                 </span>
-				{props.file.name + ` (${formatSize(props.file.size)})`}
-			</>
+				<Typography.Text
+					ellipsis={{rows: 1}}
+					style={{maxWidth: 'calc(100% - 140px)'}}
+				>
+					{props.file.name}
+				</Typography.Text>
+				<span
+					style={{whiteSpace: 'nowrap'}}
+				>
+					{'（'+formatSize(props.file.size)+'）'}
+				</span>
+			</div>
 			<Progress
-				className='upload-progress-square'
-				strokeLinecap='square'
+				strokeLinecap='butt'
 				percent={percent}
 				showInfo={false}
 			/>

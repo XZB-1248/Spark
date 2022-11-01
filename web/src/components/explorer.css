@@ -2,11 +2,6 @@ a {
 	user-select: none;
 }
 
-.file-row {
-	user-select: none;
-	cursor: pointer;
-}
-
 .ant-table-body {
 	max-height: 300px;
 	min-height: 300px;
@@ -27,9 +22,7 @@ a {
 	display: none;
 }
 
-.upload-progress-square > .ant-progress-outer > .ant-progress-inner {
-	border-radius: 0 !important;
-}
+
 
 .editor-modal, .editor-modal > .ant-modal-content {
 	top: 0;
@@ -42,4 +35,9 @@ a {
 
 .editor-modal > .ant-modal-content > .ant-modal-body {
 	height: calc(100% - 110px);
+}
+
+.file-row {
+	user-select: none;
+	cursor: pointer;
 }

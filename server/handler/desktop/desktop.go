@@ -62,20 +62,29 @@ func InitDesktop(ctx *gin.Context) {
 	})
 }
 
-// desktopEventWrapper returns a eventCb function that will be called when
-// device need to send a packet to browser
+// desktopEventWrapper returns a eventCallback function that will
+// be called when device need to send a packet to browser terminal
 func desktopEventWrapper(desktop *desktop) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
-		if len(pack.Act) == 0 {
-			if pack.Data == nil {
+		if pack.Act == `RAW_DATA_ARRIVE` && pack.Data != nil {
+			data := *pack.Data[`data`].(*[]byte)
+			if data[5] == 00 || data[5] == 01 || data[5] == 02 {
+				desktop.srcConn.WriteBinary(data)
 				return
 			}
-			if data, ok := pack.Data[`data`]; ok {
-				desktop.srcConn.WriteBinary(*data.(*[]byte))
+
+			if data[5] != 03 {
+				return
 			}
-			return
+			data = data[8:]
+			data = utility.SimpleDecrypt(data, device)
+			if utils.JSON.Unmarshal(data, &pack) != nil {
+				return
+			}
 		}
-		if pack.Act == `DESKTOP_INIT` {
+
+		switch pack.Act {
+		case `DESKTOP_INIT`:
 			if pack.Code != 0 {
 				msg := `${i18n|DESKTOP.CREATE_SESSION_FAILED}`
 				if len(pack.Msg) > 0 {
@@ -94,9 +103,7 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 					`deviceConn`: desktop.deviceConn,
 				})
 			}
-			return
-		}
-		if pack.Act == `DESKTOP_QUIT` {
+		case `DESKTOP_QUIT`:
 			msg := `${i18n|DESKTOP.SESSION_CLOSED}`
 			if len(pack.Msg) > 0 {
 				msg = pack.Msg
@@ -107,7 +114,6 @@ func desktopEventWrapper(desktop *desktop) common.EventCallback {
 			common.Info(desktop.srcConn, `DESKTOP_QUIT`, `success`, ``, map[string]any{
 				`deviceConn`: desktop.deviceConn,
 			})
-			return
 		}
 	}
 }
@@ -150,31 +156,39 @@ func onDesktopConnect(session *melody.Session) {
 
 func onDesktopMessage(session *melody.Session, data []byte) {
 	var pack modules.Packet
-	data, ok := utility.SimpleDecrypt(data, session)
-	if !(ok && utils.JSON.Unmarshal(data, &pack) == nil) {
-		if val, ok := session.Get(`Desktop`); !ok {
-			desktop := val.(*desktop)
-			common.SendPack(modules.Packet{Act: `DESKTOP_KILL`, Data: gin.H{
-				`desktop`: desktop.uuid,
-			}, Event: desktop.uuid}, desktop.deviceConn)
-		}
-		sendPack(modules.Packet{Code: -1}, session)
-		session.Close()
-		return
-	}
 	val, ok := session.Get(`Desktop`)
 	if !ok {
 		return
 	}
 	desktop := val.(*desktop)
+
+	service, op, isBinary := utils.CheckBinaryPack(data)
+	if !isBinary || service != 20 {
+		sendPack(modules.Packet{Code: -1}, session)
+		session.Close()
+		return
+	}
+	if op != 03 {
+		sendPack(modules.Packet{Code: -1}, session)
+		session.Close()
+		return
+	}
+
+	data = utility.SimpleDecrypt(data[8:], session)
+	if utils.JSON.Unmarshal(data, &pack) != nil {
+		sendPack(modules.Packet{Code: -1}, session)
+		session.Close()
+		return
+	}
 	session.Set(`LastPack`, utils.Unix)
-	if pack.Act == `DESKTOP_PING` {
+
+	switch pack.Act {
+	case `DESKTOP_PING`:
 		common.SendPack(modules.Packet{Act: `DESKTOP_PING`, Data: gin.H{
 			`desktop`: desktop.uuid,
 		}, Event: desktop.uuid}, desktop.deviceConn)
 		return
-	}
-	if pack.Act == `DESKTOP_KILL` {
+	case `DESKTOP_KILL`:
 		common.Info(desktop.srcConn, `DESKTOP_KILL`, `success`, ``, map[string]any{
 			`deviceConn`: desktop.deviceConn,
 		})
@@ -182,8 +196,7 @@ func onDesktopMessage(session *melody.Session, data []byte) {
 			`desktop`: desktop.uuid,
 		}, Event: desktop.uuid}, desktop.deviceConn)
 		return
-	}
-	if pack.Act == `DESKTOP_SHOT` {
+	case `DESKTOP_SHOT`:
 		common.SendPack(modules.Packet{Act: `DESKTOP_SHOT`, Data: gin.H{
 			`desktop`: desktop.uuid,
 		}, Event: desktop.uuid}, desktop.deviceConn)
@@ -218,11 +231,8 @@ func sendPack(pack modules.Packet, session *melody.Session) bool {
 	if err != nil {
 		return false
 	}
-	data, ok := utility.SimpleEncrypt(data, session)
-	if !ok {
-		return false
-	}
-	err = session.WriteBinary(append([]byte{00, 22, 34, 19, 20, 03}, data...))
+	data = utility.SimpleEncrypt(data, session)
+	err = session.WriteBinary(append([]byte{34, 22, 19, 17, 20, 03}, data...))
 	return err == nil
 }
 

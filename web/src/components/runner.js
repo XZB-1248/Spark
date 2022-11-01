@@ -24,8 +24,8 @@ function Runner(props) {
 			title={i18n.t('RUNNER.TITLE')}
 			width={380}
 			onFinish={onFinish}
-			onVisibleChange={visible => {
-				if (!visible) props.onCancel();
+			onVisibleChange={open => {
+				if (!open) props.onCancel();
 			}}
 			submitter={{
 				render: (_, elems) => elems.pop()

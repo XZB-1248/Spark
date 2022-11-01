@@ -1,0 +1,4 @@
+{
+	"version": "$VERSION",
+	"commit": "$COMMIT"
+}

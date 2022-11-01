@@ -6,6 +6,7 @@ const locales = {
 	'zh-CN': 'zh-CN',
 };
 const lang = navigator.language && navigator.language.length ? navigator.language : 'en';
+const locale = locales[lang] || 'en';
 
 let resources = {};
 for (const locale in locales) {
@@ -24,6 +25,9 @@ i18n.init({
 function getLang() {
 	return lang;
 }
+function getLocale() {
+	return locale;
+}
 
-export { getLang };
+export { getLang, getLocale };
 export default i18n;

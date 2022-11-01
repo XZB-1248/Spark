@@ -179,16 +179,16 @@ func GetDevice() (*modules.Device, error) {
 	}
 	localIP, err := GetLocalIP()
 	if err != nil {
-		localIP = `unknown`
+		localIP = `<unknown>`
 	}
 	macAddr, err := GetMacAddress()
 	if err != nil {
-		macAddr = `unknown`
+		macAddr = `<unknown>`
 	}
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{
-			Model: `unknown`,
+			Model: `<unknown>`,
 			Usage: 0,
 		}
 	}
@@ -221,11 +221,11 @@ func GetDevice() (*modules.Device, error) {
 	}
 	hostname, err := os.Hostname()
 	if err != nil {
-		hostname = `unknown`
+		hostname = `<unknown>`
 	}
 	username, err := user.Current()
 	if err != nil {
-		username = &user.User{Username: `unknown`}
+		username = &user.User{Username: `<unknown>`}
 	} else {
 		slashIndex := strings.Index(username.Username, `\`)
 		if slashIndex > -1 && slashIndex+1 < len(username.Username) {
@@ -252,7 +252,7 @@ func GetPartialInfo() (*modules.Device, error) {
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{
-			Model: `unknown`,
+			Model: `<unknown>`,
 			Usage: 0,
 		}
 	}

@@ -47,10 +47,10 @@ function ProcessMgr(props) {
 		})
 	}, []);
 	useEffect(() => {
-		if (props.visible) {
+		if (props.open) {
 			setLoading(false);
 		}
-	}, [props.device, props.visible]);
+	}, [props.device, props.open]);
 
 	function renderOperation(proc) {
 		return [

@@ -8,8 +8,6 @@ import (
 	"Spark/utils/melody"
 	"bytes"
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -331,36 +329,22 @@ func CallDevice(ctx *gin.Context) {
 	}
 }
 
-func SimpleEncrypt(data []byte, session *melody.Session) ([]byte, bool) {
+func SimpleEncrypt(data []byte, session *melody.Session) []byte {
 	temp, ok := session.Get(`Secret`)
 	if !ok {
-		return nil, false
+		return nil
 	}
 	secret := temp.([]byte)
-	block, err := aes.NewCipher(secret)
-	if err != nil {
-		return nil, false
-	}
-	stream := cipher.NewCTR(block, secret)
-	encBuffer := make([]byte, len(data))
-	stream.XORKeyStream(encBuffer, data)
-	return encBuffer, true
+	return utils.XOR(data, secret)
 }
 
-func SimpleDecrypt(data []byte, session *melody.Session) ([]byte, bool) {
+func SimpleDecrypt(data []byte, session *melody.Session) []byte {
 	temp, ok := session.Get(`Secret`)
 	if !ok {
-		return nil, false
+		return nil
 	}
 	secret := temp.([]byte)
-	block, err := aes.NewCipher(secret)
-	if err != nil {
-		return nil, false
-	}
-	stream := cipher.NewCTR(block, secret)
-	decBuffer := make([]byte, len(data))
-	stream.XORKeyStream(decBuffer, data)
-	return decBuffer, true
+	return utils.XOR(data, secret)
 }
 
 func WSHealthCheck(container *melody.Melody, sender Sender) {

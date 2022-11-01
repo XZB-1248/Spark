@@ -171,7 +171,7 @@ function overview(props) {
 	const tableRef = useRef();
 
 	useEffect(() => {
-		// Auto update is only available when all modal are closed.
+		// auto update is only available when all modal are closed.
 		if (!runner && !desktop && !procMgr && !explorer && !generate && !terminal) {
 			let id = setInterval(getData, 3000);
 			return () => {
@@ -405,12 +405,12 @@ function overview(props) {
 			/>
 			<Explorer
 				isWindows={isWindows}
-				visible={explorer}
+				open={explorer}
 				device={explorer}
 				onCancel={setExplorer.bind(null, false)}
 			/>
 			<ProcMgr
-				visible={procMgr}
+				open={procMgr}
 				device={procMgr}
 				onCancel={setProcMgr.bind(null, false)}
 			/>
@@ -420,12 +420,12 @@ function overview(props) {
 				onCancel={setRunner.bind(null, false)}
 			/>
 			<Desktop
-				visible={desktop}
+				open={desktop}
 				device={desktop}
 				onCancel={setDesktop.bind(null, false)}
 			/>
 			<Terminal
-				visible={terminal}
+				open={terminal}
 				device={terminal}
 				onCancel={setTerminal.bind(null, false)}
 			/>

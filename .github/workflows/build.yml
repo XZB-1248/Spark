@@ -91,6 +91,11 @@ jobs:
 
     - name: Build and pack static resources
       run: |
+        export COMMIT=`git rev-parse HEAD`
+        export VERSION=`git describe --tags | sed 's/^v//'`
+        sed -i "s/\$COMMIT/$COMMIT/g" ./web/src/config/version.json
+        sed -i "s/\$VERSION/$VERSION/g" ./web/src/config/version.json
+        
         cd ./web
         npm install
         npm run build-prod
@@ -115,20 +120,20 @@ jobs:
 
     - name: Prepare release note
       run: |
-        wget -q https://1248.ink/Tools/release.js
-        node release.js ${{ github.ref_name }}
+        export REF_NAME=`git describe --tags`
+        node ./scripts/release.js $REF_NAME
 
     - name: Pack releases
       run: |
         mv ./built ./releases/built
         cd ./releases
-        sudo apt install zip tar -y
-        tar -zcf server_darwin_arm64.tar.gz server_darwin_arm64 ./built
-        tar -zcf server_darwin_amd64.tar.gz server_darwin_amd64 ./built
-        tar -zcf server_linux_arm.tar.gz server_linux_arm ./built
-        tar -zcf server_linux_i386.tar.gz server_linux_i386 ./built
-        tar -zcf server_linux_arm64.tar.gz server_linux_arm64 ./built
-        tar -zcf server_linux_amd64.tar.gz server_linux_amd64 ./built
+        sudo apt install zip tar pigz -y
+        tar -cpf server_darwin_arm64.tar.gz server_darwin_arm64 ./built
+        tar -cpf server_darwin_amd64.tar.gz server_darwin_amd64 ./built
+        tar -cpf server_linux_arm.tar.gz server_linux_arm ./built
+        tar -cpf server_linux_i386.tar.gz server_linux_i386 ./built
+        tar -cpf server_linux_arm64.tar.gz server_linux_arm64 ./built
+        tar -cpf server_linux_amd64.tar.gz server_linux_amd64 ./built
         zip -r -9 -q server_windows_arm.zip server_windows_arm.exe ./built
         zip -r -9 -q server_windows_i386.zip server_windows_i386.exe ./built
         zip -r -9 -q server_windows_arm64.zip server_windows_arm64.exe ./built
@@ -158,3 +163,9 @@ jobs:
         name: |
           darwin_arm64
           darwin_amd64
+
+    - name: Update version info
+      env:
+        RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      run: |
+        curl -X POST -H "Authorization: $RELEASE_TOKEN" --retry 10 -m 60 -o /dev/null https://1248.ink/spark/release > /dev/null 2>&1

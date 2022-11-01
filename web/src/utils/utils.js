@@ -2,7 +2,6 @@ import axios from "axios";
 import Qs from "qs";
 import i18n, {getLang} from "../locale/locale";
 import {message} from "antd";
-import CryptoJS from "crypto-js";
 
 let orderCompare;
 try {
@@ -119,7 +118,7 @@ function catchBlobReq(err) {
 	}
 }
 
-function hex2buf(hex) {
+function hex2ua(hex) {
 	if (typeof hex !== 'string') {
 		return new Uint8Array([]);
 	}
@@ -130,86 +129,43 @@ function hex2buf(hex) {
 	return new Uint8Array(list.map(byte => parseInt(byte, 16)));
 }
 
-function ab2str(buffer) {
-	const array = new Uint8Array(buffer);
-	let out, i, len, c;
-	let char2, char3;
-
-	out = "";
-	len = array.length;
-	i = 0;
-	while (i < len) {
-		c = array[i++];
-		switch (c >> 4) {
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-			case 4:
-			case 5:
-			case 6:
-			case 7:
-				out += String.fromCharCode(c);
-				break;
-			case 12:
-			case 13:
-				char2 = array[i++];
-				out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
-				break;
-			case 14:
-				char2 = array[i++];
-				char3 = array[i++];
-				out += String.fromCharCode(((c & 0x0F) << 12) |
-					((char2 & 0x3F) << 6) |
-					((char3 & 0x3F) << 0));
-				break;
-		}
-	}
-	return out;
+function ua2hex(buf) {
+	let hexArr = Array.prototype.map.call(buf, bit => {
+		return ('00' + bit.toString(16)).slice(-2);
+	});
+	return hexArr.join('');
 }
 
-function ws2ua(wordArray) {
-	const l = wordArray.sigBytes;
-	const words = wordArray.words;
-	const result = new Uint8Array(l);
-	let i = 0, j = 0;
-	while (true) {
-		if (i === l)
-			break;
-		const w = words[j++];
-		result[i++] = (w & 0xff000000) >>> 24;
-		if (i === l)
-			break;
-		result[i++] = (w & 0x00ff0000) >>> 16;
-		if (i === l)
-			break;
-		result[i++] = (w & 0x0000ff00) >>> 8;
-		if (i === l)
-			break;
-		result[i++] = (w & 0x000000ff);
-	}
-	return result;
+function str2ua(str) {
+	return new TextEncoder().encode(str);
+}
+
+function ua2str(buf) {
+	return new TextDecoder().decode(buf);
+}
+
+function hex2str(hex) {
+	return new TextDecoder().decode(hex2ua(hex));
+}
+
+function str2hex(str) {
+	return ua2hex(new TextEncoder().encode(str));
 }
 
 function encrypt(data, secret) {
-	let json = JSON.stringify(data);
-	json = CryptoJS.enc.Utf8.parse(json);
-	let encrypted = CryptoJS.AES.encrypt(json, secret, {
-		mode: CryptoJS.mode.CTR,
-		iv: secret,
-		padding: CryptoJS.pad.NoPadding
-	});
-	return ws2ua(encrypted.ciphertext);
+	let buf = data;
+	for (let i = 0; i < buf.length; i++) {
+		buf[i] ^= secret[i % secret.length];
+	}
+	return buf;
 }
 
 function decrypt(data, secret) {
-	data = CryptoJS.lib.WordArray.create(data);
-	let decrypted = CryptoJS.AES.encrypt(data, secret, {
-		mode: CryptoJS.mode.CTR,
-		iv: secret,
-		padding: CryptoJS.pad.NoPadding
-	});
-	return ab2str(ws2ua(decrypted.ciphertext).buffer);
+	data = new Uint8Array(data);
+	for (let i = 0; i < data.length; i++) {
+		data[i] ^= secret[i % secret.length];
+	}
+	return ua2str(data);
 }
 
-export {post, request, waitTime, formatSize, tsToTime, getBaseURL, genRandHex, translate, preventClose, catchBlobReq, hex2buf, ab2str, ws2ua, encrypt, decrypt, orderCompare};
+export {post, request, waitTime, formatSize, tsToTime, getBaseURL, genRandHex, translate, preventClose, catchBlobReq, hex2ua, ua2hex, str2ua, ua2str, hex2str, str2hex, encrypt, decrypt, orderCompare};

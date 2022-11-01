@@ -10,11 +10,11 @@ function DraggableModal(props) {
 		bottom: 0,
 		right: 0,
 	});
-	const draggleRef = useRef(null);
+	const draggableRef = useRef(null);
 
 	const onStart = (_event, uiData) => {
 		const { clientWidth, clientHeight } = window.document.documentElement;
-		const targetRect = draggleRef.current?.getBoundingClientRect();
+		const targetRect = draggableRef.current?.getBoundingClientRect();
 		if (!targetRect || disabled) {
 			return;
 		}
@@ -55,7 +55,7 @@ function DraggableModal(props) {
 					bounds={bounds}
 					onStart={(event, uiData) => onStart(event, uiData)}
 				>
-					<div ref={draggleRef}>{modal}</div>
+					<div ref={draggableRef}>{modal}</div>
 				</Draggable>
 			)}
 			{...props}
