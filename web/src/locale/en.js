@@ -37,7 +37,7 @@ export default {
 	"OVERVIEW.TERMINAL": "Terminal",
 	"OVERVIEW.PROC_MANAGER": "Process",
 	"OVERVIEW.EXPLORER": "Explorer",
-	"OVERVIEW.RUN": "Run",
+	"OVERVIEW.EXECUTE": "Execute",
 	"OVERVIEW.SCREENSHOT": "Screenshot",
 	"OVERVIEW.DESKTOP": "Desktop",
 	"OVERVIEW.LOCK": "Lock",
@@ -133,8 +133,8 @@ export default {
 	"DESKTOP.FETCH_IMAGE_FAILED": "Failed to fetch screenshot image",
 	"DESKTOP.NO_DISPLAY_FOUND": "No display found",
 
-	"RUNNER.TITLE": "Run",
-	"RUNNER.EXECUTION_SUCCESS": "Execution success",
-	"RUNNER.CMD_PLACEHOLDER": "Command",
-	"RUNNER.ARGS_PLACEHOLDER": "Arguments (separated by space)"
+	"EXECUTE.TITLE": "Run",
+	"EXECUTE.EXECUTION_SUCCESS": "Execution success",
+	"EXECUTE.CMD_PLACEHOLDER": "Command",
+	"EXECUTE.ARGS_PLACEHOLDER": "Arguments (separated by space)"
 };

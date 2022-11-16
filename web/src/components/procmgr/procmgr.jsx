@@ -65,7 +65,7 @@ function ProcessMgr(props) {
 	}
 
 	function killProcess(pid) {
-		request(`/api/device/process/kill`, {pid: pid, device: props.device}).then(res => {
+		request(`/api/device/process/kill`, {pid: pid, device: props.device.id}).then(res => {
 			let data = res.data;
 			if (data.code === 0) {
 				message.success(i18n.t('PROCMGR.KILL_PROCESS_SUCCESSFULLY'));
@@ -76,7 +76,7 @@ function ProcessMgr(props) {
 
 	async function getData(form) {
 		await waitTime(300);
-		let res = await request('/api/device/process/list', {device: props.device});
+		let res = await request('/api/device/process/list', {device: props.device.id});
 		setLoading(false);
 		let data = res.data;
 		if (data.code === 0) {

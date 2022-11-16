@@ -27,7 +27,7 @@ function FileUploader(props) {
 			return;
 		}
 		const params = Qs.stringify({
-			device: props.device,
+			device: props.device.id,
 			path: props.path,
 			file: props.file.name
 		});

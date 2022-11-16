@@ -4,19 +4,21 @@ import {Button, Image, message, Modal, Progress, Tooltip} from 'antd';
 import {catchBlobReq, formatSize, request, tsToTime, waitTime} from "../utils/utils";
 import {QuestionCircleOutlined} from "@ant-design/icons";
 import i18n from "../locale/locale";
-import Suspense from "../components/suspense";
 
 // DO NOT EDIT OR DELETE THIS COPYRIGHT MESSAGE.
 console.log("%c By XZB %c https://github.com/XZB-1248/Spark", 'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:64px;color:#00bbee;-webkit-text-fill-color:#00bbee;-webkit-text-stroke:1px#00bbee;', 'font-size:12px;');
 
-const Generate = React.lazy(() => import('../components/generate/generate'));
-const Explorer = React.lazy(() => import('../components/explorer/explorer'));
-const Terminal = React.lazy(() => import('../components/terminal/terminal'));
-const ProcMgr = React.lazy(() => import('../components/procmgr/procmgr'));
-const Desktop = React.lazy(() => import('../components/desktop/desktop'));
-const Execute = React.lazy(() => import('../components/execute/execute'));
+let ComponentMap = {
+	Generate: null,
+	Explorer: null,
+	Terminal: null,
+	ProcMgr: null,
+	Desktop: null,
+	Execute: null,
+};
 
 function overview(props) {
+	const [loading, setLoading] = useState(false);
 	const [execute, setExecute] = useState(false);
 	const [desktop, setDesktop] = useState(false);
 	const [procMgr, setProcMgr] = useState(false);
@@ -24,7 +26,6 @@ function overview(props) {
 	const [generate, setGenerate] = useState(false);
 	const [terminal, setTerminal] = useState(false);
 	const [screenBlob, setScreenBlob] = useState('');
-	const [isWindows, setIsWindows] = useState(false);
 	const [dataSource, setDataSource] = useState([]);
 	const [columnsState, setColumnsState] = useState(getInitColumnsState());
 
@@ -149,6 +150,24 @@ function overview(props) {
 		setting: true,
 	};
 	const tableRef = useRef();
+	const loadComponent = (component, callback) => {
+		let element = null;
+		component = component.toLowerCase();
+		Object.keys(ComponentMap).forEach(k => {
+			if (k.toLowerCase() === component.toLowerCase()) {
+				element = k;
+			}
+		});
+		if (!element) return;
+		if (ComponentMap[element] === null) {
+			import('../components/'+component+'/'+component).then((m) => {
+				ComponentMap[element] = m.default;
+				callback();
+			});
+		} else {
+			callback();
+		}
+	}
 
 	useEffect(() => {
 		// auto update is only available when all modal are closed.
@@ -251,7 +270,7 @@ function overview(props) {
 	}
 	function renderOperation(device) {
 		let menus = [
-			{key: 'run', name: i18n.t('OVERVIEW.RUN')},
+			{key: 'execute', name: i18n.t('OVERVIEW.EXECUTE')},
 			{key: 'desktop', name: i18n.t('OVERVIEW.DESKTOP')},
 			{key: 'screenshot', name: i18n.t('OVERVIEW.SCREENSHOT')},
 			{key: 'lock', name: i18n.t('OVERVIEW.LOCK')},
@@ -263,29 +282,33 @@ function overview(props) {
 			{key: 'offline', name: i18n.t('OVERVIEW.OFFLINE')},
 		];
 		return [
-			<a key='terminal' onClick={setTerminal.bind(null, device)}>{i18n.t('OVERVIEW.TERMINAL')}</a>,
-			<a key='procmgr' onClick={setProcMgr.bind(null, device.id)}>{i18n.t('OVERVIEW.PROC_MANAGER')}</a>,
-			<a key='explorer' onClick={() => {
-				setExplorer(device.id);
-				setIsWindows(device.os === 'windows');
-			}}>
-				{i18n.t('OVERVIEW.EXPLORER')}
-			</a>,
+			<a key='terminal' onClick={() => onMenuClick('terminal', device)}>{i18n.t('OVERVIEW.TERMINAL')}</a>,
+			<a key='explorer' onClick={() => onMenuClick('explorer', device)}>{i18n.t('OVERVIEW.EXPLORER')}</a>,
+			<a key='procmgr' onClick={() => onMenuClick('procmgr', device)}>{i18n.t('OVERVIEW.PROC_MANAGER')}</a>,
 			<TableDropdown
 				key='more'
-				onSelect={key => callDevice(key, device)}
+				onSelect={key => onMenuClick(key, device)}
 				menus={menus}
 			/>,
 		]
 	}
 
-	function callDevice(act, device) {
-		if (act === 'run') {
-			setRunner(device);
-			return;
-		}
-		if (act === 'desktop') {
-			setDesktop(device);
+	function onMenuClick(act, value) {
+		const device = value;
+		let hooksMap = {
+			terminal: setTerminal,
+			explorer: setExplorer,
+			generate: setGenerate,
+			procmgr: setProcMgr,
+			execute: setExecute,
+			desktop: setDesktop,
+		};
+		if (hooksMap[act]) {
+			setLoading(true);
+			loadComponent(act, () => {
+				hooksMap[act](device);
+				setLoading(false);
+			});
 			return;
 		}
 		if (act === 'screenshot') {
@@ -318,7 +341,7 @@ function overview(props) {
 
 	function toolBar() {
 		return (
-			<Button type='primary' onClick={setGenerate.bind(null, true)}>{i18n.t('OVERVIEW.GENERATE')}</Button>
+			<Button type='primary' onClick={() => onMenuClick('generate', true)}>{i18n.t('OVERVIEW.GENERATE')}</Button>
 		)
 	}
 
@@ -379,48 +402,53 @@ function overview(props) {
 					}
 				}}
 			/>
-			<Suspense>
-				<Generate
+			{
+				ComponentMap.Generate &&
+				<ComponentMap.Generate
 					visible={generate}
 					onVisibleChange={setGenerate}
 				/>
-			</Suspense>
-			<Suspense>
-				<Explorer
-					isWindows={isWindows}
-					open={explorer}
-					device={explorer}
-					onCancel={setExplorer.bind(null, false)}
-				/>
-			</Suspense>
-			<Suspense>
-				<ProcMgr
-					open={procMgr}
-					device={procMgr}
-					onCancel={setProcMgr.bind(null, false)}
-				/>
-			</Suspense>
-			<Suspense>
-				<Execute
+			}
+			{
+				ComponentMap.Execute &&
+				<ComponentMap.Execute
 					visible={execute}
 					device={execute}
 					onCancel={setExecute.bind(null, false)}
 				/>
-			</Suspense>
-			<Suspense>
-				<Desktop
+			}
+			{
+				ComponentMap.Explorer &&
+				<ComponentMap.Explorer
+					open={explorer}
+					device={explorer}
+					onCancel={setExplorer.bind(null, false)}
+				/>
+			}
+			{
+				ComponentMap.ProcMgr &&
+				<ComponentMap.ProcMgr
+					open={procMgr}
+					device={procMgr}
+					onCancel={setProcMgr.bind(null, false)}
+				/>
+			}
+			{
+				ComponentMap.Desktop &&
+				<ComponentMap.Desktop
 					open={desktop}
 					device={desktop}
 					onCancel={setDesktop.bind(null, false)}
 				/>
-			</Suspense>
-			<Suspense>
-				<Terminal
+			}
+			{
+				ComponentMap.Terminal &&
+				<ComponentMap.Terminal
 					open={terminal}
 					device={terminal}
 					onCancel={setTerminal.bind(null, false)}
 				/>
-			</Suspense>
+			}
 			<ProTable
 				scroll={{
 					x: 'max-content',
@@ -434,6 +462,8 @@ function overview(props) {
 					value: columnsState,
 					onChange: saveColumnsState
 				}}
+				onLoadingChange={setLoading}
+				loading={loading}
 				request={getData}
 				pagination={false}
 				actionRef={tableRef}

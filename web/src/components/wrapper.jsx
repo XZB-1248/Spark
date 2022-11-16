@@ -4,11 +4,11 @@ import zhCN from 'antd/lib/locale/zh_CN';
 import en from 'antd/lib/locale/en_US';
 import {getLang, getLocale} from "../locale/locale";
 import {Button, ConfigProvider, notification} from "antd";
-import axios from "axios";
-import './wrapper.css';
 import version from "../config/version.json";
 import ReactMarkdown from "react-markdown";
 import i18n from "i18next";
+import axios from "axios";
+import './wrapper.css';
 
 promptUpdate();
 function wrapper(props) {

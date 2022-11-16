@@ -129,7 +129,7 @@ function TextEditor(props) {
 		setLoading(true);
 		await waitTime(300);
 		const params = Qs.stringify({
-			device: props.device,
+			device: props.device.id,
 			path: props.path,
 			file: props.file
 		});

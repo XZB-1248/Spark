@@ -37,7 +37,7 @@ export default {
 	"OVERVIEW.TERMINAL": "终端",
 	"OVERVIEW.PROC_MANAGER": "进程",
 	"OVERVIEW.EXPLORER": "文件",
-	"OVERVIEW.RUN": "运行",
+	"OVERVIEW.EXECUTE": "运行",
 	"OVERVIEW.SCREENSHOT": "截屏",
 	"OVERVIEW.DESKTOP": "桌面",
 	"OVERVIEW.LOCK": "锁屏",
@@ -133,8 +133,8 @@ export default {
 	"DESKTOP.FETCH_IMAGE_FAILED": "截屏读取失败",
 	"DESKTOP.NO_DISPLAY_FOUND": "设备未连接显示器",
 
-	"RUNNER.TITLE": "运行",
-	"RUNNER.EXECUTION_SUCCESS": "执行成功",
-	"RUNNER.CMD_PLACEHOLDER": "命令",
-	"RUNNER.ARGS_PLACEHOLDER": "参数（以空格分隔）"
+	"EXECUTE.TITLE": "运行",
+	"EXECUTE.EXECUTION_SUCCESS": "执行成功",
+	"EXECUTE.CMD_PLACEHOLDER": "命令",
+	"EXECUTE.ARGS_PLACEHOLDER": "参数（以空格分隔）"
 };

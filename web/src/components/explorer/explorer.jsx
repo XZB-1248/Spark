@@ -8,14 +8,25 @@ import {VList} from "virtuallist-antd";
 import {HomeOutlined, QuestionCircleOutlined, ReloadOutlined, UploadOutlined} from "@ant-design/icons";
 import Qs from "qs";
 import DraggableModal from "../modal";
-import "./explorer.css";
+import FileUploader from "./uploader";
 import AceBuilds from "ace-builds";
-import Suspense from "../suspense";
+import "./explorer.css";
 
+let TextEditor = null;
 const ModeList = AceBuilds.require("ace/ext/modelist");
-const TextEditor = React.lazy(() => import('./editor'));
-const FileUploader = React.lazy(() => import('./uploader'));
 
+function loadEditor(callback) {
+	if (TextEditor === null) {
+		import('./editor').then(m => {
+			TextEditor = m.default;
+			callback();
+		});
+	} else {
+		callback();
+	}
+}
+
+let isWindows = false;
 let position = '';
 let fileList = [];
 function FileBrowser(props) {
@@ -92,6 +103,7 @@ function FileBrowser(props) {
 	</Space>);
 	useEffect(() => {
 		if (props.device) {
+			isWindows = props.device.os === 'windows';
 			position = '/';
 			setPath(`/`);
 		}
@@ -148,13 +160,13 @@ function FileBrowser(props) {
 		}
 	}
 	function onRowClick(file) {
-		const separator = props.isWindows ? '\\' : '/';
+		const separator = isWindows ? '\\' : '/';
 		if (file.name === '..') {
 			listFiles(getParentPath(position));
 			return;
 		}
 		if (file.type !== 0) {
-			if (props.isWindows) {
+			if (isWindows) {
 				if (path === '/' || path === '\\' || path.length === 0) {
 					listFiles(file.name + separator);
 					return
@@ -182,7 +194,7 @@ function FileBrowser(props) {
 	}
 	function imgPreview(file) {
 		setLoading(true);
-		request('/api/device/file/get', {device: props.device, files: path + file.name}, {}, {
+		request('/api/device/file/get', {device: props.device.id, files: path + file.name}, {}, {
 			responseType: 'blob',
 			timeout: 10000
 		}).then(res => {
@@ -204,15 +216,17 @@ function FileBrowser(props) {
 		}
 		if (editingFile) return;
 		setLoading(true);
-		request('/api/device/file/text', {device: props.device, file: path + file.name}, {}, {
+		request('/api/device/file/text', {device: props.device.id, file: path + file.name}, {}, {
 			responseType: 'blob',
 			timeout: 7000
 		}).then(res => {
 			if (res.status === 200) {
 				res.data.text().then(str => {
-					setEditingContent(str);
-					setDraggable(false);
-					setEditingFile(file.name);
+					loadEditor(() => {
+						setEditingContent(str);
+						setDraggable(false);
+						setEditingFile(file.name);
+					});
 				});
 			}
 		}).catch(catchBlobReq).finally(() => {
@@ -227,7 +241,7 @@ function FileBrowser(props) {
 		tableRef.current.reload();
 	}
 	function getParentPath(path) {
-		let separator = props.isWindows ? '\\' : '/';
+		let separator = isWindows ? '\\' : '/';
 		// remove the last separator
 		// or there'll be an empty element after split
 		let tempPath = path.substring(0, path.length - 1);
@@ -243,7 +257,7 @@ function FileBrowser(props) {
 
 	function uploadFile() {
 		if (path === '/' || path === '\\' || path.length === 0) {
-			if (props.isWindows) {
+			if (isWindows) {
 				message.error(i18n.t('EXPLORER.UPLOAD_INVALID_PATH'));
 				return;
 			}
@@ -292,7 +306,7 @@ function FileBrowser(props) {
 
 	function downloadFiles(items) {
 		if (path === '/' || path === '\\' || path.length === 0) {
-			if (props.isWindows) {
+			if (isWindows) {
 				// It may take an extremely long time to archive volumes.
 				// So we don't allow to download volumes.
 				// Besides, archive volumes may throw an error.
@@ -311,12 +325,12 @@ function FileBrowser(props) {
 		}
 		post(location.origin + location.pathname + 'api/device/file/get', {
 			files: files,
-			device: props.device
+			device: props.device.id
 		});
 	}
 	function removeFiles(items) {
 		if (path === '/' || path === '\\' || path.length === 0) {
-			if (props.isWindows) {
+			if (isWindows) {
 				message.error(i18n.t('EXPLORER.DELETE_INVALID_PATH'));
 				return;
 			}
@@ -332,7 +346,7 @@ function FileBrowser(props) {
 		}
 		request(`/api/device/file/remove`, {
 			files: files,
-			device: props.device
+			device: props.device.id
 		}, {}, {
 			transformRequest: [v => Qs.stringify(v, {indices: false})]
 		}).then(res => {
@@ -346,7 +360,7 @@ function FileBrowser(props) {
 
 	async function getData(form) {
 		await waitTime(300);
-		let res = await request('/api/device/file/list', {path: position, device: props.device});
+		let res = await request('/api/device/file/list', {path: position, device: props.device.id});
 		setSelectedRowKeys([]);
 		setLoading(false);
 		let data = res.data;
@@ -456,7 +470,8 @@ function FileBrowser(props) {
 				onChange={onFileChange}
 				style={{display: 'none'}}
 			/>
-			<Suspense>
+			{
+				TextEditor &&
 				<TextEditor
 					path={path}
 					file={editingFile}
@@ -469,17 +484,15 @@ function FileBrowser(props) {
 						if (reload) tableRef.current.reload();
 					}}
 				/>
-			</Suspense>
-			<Suspense>
-				<FileUploader
-					open={uploading}
-					path={path}
-					file={uploading}
-					device={props.device}
-					onSuccess={onUploadSuccess}
-					onCancel={onUploadCancel}
-				/>
-			</Suspense>
+			}
+			<FileUploader
+				open={uploading}
+				path={path}
+				file={uploading}
+				device={props.device}
+				onSuccess={onUploadSuccess}
+				onCancel={onUploadCancel}
+			/>
 			<Image
 				preview={{
 					visible: preview,
@@ -495,7 +508,7 @@ function FileBrowser(props) {
 }
 
 function Navigator(props) {
-	let separator = props.isWindows ? '\\' : '/';
+	let separator = isWindows ? '\\' : '/';
 	let path = [];
 	let pathItems = [];
 	let tempPath = props.path;
@@ -507,7 +520,7 @@ function Navigator(props) {
 	}
 	for (let i = 0; i < path.length; i++) {
 		let name = path[i];
-		if (i === 0 && props.isWindows) {
+		if (i === 0 && isWindows) {
 			if (name.endsWith(':')) {
 				name = name.substring(0, name.length - 1);
 			}
@@ -517,7 +530,7 @@ function Navigator(props) {
 			path: path.slice(0, i + 1).join(separator) + separator
 		});
 	}
-	if (path.length > 0 && props.isWindows) {
+	if (path.length > 0 && isWindows) {
 		let first = path[0];
 		if (first.endsWith(':')) {
 			first = first.substring(0, first.length - 1);
