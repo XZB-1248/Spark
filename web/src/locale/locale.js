@@ -1,19 +1,20 @@
 import i18n from 'i18next';
+import zhCN from './zh-CN';
+import en from './en';
 
-const locales = {
-	'en': 'en',
-	'en-US': 'en',
-	'zh-CN': 'zh-CN',
+const resources = {
+	'en': {
+		translation: en
+	},
+	'en-US': {
+		translation: en
+	},
+	'zh-CN': {
+		translation: zhCN
+	},
 };
 const lang = navigator.language && navigator.language.length ? navigator.language : 'en';
-const locale = locales[lang] || 'en';
-
-let resources = {};
-for (const locale in locales) {
-	resources[locale] = {
-		translation: require(`./${locales[locale]}.json`),
-	};
-}
+const locale = resources[lang] ? lang : 'en';
 
 i18n.init({
 	lng: lang,

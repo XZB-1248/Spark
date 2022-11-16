@@ -6,14 +6,14 @@ import {FitAddon} from "xterm-addon-fit";
 import debounce from 'lodash/debounce';
 import wcwidth from 'wcwidth';
 import "xterm/css/xterm.css";
-import i18n from "../locale/locale";
+import i18n from "../../locale/locale";
 import {
 	decrypt, encrypt, genRandHex, getBaseURL,
 	hex2ua, str2hex, str2ua, translate,
 	ua2hex, ua2str
-} from "../utils/utils";
-import DraggableModal from "./modal";
-const Zmodem = require("../vendors/zmodem.js/zmodem");
+} from "../../utils/utils";
+import DraggableModal from "../modal";
+const Zmodem = require("../../vendors/zmodem.js/zmodem");
 
 let zsentry = null;
 let zsession = null;

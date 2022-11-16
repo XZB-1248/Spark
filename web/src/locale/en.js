@@ -1,4 +1,4 @@
-{
+export default {
 	"COMMON.REQUEST_FAILED": "Request failed",
 	"COMMON.REQUEST_TIMEOUT": "Request timeout",
 	"COMMON.PAGE_NOT_FOUND": "Page Not Found",
@@ -57,7 +57,7 @@
 	"EXPLORER.DATE_MODIFIED": "Date Modified",
 	"EXPLORER.FILE": "file",
 	"EXPLORER.FOLDER": "folder",
-	"EXPLORER.RELOAD": "Reload",
+	"EXPLORER.RENAME": "Rename",
 	"EXPLORER.UPLOAD": "Upload",
 	"EXPLORER.DELETE": "Delete",
 	"EXPLORER.DOWNLOAD": "Download",
@@ -137,4 +137,4 @@
 	"RUNNER.EXECUTION_SUCCESS": "Execution success",
 	"RUNNER.CMD_PLACEHOLDER": "Command",
 	"RUNNER.ARGS_PLACEHOLDER": "Arguments (separated by space)"
-}
+};

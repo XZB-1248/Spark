@@ -1,10 +1,10 @@
 import React from 'react';
 import {ModalForm, ProFormText} from '@ant-design/pro-form';
-import {request} from "../utils/utils";
-import i18n from "../locale/locale";
+import {request} from "../../utils/utils";
+import i18n from "../../locale/locale";
 import {message} from "antd";
 
-function Runner(props) {
+function Execute(props) {
 	async function onFinish(form) {
 		form.device = props.device.id;
 		let basePath = location.origin + location.pathname + 'api/device/';
@@ -49,4 +49,4 @@ function Runner(props) {
 	)
 }
 
-export default Runner;
+export default Execute;

@@ -1,4 +1,4 @@
-{
+export default {
 	"COMMON.REQUEST_FAILED": "请求服务器失败",
 	"COMMON.REQUEST_TIMEOUT": "请求超时",
 	"COMMON.PAGE_NOT_FOUND": "未找到该页面",
@@ -57,7 +57,7 @@
 	"EXPLORER.DATE_MODIFIED": "修改时间",
 	"EXPLORER.FILE": "文件",
 	"EXPLORER.FOLDER": "文件夹",
-	"EXPLORER.RELOAD": "刷新",
+	"EXPLORER.RENAME": "重命名",
 	"EXPLORER.UPLOAD": "上传",
 	"EXPLORER.DELETE": "删除",
 	"EXPLORER.DOWNLOAD": "下载",
@@ -137,4 +137,4 @@
 	"RUNNER.EXECUTION_SUCCESS": "执行成功",
 	"RUNNER.CMD_PLACEHOLDER": "命令",
 	"RUNNER.ARGS_PLACEHOLDER": "参数（以空格分隔）"
-}
+};

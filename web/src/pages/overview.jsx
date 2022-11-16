@@ -1,43 +1,23 @@
 import React, {useEffect, useRef, useState} from 'react';
 import ProTable, {TableDropdown} from '@ant-design/pro-table';
 import {Button, Image, message, Modal, Progress, Tooltip} from 'antd';
-import {catchBlobReq, formatSize, request, translate, tsToTime, waitTime} from "../utils/utils";
-import Generate from "../components/generate";
-import Explorer from "../components/explorer";
-import Terminal from "../components/terminal";
-import ProcMgr from "../components/procmgr";
-import Desktop from "../components/desktop";
-import Runner from "../components/runner";
+import {catchBlobReq, formatSize, request, tsToTime, waitTime} from "../utils/utils";
 import {QuestionCircleOutlined} from "@ant-design/icons";
 import i18n from "../locale/locale";
+import Suspense from "../components/suspense";
 
 // DO NOT EDIT OR DELETE THIS COPYRIGHT MESSAGE.
 console.log("%c By XZB %c https://github.com/XZB-1248/Spark", 'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:64px;color:#00bbee;-webkit-text-fill-color:#00bbee;-webkit-text-stroke:1px#00bbee;', 'font-size:12px;');
 
-function UsageBar(props) {
-	let {usage} = props;
-	usage = usage || 0;
-	usage = Math.round(usage * 100) / 100;
-
-	return (
-		<Tooltip
-			title={props.title??`${usage}%`}
-			overlayInnerStyle={{
-				whiteSpace: 'nowrap',
-				wordBreak: 'keep-all',
-				maxWidth: '300px',
-			}}
-			overlayStyle={{
-				maxWidth: '300px',
-			}}
-		>
-			<Progress percent={usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>
-		</Tooltip>
-	);
-}
+const Generate = React.lazy(() => import('../components/generate/generate'));
+const Explorer = React.lazy(() => import('../components/explorer/explorer'));
+const Terminal = React.lazy(() => import('../components/terminal/terminal'));
+const ProcMgr = React.lazy(() => import('../components/procmgr/procmgr'));
+const Desktop = React.lazy(() => import('../components/desktop/desktop'));
+const Execute = React.lazy(() => import('../components/execute/execute'));
 
 function overview(props) {
-	const [runner, setRunner] = useState(false);
+	const [execute, setExecute] = useState(false);
 	const [desktop, setDesktop] = useState(false);
 	const [procMgr, setProcMgr] = useState(false);
 	const [explorer, setExplorer] = useState(false);
@@ -172,13 +152,13 @@ function overview(props) {
 
 	useEffect(() => {
 		// auto update is only available when all modal are closed.
-		if (!runner && !desktop && !procMgr && !explorer && !generate && !terminal) {
+		if (!execute && !desktop && !procMgr && !explorer && !generate && !terminal) {
 			let id = setInterval(getData, 3000);
 			return () => {
 				clearInterval(id);
 			};
 		}
-	}, [runner, desktop, procMgr, explorer, generate, terminal]);
+	}, [execute, desktop, procMgr, explorer, generate, terminal]);
 
 	function getInitColumnsState() {
 		let data = localStorage.getItem(`columnsState`);
@@ -399,36 +379,48 @@ function overview(props) {
 					}
 				}}
 			/>
-			<Generate
-				visible={generate}
-				onVisibleChange={setGenerate}
-			/>
-			<Explorer
-				isWindows={isWindows}
-				open={explorer}
-				device={explorer}
-				onCancel={setExplorer.bind(null, false)}
-			/>
-			<ProcMgr
-				open={procMgr}
-				device={procMgr}
-				onCancel={setProcMgr.bind(null, false)}
-			/>
-			<Runner
-				visible={runner}
-				device={runner}
-				onCancel={setRunner.bind(null, false)}
-			/>
-			<Desktop
-				open={desktop}
-				device={desktop}
-				onCancel={setDesktop.bind(null, false)}
-			/>
-			<Terminal
-				open={terminal}
-				device={terminal}
-				onCancel={setTerminal.bind(null, false)}
-			/>
+			<Suspense>
+				<Generate
+					visible={generate}
+					onVisibleChange={setGenerate}
+				/>
+			</Suspense>
+			<Suspense>
+				<Explorer
+					isWindows={isWindows}
+					open={explorer}
+					device={explorer}
+					onCancel={setExplorer.bind(null, false)}
+				/>
+			</Suspense>
+			<Suspense>
+				<ProcMgr
+					open={procMgr}
+					device={procMgr}
+					onCancel={setProcMgr.bind(null, false)}
+				/>
+			</Suspense>
+			<Suspense>
+				<Execute
+					visible={execute}
+					device={execute}
+					onCancel={setExecute.bind(null, false)}
+				/>
+			</Suspense>
+			<Suspense>
+				<Desktop
+					open={desktop}
+					device={desktop}
+					onCancel={setDesktop.bind(null, false)}
+				/>
+			</Suspense>
+			<Suspense>
+				<Terminal
+					open={terminal}
+					device={terminal}
+					onCancel={setTerminal.bind(null, false)}
+				/>
+			</Suspense>
 			<ProTable
 				scroll={{
 					x: 'max-content',
@@ -450,6 +442,27 @@ function overview(props) {
 				onDataSourceChange={setDataSource}
 			/>
 		</>
+	);
+}
+function UsageBar(props) {
+	let {usage} = props;
+	usage = usage || 0;
+	usage = Math.round(usage * 100) / 100;
+
+	return (
+		<Tooltip
+			title={props.title??`${usage}%`}
+			overlayInnerStyle={{
+				whiteSpace: 'nowrap',
+				wordBreak: 'keep-all',
+				maxWidth: '300px',
+			}}
+			overlayStyle={{
+				maxWidth: '300px',
+			}}
+		>
+			<Progress percent={usage} showInfo={false} strokeWidth={12} trailColor='#FFECFF'/>
+		</Tooltip>
 	);
 }
 

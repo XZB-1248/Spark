@@ -1,10 +1,10 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Button, message, Popconfirm} from "antd";
 import ProTable from '@ant-design/pro-table';
-import {request, waitTime} from "../utils/utils";
-import i18n from "../locale/locale";
+import {request, waitTime} from "../../utils/utils";
+import i18n from "../../locale/locale";
 import {VList} from "virtuallist-antd";
-import DraggableModal from "./modal";
+import DraggableModal from "../modal";
 import {ReloadOutlined} from "@ant-design/icons";
 
 function ProcessMgr(props) {

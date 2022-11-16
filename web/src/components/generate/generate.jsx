@@ -1,8 +1,8 @@
 import React from 'react';
 import {ModalForm, ProFormCascader, ProFormDigit, ProFormGroup, ProFormText} from '@ant-design/pro-form';
-import {post, request} from "../utils/utils";
-import prebuilt from '../config/prebuilt.json';
-import i18n from "../locale/locale";
+import {post, request} from "../../utils/utils";
+import prebuilt from '../../config/prebuilt.json';
+import i18n from "../../locale/locale";
 
 function Generate(props) {
 	const initValues = getInitValues();

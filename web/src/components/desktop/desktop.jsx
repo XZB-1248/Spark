@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate, hex2ua, ua2hex} from "../utils/utils";
-import i18n from "../locale/locale";
-import DraggableModal from "./modal";
+import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate, hex2ua, ua2hex} from "../../utils/utils";
+import i18n from "../../locale/locale";
+import DraggableModal from "../modal";
 import {Button, message} from "antd";
 import {FullscreenOutlined, ReloadOutlined} from "@ant-design/icons";
 
