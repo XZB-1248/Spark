@@ -20,22 +20,21 @@ function ScreenModal(props) {
 	const [fps, setFps] = useState(0);
 	const canvasRef = useCallback((e) => {
 		if (e && props.open && !conn) {
+			secret = hex2ua(genRandHex(32));
 			canvas = e;
 			initCanvas(canvas);
 			construct(canvas);
 		}
 	}, [props]);
 	useEffect(() => {
-		if (props.open) {
-			secret = hex2ua(genRandHex(32));
-		} else {
+		if (!props.open) {
 			if (ws && conn) {
 				clearInterval(ticker);
 				ws.close();
 				conn = false;
 			}
 		}
-	}, [props.open, props.device]);
+	}, [props.open]);
 
 	function initCanvas() {
 		if (!canvas) return;
