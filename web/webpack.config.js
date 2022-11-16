@@ -1,7 +1,8 @@
 const path = require("path");
-const TerserPlugin = require("terser-webpack-plugin");
+const esbuild = require('esbuild');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const {ESBuildMinifyPlugin} = require("esbuild-loader");
 const {CleanWebpackPlugin} = require("clean-webpack-plugin");
 const AntdDayjsWebpackPlugin = require("antd-dayjs-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
@@ -19,15 +20,26 @@ module.exports = (env, args) => {
         module: {
             rules: [
                 {
-                    test: /\.(js|jsx)$/,
-                    use: 'babel-loader',
-                    exclude: /node_modules/
+                    test: /\.(js|jsx)$/i,
+                    loader: 'esbuild-loader',
+                    include: path.resolve(__dirname, 'src'),
+                    options: {
+                        loader: 'jsx',
+                        target: 'es2015'
+                    }
                 },
                 {
                     test: /\.css$/,
                     use: [
                         'style-loader',
-                        'css-loader'
+                        'css-loader',
+                        {
+                            loader: 'esbuild-loader',
+                            options: {
+                                loader: 'css',
+                                minify: true
+                            }
+                        }
                     ]
                 },
                 {
@@ -85,51 +97,61 @@ module.exports = (env, args) => {
         optimization: {
             minimize: mode === 'production',
             minimizer: [
-                new TerserPlugin({
-                    test: /\.js(\?.*)?$/i,
-                    parallel: true,
-                    extractComments: false,
-                    terserOptions: {
-                        compress: {
-                            drop_console: false,
-                            collapse_vars: true,
-                            reduce_vars: true,
-                        }
-                    }
+                new ESBuildMinifyPlugin({
+                    css: true,
+                    target: 'es2015',
+                    implementation: esbuild,
+                    legalComments: 'none'
                 })
             ],
-            runtimeChunk: 'multiple',
-            splitChunks: {
-                chunks: 'initial',
+            runtimeChunk: 'single',
+            splitChunks: mode === 'development' ? false : {
+                chunks: 'all',
+                filename: '[name].chunk.[contenthash:7].js',
                 cacheGroups: {
                     react: {
                         test: /react|redux|react-router/i,
                         priority: -1,
-                        chunks: 'all',
                         reuseExistingChunk: true
                     },
                     common: {
-                        test: /axios|i18next|crypto-js|dayjs/i,
+                        test: /axios|i18next|dayjs/i,
                         priority: -2,
-                        chunks: 'all',
+                        reuseExistingChunk: true
+                    },
+                    proForm: {
+                        test: /pro-form/i,
+                        priority: -3,
+                        reuseExistingChunk: true
+                    },
+                    proTable: {
+                        test: /pro-table/i,
+                        priority: -3,
+                        reuseExistingChunk: true
+                    },
+                    proLayout: {
+                        test: /pro-layout/i,
+                        priority: -3,
                         reuseExistingChunk: true
                     },
                     antd: {
                         test: /antd|ant-design/i,
-                        priority: -3,
-                        chunks: 'all',
+                        priority: -4,
                         reuseExistingChunk: true
                     },
-                    addon: {
-                        test: /xterm|react-ace|ace-builds/i,
-                        priority: -4,
-                        chunks: 'initial',
+                    ace: {
+                        test: /react-ace|ace-builds/i,
+                        priority: -5,
+                        reuseExistingChunk: true
+                    },
+                    xterm: {
+                        test: /xterm/i,
+                        priority: -6,
                         reuseExistingChunk: true
                     },
                     vendor: {
                         test: /[\\/]node_modules[\\/]/i,
-                        priority: -5,
-                        chunks: 'initial',
+                        priority: -7,
                         reuseExistingChunk: true
                     }
                 }
