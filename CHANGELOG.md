@@ -1,9 +1,11 @@
 ## v0.2.1
 
 * Fix: desktop connection timeout.
+* Fix: desktop viewer doesn't work on unix-like system.
 * Add: show resolution of desktop.
 
 * 修复：远程桌面连接超时。
+* 修复：远程桌面在类unix系统下无法显示。
 * 新增：显示远程桌面的分辨率。
 
 

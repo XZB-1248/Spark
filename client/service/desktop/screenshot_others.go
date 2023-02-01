@@ -17,8 +17,10 @@ func (s *screen) init(displayIndex int) {
 }
 
 func (s *screen) capture(img *image.RGBA, _ image.Rectangle) error {
-	var err error
-	img, err = screenshot.CaptureDisplay(displayIndex)
+	image, err := screenshot.CaptureDisplay(displayIndex)
+	if err == nil {
+		*img = *image
+	}
 	return err
 }
 

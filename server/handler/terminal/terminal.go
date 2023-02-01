@@ -64,7 +64,7 @@ func InitTerminal(ctx *gin.Context) {
 }
 
 // terminalEventWrapper returns a eventCallback function that will
-// be called when device need to send a packet to browser terminal
+// be called when device need to send a packet to browser
 func terminalEventWrapper(terminal *terminal) common.EventCallback {
 	return func(pack modules.Packet, device *melody.Session) {
 		if pack.Act == `RAW_DATA_ARRIVE` && pack.Data != nil {
