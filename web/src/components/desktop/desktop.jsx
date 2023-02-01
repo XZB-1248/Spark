@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate, hex2ua, ua2hex} from "../../utils/utils";
+import {encrypt, decrypt, formatSize, genRandHex, getBaseURL, translate, str2ua, hex2ua, ua2hex} from "../../utils/utils";
 import i18n from "../../locale/locale";
 import DraggableModal from "../modal";
 import {Button, message} from "antd";
@@ -16,10 +16,11 @@ let bytes = 0;
 let ticks = 0;
 let title = i18n.t('DESKTOP.TITLE');
 function ScreenModal(props) {
+	const [resolution, setResolution] = useState('0x0');
 	const [bandwidth, setBandwidth] = useState(0);
 	const [fps, setFps] = useState(0);
 	const canvasRef = useCallback((e) => {
-		if (e && props.open && !conn) {
+		if (e && props.open && !conn && !canvas) {
 			secret = hex2ua(genRandHex(32));
 			canvas = e;
 			initCanvas(canvas);
@@ -127,6 +128,7 @@ function ScreenModal(props) {
 			if (width === 0 || height === 0) return;
 			canvas.width = width;
 			canvas.height = height;
+			setResolution(`${width}x${height}`);
 			return;
 		}
 		if (op === 0) frames++;
@@ -174,7 +176,7 @@ function ScreenModal(props) {
 
 	function sendData(data) {
 		if (conn) {
-			let body = encrypt(data, secret);
+			let body = encrypt(str2ua(JSON.stringify(data)), secret);
 			let buffer = new Uint8Array(body.length + 8);
 			buffer.set(new Uint8Array([34, 22, 19, 17, 20, 3]), 0);
 			buffer.set(new Uint8Array([body.length >> 8, body.length & 0xFF]), 6);
@@ -188,7 +190,7 @@ function ScreenModal(props) {
 			draggable={true}
 			maskClosable={false}
 			destroyOnClose={true}
-			modalTitle={`${title} ${formatSize(bandwidth)}/s FPS: ${fps}`}
+			modalTitle={`${title} ${resolution} ${formatSize(bandwidth)}/s FPS: ${fps}`}
 			footer={null}
 			height={480}
 			width={940}
