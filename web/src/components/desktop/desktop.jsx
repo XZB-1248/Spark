@@ -29,6 +29,7 @@ function ScreenModal(props) {
 	}, [props]);
 	useEffect(() => {
 		if (!props.open) {
+			canvas = null;
 			if (ws && conn) {
 				clearInterval(ticker);
 				ws.close();
