@@ -134,9 +134,8 @@ func wsHandshake(ctx *gin.Context) {
 		return
 	}
 	secret := append(utils.GetUUID(), utils.GetUUID()...)
-	err = common.Melody.HandleRequestWithKeys(ctx.Writer, ctx.Request, http.Header{
-		`Secret`: []string{hex.EncodeToString(secret)},
-	}, gin.H{
+	ctx.Writer.Header().Add(`Secret`, hex.EncodeToString(secret))
+	err = common.Melody.HandleRequestWithKeys(ctx.Writer, ctx.Request, gin.H{
 		`Secret`:   secret,
 		`LastPack`: utils.Unix,
 		`Address`:  common.GetRemoteAddr(ctx),

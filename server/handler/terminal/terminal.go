@@ -56,7 +56,7 @@ func InitTerminal(ctx *gin.Context) {
 		return
 	}
 
-	terminalSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
+	terminalSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, gin.H{
 		`Secret`:   secret,
 		`Device`:   device,
 		`LastPack`: utils.Unix,

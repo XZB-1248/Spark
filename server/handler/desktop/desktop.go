@@ -55,7 +55,7 @@ func InitDesktop(ctx *gin.Context) {
 		return
 	}
 
-	desktopSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, nil, gin.H{
+	desktopSessions.HandleRequestWithKeys(ctx.Writer, ctx.Request, gin.H{
 		`Secret`:   secret,
 		`Device`:   device,
 		`LastPack`: utils.Unix,
