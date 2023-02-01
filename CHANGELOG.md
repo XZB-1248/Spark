@@ -1,3 +1,13 @@
+## v0.2.1
+
+* Fix: desktop connection timeout.
+* Add: show resolution of desktop.
+
+* 修复：远程桌面连接超时。
+* 新增：显示远程桌面的分辨率。
+
+
+
 ## v0.2.0
 
 * Add: zmodem(lrzsz) support for terminal.
