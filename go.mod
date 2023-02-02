@@ -11,14 +11,15 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/kataras/golog v0.1.7
 	github.com/kbinani/screenshot v0.0.0-20210720154843-7d3a670d8329
+	github.com/kirides/go-d3d v1.0.0
+	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/rakyll/statik v0.1.7
 	github.com/shirou/gopsutil/v3 v3.22.2
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 )
 
-require github.com/kirides/screencapture v0.0.0-20211101142135-282f3f7e0f33
-
 require (
-	github.com/gen2brain/shm v0.0.0-20210511105953-083dbc7d9d83 // indirect
+	github.com/gen2brain/shm v0.0.0-20221026125803-c33c9e32b1c8 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
@@ -27,11 +28,10 @@ require (
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
+	github.com/jezek/xgb v1.1.0 // indirect
 	github.com/kataras/pio v0.0.10 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -40,9 +40,8 @@ require (
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20220111093109-d55c255bac03 // indirect
-	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
+	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

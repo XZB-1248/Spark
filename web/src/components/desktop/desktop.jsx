@@ -41,6 +41,7 @@ function ScreenModal(props) {
 	function initCanvas() {
 		if (!canvas) return;
 		ctx = canvas.getContext('2d', {alpha: false});
+		ctx.imageSmoothingEnabled = false;
 	}
 	function construct() {
 		if (ctx !== null) {
@@ -87,24 +88,11 @@ function ScreenModal(props) {
 		}
 	}
 	function fullScreen() {
-		try {
-			canvas.requestFullscreen();
-		} catch {}
-		try {
-			canvas.webkitRequestFullscreen();
-		} catch {}
-		try {
-			canvas.mozRequestFullScreen();
-		} catch {}
-		try {
-			canvas.msRequestFullscreen();
-		} catch {}
+		canvas.requestFullscreen().catch(console.error);
 	}
 	function refresh() {
 		if (canvas && props.open) {
 			if (!conn) {
-				canvas.width = 1920;
-				canvas.height = 1080;
 				initCanvas(canvas);
 				construct(canvas);
 			} else {
@@ -150,13 +138,18 @@ function ScreenModal(props) {
 		dv = null;
 	}
 	function updateImage(ab, it, dx, dy, bw, bh, canvasCtx) {
-		if (it === 0) {
-			canvasCtx.putImageData(new ImageData(new Uint8ClampedArray(ab), bw, bh), dx, dy, 0, 0, bw, bh);
-		} else {
-			createImageBitmap(new Blob([ab]), 0, 0, bw, bh)
-			.then((ib) => {
-				canvasCtx.drawImage(ib, 0, 0, bw, bh, dx, dy, bw, bh);
-			});
+		switch (it) {
+			case 0:
+				canvasCtx.putImageData(new ImageData(new Uint8ClampedArray(ab), bw, bh), dx, dy, 0, 0, bw, bh);
+				break;
+			case 1:
+				createImageBitmap(new Blob([ab]), 0, 0, bw, bh, {
+					premultiplyAlpha: 'none',
+					colorSpaceConversion: 'none'
+				}).then((ib) => {
+					canvasCtx.drawImage(ib, 0, 0, bw, bh, dx, dy, bw, bh);
+				});
+				break;
 		}
 	}
 	function handleJSON(ab) {

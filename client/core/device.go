@@ -43,12 +43,12 @@ func isPrivateIP(ip _net.IP) bool {
 func GetLocalIP() (string, error) {
 	ifaces, err := _net.Interfaces()
 	if err != nil {
-		return `Unknown`, err
+		return `<UNKNOWN>`, err
 	}
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
 		if err != nil {
-			return `Unknown`, err
+			return `<UNKNOWN>`, err
 		}
 
 		for _, addr := range addrs {
@@ -68,7 +68,7 @@ func GetLocalIP() (string, error) {
 			}
 		}
 	}
-	return `Unknown`, errors.New(`no IP address found`)
+	return `<UNKNOWN>`, errors.New(`no IP address found`)
 }
 
 func GetMacAddress() (string, error) {
@@ -179,16 +179,16 @@ func GetDevice() (*modules.Device, error) {
 	}
 	localIP, err := GetLocalIP()
 	if err != nil {
-		localIP = `<unknown>`
+		localIP = `<UNKNOWN>`
 	}
 	macAddr, err := GetMacAddress()
 	if err != nil {
-		macAddr = `<unknown>`
+		macAddr = `<UNKNOWN>`
 	}
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{
-			Model: `<unknown>`,
+			Model: `<UNKNOWN>`,
 			Usage: 0,
 		}
 	}
@@ -221,11 +221,11 @@ func GetDevice() (*modules.Device, error) {
 	}
 	hostname, err := os.Hostname()
 	if err != nil {
-		hostname = `<unknown>`
+		hostname = `<UNKNOWN>`
 	}
 	username, err := user.Current()
 	if err != nil {
-		username = &user.User{Username: `<unknown>`}
+		username = &user.User{Username: `<UNKNOWN>`}
 	} else {
 		slashIndex := strings.Index(username.Username, `\`)
 		if slashIndex > -1 && slashIndex+1 < len(username.Username) {
@@ -252,7 +252,7 @@ func GetPartialInfo() (*modules.Device, error) {
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
 		cpuInfo = modules.CPU{
-			Model: `<unknown>`,
+			Model: `<UNKNOWN>`,
 			Usage: 0,
 		}
 	}

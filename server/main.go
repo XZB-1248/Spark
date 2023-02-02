@@ -359,7 +359,7 @@ func checkAuth() gin.HandlerFunc {
 
 			if ctx.IsAborted() {
 				blocked.Set(addr, now+1)
-				user = utils.If(len(user) == 0, `EMPTY`, user)
+				user = utils.If(len(user) == 0, `<EMPTY>`, user)
 				common.Warn(ctx, `LOGIN_ATTEMPT`, `fail`, ``, map[string]any{
 					`user`: user,
 				})

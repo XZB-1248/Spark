@@ -16,7 +16,7 @@ func ListProcesses() ([]Process, error) {
 	for i := 0; i < len(processes); i++ {
 		name, err := processes[i].Name()
 		if err != nil {
-			name = `<Unknown>`
+			name = `<UNKNOWN>`
 		}
 		result = append(result, Process{Name: name, Pid: processes[i].Pid})
 	}

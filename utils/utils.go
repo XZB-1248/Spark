@@ -15,9 +15,10 @@ import (
 )
 
 var (
+	JSON = jsoniter.Config{EscapeHTML: false, SortMapKeys: true, ValidateJsonRawMessage: true}.Froze()
+
 	ErrEntityInvalid      = errors.New(`common.ENTITY_INVALID`)
 	ErrFailedVerification = errors.New(`common.ENTITY_CHECK_FAILED`)
-	JSON                  = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 func If[T any](b bool, t, f T) T {
