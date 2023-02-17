@@ -26,10 +26,6 @@
 		"label": "Windows",
 		"children": [
 			{
-				"value": "arm",
-				"label": "arm"
-			},
-			{
 				"value": "arm64",
 				"label": "arm64"
 			},

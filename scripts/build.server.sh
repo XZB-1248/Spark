@@ -27,8 +27,6 @@ go build -ldflags "-s -w -X 'Spark/server/config.COMMIT=$COMMIT'" -tags=jsoniter
 
 export GOOS=windows
 
-export GOARCH=arm
-go build -ldflags "-s -w -X 'Spark/server/config.COMMIT=$COMMIT'" -tags=jsoniter -o ./releases/server_windows_arm.exe Spark/server
 export GOARCH=386
 go build -ldflags "-s -w -X 'Spark/server/config.COMMIT=$COMMIT'" -tags=jsoniter -o ./releases/server_windows_i386.exe Spark/server
 export GOARCH=arm64

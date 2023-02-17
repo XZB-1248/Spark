@@ -18,8 +18,6 @@ go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=%COMMIT%'" -o ./built/li
 
 set GOOS=windows
 
-set GOARCH=arm
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=%COMMIT%'" -o ./built/windows_arm Spark/client
 set GOARCH=386
 go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=%COMMIT%'" -o ./built/windows_i386 Spark/client
 set GOARCH=arm64
