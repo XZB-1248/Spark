@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package basic
@@ -93,8 +94,9 @@ func Lock() error {
 }
 
 func Logoff() error {
+	const EWX_LOGOFF = 0x00000000
 	dll := syscall.MustLoadDLL(`user32`)
-	_, _, err := dll.MustFindProc(`ExitWindowsEx`).Call(0x0, 0x0)
+	_, _, err := dll.MustFindProc(`ExitWindowsEx`).Call(EWX_LOGOFF, 0x0)
 	dll.Release()
 	if err == syscall.Errno(0) {
 		return nil
@@ -103,8 +105,9 @@ func Logoff() error {
 }
 
 func Hibernate() error {
+	const HIBERNATE = 0x00000001
 	dll := syscall.MustLoadDLL(`powrprof`)
-	_, _, err := dll.MustFindProc(`SetSuspendState`).Call(0x0, 0x0, 0x1)
+	_, _, err := dll.MustFindProc(`SetSuspendState`).Call(HIBERNATE, 0x0, 0x1)
 	dll.Release()
 	if err == syscall.Errno(0) {
 		return nil
@@ -113,8 +116,9 @@ func Hibernate() error {
 }
 
 func Suspend() error {
+	const SUSPEND = 0x00000000
 	dll := syscall.MustLoadDLL(`powrprof`)
-	_, _, err := dll.MustFindProc(`SetSuspendState`).Call(0x1, 0x0, 0x1)
+	_, _, err := dll.MustFindProc(`SetSuspendState`).Call(SUSPEND, 0x0, 0x1)
 	dll.Release()
 	if err == syscall.Errno(0) {
 		return nil
@@ -123,8 +127,10 @@ func Suspend() error {
 }
 
 func Restart() error {
+	const EWX_REBOOT = 0x00000002
+	const EWX_FORCE = 0x00000004
 	dll := syscall.MustLoadDLL(`user32`)
-	_, _, err := dll.MustFindProc(`ExitWindowsEx`).Call(0x2, 0x0)
+	_, _, err := dll.MustFindProc(`ExitWindowsEx`).Call(EWX_REBOOT|EWX_FORCE, 0x0)
 	dll.Release()
 	if err == syscall.Errno(0) {
 		return nil
@@ -133,8 +139,10 @@ func Restart() error {
 }
 
 func Shutdown() error {
+	const EWX_SHUTDOWN = 0x00000001
+	const EWX_FORCE = 0x00000004
 	dll := syscall.MustLoadDLL(`user32`)
-	_, _, err := dll.MustFindProc(`ExitWindowsEx`).Call(0x1, 0x0)
+	_, _, err := dll.MustFindProc(`ExitWindowsEx`).Call(EWX_SHUTDOWN|EWX_FORCE, 0x0)
 	dll.Release()
 	if err == syscall.Errno(0) {
 		return nil
