@@ -36,6 +36,8 @@ server forever.
 
 **YOUR DATA IS PRICELESS. THINK TWICE BEFORE YOU CLICK ANY BUTTON OR ENTER ANY COMMAND.**
 
+If you found any security vulnerability, please **DO NOT** open an issue and immediately contact me via [**email**](mailto:i@1248.ink).
+
 ---
 
 ## Quick start
@@ -59,7 +61,7 @@ Example:
   ```json
   {
       "listen": ":8000",
-      "salt": "123456abcdefg",
+      "salt": "123456abcdef",
       "auth": {
           "username": "password"
       },
@@ -76,7 +78,7 @@ Example:
   * after modification, you need to re-generate all clients
 * `auth` `optional`, format: `username:password`
   * hashed-password is highly recommended
-  * format: `$algorithm$hashed-password`, example: `$sha256$123456abcdefg`
+  * format: `$algorithm$hashed-password`, example: `$sha256$11223344556677AABBCCDDEEFF`
   * supported algorithms: `sha256`, `sha512`, `bcrypt`
   * if you don't follow the format, password will be treated as plain-text
 * `log` `optional`
@@ -116,19 +118,19 @@ Example:
 
 ## Screenshots
 
-![overview](./screenshots/overview.png)
+![overview](./docs/overview.png)
 
-![terminal](./screenshots/terminal.png)
+![terminal](./docs/terminal.png)
 
-![desktop](./screenshots/desktop.png)
+![desktop](./docs/desktop.png)
 
-![procmgr](./screenshots/procmgr.png)
+![procmgr](./docs/procmgr.png)
 
-![explorer](./screenshots/explorer.png)
+![explorer](./docs/explorer.png)
 
-![overview.cpu](./screenshots/overview.cpu.png)
+![overview.cpu](./docs/overview.cpu.png)
 
-![explorer.editor](./screenshots/explorer.editor.png)
+![explorer.editor](./docs/explorer.editor.png)
 
 ---
 
@@ -191,6 +193,15 @@ Copy the whole `built` directory to that new directory.
 Copy configuration file mentioned above to that new directory.
 <br />
 Finally, run the executable file in that directory.
+
+---
+
+## Sponsor
+
+The project is free and open to the public, and its growth cannot be achieved without your support. Please consider sponsoring me to make this project even better.
+
+You can sponsor me via WeChat.
+![sponsor](./docs/sponsor.jpeg)
 
 ---
 

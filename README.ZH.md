@@ -34,6 +34,8 @@
 
 **数据无价，在点击任何按钮、输入任何命令之前，请三思。**
 
+如果你发现了任何安全问题，请**不要**发布issue，并立即[**联系我**](mailto:i@1248.ink)。
+
 ---
 
 ## 快速开始
@@ -54,7 +56,7 @@
   ```json
   {
       "listen": ":8000",
-      "salt": "123456abcdefg",
+      "salt": "123456abcdef",
       "auth": {
           "username": "password"
       },
@@ -70,7 +72,7 @@
 * `salt` `必填`，修改后需要重新部署客户端，长度不大于24
 * `auth` `选填`，格式为 `用户名:密码`
     * 密码强烈建议使用hash加密
-    * 格式为`$算法$密文`，例如`$sha256$123456abcdefg`
+    * 格式为`$算法$密文`，例如`$sha256$11223344556677AABBCCDDEEFF`
     * 支持的算法有：`sha256`，`sha512`和`bcrypt`
     * 如果不按照格式填写，将会被视为明文密码
 * `log` `选填`，日志配置
@@ -110,19 +112,19 @@
 
 ## 截图
 
-![overview](./screenshots/overview.ZH.png)
+![overview](./docs/overview.ZH.png)
 
-![terminal](./screenshots/terminal.ZH.png)
+![terminal](./docs/terminal.ZH.png)
 
-![desktop](./screenshots/desktop.ZH.png)
+![desktop](./docs/desktop.ZH.png)
 
-![procmgr](./screenshots/procmgr.ZH.png)
+![procmgr](./docs/procmgr.ZH.png)
 
-![explorer](./screenshots/explorer.ZH.png)
+![explorer](./docs/explorer.ZH.png)
 
-![overview.cpu](./screenshots/overview.cpu.ZH.png)
+![overview.cpu](./docs/overview.cpu.ZH.png)
 
-![explorer.editor](./screenshots/explorer.editor.ZH.png)
+![explorer.editor](./docs/explorer.editor.ZH.png)
 
 ---
 
@@ -184,6 +186,15 @@ $ ./scripts/build.server.sh
 
 ---
 
+## 赞助
+
+项目是免费公开的，它的成长离不开您的支持，请考虑赞助我让这个项目变得更好。
+
+您可以使用微信扫码赞助。
+![sponsor](./docs/sponsor.jpeg)
+
+---
+
 ## 项目依赖
 
 Spark使用了许多第三方的开源项目。
@@ -225,7 +236,7 @@ Spark使用了许多第三方的开源项目。
 ### 感谢
 
 * [natpass](https://github.com/lwch/natpass) (MIT License)
-* 图像差异算法部分参考了natpass项目的有关部分。
+* 图像差异算法部分参考了natpass项目的有关逻辑。
 
 ---
 
