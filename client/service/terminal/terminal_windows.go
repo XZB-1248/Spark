@@ -4,6 +4,7 @@ import (
 	"Spark/client/common"
 	"Spark/modules"
 	"Spark/utils"
+	"Spark/utils/cmap"
 	"encoding/hex"
 	"io"
 	"os/exec"
@@ -23,6 +24,7 @@ type terminal struct {
 	stdin    *io.WriteCloser
 }
 
+var terminals = cmap.New[*terminal]()
 var defaultCmd = ``
 
 func init() {
@@ -108,11 +110,8 @@ func InitTerminal(pack modules.Packet) error {
 }
 
 func InputRawTerminal(input []byte, uuid string) {
-	var session *terminal
-
-	if val, ok := terminals.Get(uuid); ok {
-		session = val.(*terminal)
-	} else {
+	session, ok := terminals.Get(uuid)
+	if !ok {
 		return
 	}
 	(*session.stdin).Write(input)
@@ -152,16 +151,14 @@ func ResizeTerminal(pack modules.Packet) error {
 
 func KillTerminal(pack modules.Packet) {
 	var uuid string
-	var session *terminal
 	if val, ok := pack.GetData(`terminal`, reflect.String); !ok {
 		return
 	} else {
 		uuid = val.(string)
 	}
-	if val, ok := terminals.Get(uuid); !ok {
+	session, ok := terminals.Get(uuid)
+	if !ok {
 		return
-	} else {
-		session = val.(*terminal)
 	}
 	terminals.Remove(uuid)
 	data, _ := utils.JSON.Marshal(modules.Packet{Act: `TERMINAL_QUIT`, Msg: `${i18n|TERMINAL.SESSION_CLOSED}`})
@@ -179,12 +176,11 @@ func PingTerminal(pack modules.Packet) {
 	} else {
 		uuid = val.(string)
 	}
-	if val, ok := terminals.Get(uuid); !ok {
+	session, ok := terminals.Get(uuid)
+	if !ok {
 		return
-	} else {
-		session = val.(*terminal)
-		session.lastPack = utils.Unix
 	}
+	session.lastPack = utils.Unix
 }
 
 func doKillTerminal(terminal *terminal) {
@@ -221,11 +217,10 @@ func healthCheck() {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		keys := make([]string, 0)
-		terminals.IterCb(func(uuid string, t any) bool {
-			termSession := t.(*terminal)
-			if timestamp-termSession.lastPack > MaxInterval {
+		terminals.IterCb(func(uuid string, session *terminal) bool {
+			if timestamp-session.lastPack > MaxInterval {
 				keys = append(keys, uuid)
-				doKillTerminal(termSession)
+				doKillTerminal(session)
 			}
 			return true
 		})

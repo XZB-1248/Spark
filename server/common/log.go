@@ -1,7 +1,6 @@
 package common
 
 import (
-	"Spark/modules"
 	"Spark/server/config"
 	"Spark/utils"
 	"Spark/utils/melody"
@@ -81,9 +80,8 @@ func getLog(ctx any, event, status, msg string, args map[string]any) string {
 			}
 		}
 		if targetInfo {
-			val, ok := Devices.Get(connUUID)
+			device, ok := Devices.Get(connUUID)
 			if ok {
-				device := val.(*modules.Device)
 				args[`target`] = map[string]any{
 					`name`: device.Hostname,
 					`ip`:   device.WAN,

@@ -3,6 +3,6 @@
 /tools
 /logs
 /.idea
-/Config.json
+/config.json
 dist/
 node_modules/

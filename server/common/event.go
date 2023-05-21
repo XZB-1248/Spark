@@ -15,7 +15,7 @@ type event struct {
 	remove     chan bool
 }
 
-var events = cmap.New()
+var events = cmap.New[*event]()
 
 // CallEvent tries to call the callback with the given uuid
 // after that, it will notify the caller via the channel
@@ -23,11 +23,10 @@ func CallEvent(pack modules.Packet, session *melody.Session) {
 	if len(pack.Event) == 0 {
 		return
 	}
-	v, ok := events.Get(pack.Event)
+	ev, ok := events.Get(pack.Event)
 	if !ok {
 		return
 	}
-	ev := v.(*event)
 	if session != nil && session.UUID != ev.connection {
 		return
 	}
@@ -76,12 +75,11 @@ func AddEvent(fn EventCallback, connUUID, trigger string) {
 // RemoveEvent deletes the event with the given event trigger.
 // The ok will be returned to caller if the event is temp (only once).
 func RemoveEvent(trigger string, ok ...bool) {
-	v, found := events.Get(trigger)
+	ev, found := events.Get(trigger)
 	if !found {
 		return
 	}
 	events.Remove(trigger)
-	ev := v.(*event)
 	if ev.remove != nil {
 		if len(ok) > 0 {
 			ev.remove <- ok[0]
@@ -89,7 +87,6 @@ func RemoveEvent(trigger string, ok ...bool) {
 			ev.remove <- false
 		}
 	}
-	v = nil
 	ev = nil
 }
 

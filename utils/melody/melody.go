@@ -301,27 +301,14 @@ func (m *Melody) SendMultiple(msg []byte, list []string) error {
 
 // GetSessionByUUID returns the session with specified uuid.
 func (m *Melody) GetSessionByUUID(uuid string) (*Session, bool) {
-	val, ok := m.hub.sessions.Get(uuid)
-	if !ok {
-		return nil, false
-	}
-	s, ok := val.(*Session)
-	if !ok {
-		m.hub.sessions.Remove(uuid)
-	}
-	return s, ok
+	return m.hub.sessions.Get(uuid)
 }
 
 // IterSessions iterates all sessions.
 func (m *Melody) IterSessions(fn func(uuid string, s *Session) bool) {
 	var invalid []string
-	m.hub.sessions.IterCb(func(uuid string, v interface{}) bool {
-		if s, ok := v.(*Session); !ok {
-			invalid = append(invalid, uuid)
-			return true
-		} else {
-			return fn(uuid, s)
-		}
+	m.hub.sessions.IterCb(func(uuid string, s *Session) bool {
+		return fn(uuid, s)
 	})
 	m.hub.sessions.Remove(invalid...)
 }

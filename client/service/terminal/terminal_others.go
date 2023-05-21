@@ -6,6 +6,7 @@ import (
 	"Spark/client/common"
 	"Spark/modules"
 	"Spark/utils"
+	"Spark/utils/cmap"
 	"encoding/hex"
 	"github.com/creack/pty"
 	"os"
@@ -23,6 +24,7 @@ type terminal struct {
 	cmd      *exec.Cmd
 }
 
+var terminals = cmap.New[*terminal]()
 var defaultShell = ``
 
 func init() {
@@ -88,11 +90,8 @@ func InitTerminal(pack modules.Packet) error {
 }
 
 func InputRawTerminal(input []byte, uuid string) {
-	var session *terminal
-
-	if val, ok := terminals.Get(uuid); ok {
-		session = val.(*terminal)
-	} else {
+	session, ok := terminals.Get(uuid)
+	if !ok {
 		return
 	}
 	session.pty.Write(input)
@@ -165,10 +164,9 @@ func KillTerminal(pack modules.Packet) {
 	} else {
 		uuid = val.(string)
 	}
-	if val, ok := terminals.Get(uuid); !ok {
+	session, ok := terminals.Get(uuid)
+	if !ok {
 		return
-	} else {
-		session = val.(*terminal)
 	}
 	terminals.Remove(uuid)
 	data, _ := utils.JSON.Marshal(modules.Packet{Act: `TERMINAL_QUIT`, Msg: `${i18n|TERMINAL.SESSION_CLOSED}`})
@@ -180,18 +178,16 @@ func KillTerminal(pack modules.Packet) {
 
 func PingTerminal(pack modules.Packet) {
 	var termUUID string
-	var termSession *terminal
 	if val, ok := pack.GetData(`terminal`, reflect.String); !ok {
 		return
 	} else {
 		termUUID = val.(string)
 	}
-	if val, ok := terminals.Get(termUUID); !ok {
+	session, ok := terminals.Get(termUUID)
+	if !ok {
 		return
-	} else {
-		termSession = val.(*terminal)
-		termSession.lastPack = utils.Unix
 	}
+	session.lastPack = utils.Unix
 }
 
 func doKillTerminal(terminal *terminal) {
@@ -234,11 +230,10 @@ func healthCheck() {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		queue := make([]string, 0)
-		terminals.IterCb(func(uuid string, t any) bool {
-			termSession := t.(*terminal)
-			if timestamp-termSession.lastPack > MaxInterval {
+		terminals.IterCb(func(uuid string, session *terminal) bool {
+			if timestamp-session.lastPack > MaxInterval {
 				queue = append(queue, uuid)
-				doKillTerminal(termSession)
+				doKillTerminal(session)
 			}
 			return true
 		})

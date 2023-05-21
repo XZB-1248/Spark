@@ -5,7 +5,7 @@ import (
 )
 
 type hub struct {
-	sessions   cmap.ConcurrentMap
+	sessions   cmap.ConcurrentMap[string, *Session]
 	queue      chan *envelope
 	register   chan *Session
 	unregister chan *Session
@@ -15,7 +15,7 @@ type hub struct {
 
 func newHub() *hub {
 	return &hub{
-		sessions:   cmap.New(),
+		sessions:   cmap.New[*Session](),
 		queue:      make(chan *envelope),
 		register:   make(chan *Session),
 		unregister: make(chan *Session),
@@ -38,19 +38,16 @@ loop:
 			if len(m.list) > 0 {
 				for _, uuid := range m.list {
 					if s, ok := h.sessions.Get(uuid); ok {
-						s := s.(*Session)
 						s.writeMessage(m)
 					}
 				}
 			} else if m.filter == nil {
-				h.sessions.IterCb(func(uuid string, v interface{}) bool {
-					s := v.(*Session)
+				h.sessions.IterCb(func(uuid string, s *Session) bool {
 					s.writeMessage(m)
 					return true
 				})
 			} else {
-				h.sessions.IterCb(func(uuid string, v interface{}) bool {
-					s := v.(*Session)
+				h.sessions.IterCb(func(uuid string, s *Session) bool {
 					if m.filter(s) {
 						s.writeMessage(m)
 					}
@@ -60,8 +57,7 @@ loop:
 		case m := <-h.exit:
 			var keys []string
 			h.open = false
-			h.sessions.IterCb(func(uuid string, v interface{}) bool {
-				s := v.(*Session)
+			h.sessions.IterCb(func(uuid string, s *Session) bool {
 				s.writeMessage(m)
 				s.Close()
 				keys = append(keys, uuid)

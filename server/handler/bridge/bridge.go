@@ -28,15 +28,14 @@ type Bridge struct {
 	OnFinish func(bridge *Bridge)
 }
 
-var bridges = cmap.New()
+var bridges = cmap.New[*Bridge]()
 
 func init() {
 	go func() {
 		for now := range time.NewTicker(15 * time.Second).C {
 			var queue []string
 			timestamp := now.Unix()
-			bridges.IterCb(func(k string, v any) bool {
-				b := v.(*Bridge)
+			bridges.IterCb(func(k string, b *Bridge) bool {
 				if timestamp-b.creation > 60 && !b.using {
 					b.lock.Lock()
 					if b.Src != nil && b.Src.Request.Body != nil {
@@ -63,12 +62,12 @@ func CheckBridge(ctx *gin.Context) *Bridge {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return nil
 	}
-	val, ok := bridges.Get(form.Bridge)
+	b, ok := bridges.Get(form.Bridge)
 	if !ok {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_BRIDGE_ID}`})
 		return nil
 	}
-	return val.(*Bridge)
+	return b
 }
 
 func BridgePush(ctx *gin.Context) {
@@ -218,12 +217,11 @@ func AddBridgeWithDst(ext any, uuid string, Dst *gin.Context) *Bridge {
 }
 
 func RemoveBridge(uuid string) {
-	val, ok := bridges.Get(uuid)
+	b, ok := bridges.Get(uuid)
 	if !ok {
 		return
 	}
 	bridges.Remove(uuid)
-	b := val.(*Bridge)
 	if b.Src != nil && b.Src.Request.Body != nil {
 		b.Src.Request.Body.Close()
 	}

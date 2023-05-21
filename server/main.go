@@ -32,7 +32,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var blocked = cmap.New()
+var blocked = cmap.New[int64]()
 var lastRequest = time.Now().Unix()
 
 func main() {
@@ -212,14 +212,13 @@ func wsOnMessageBinary(session *melody.Session, data []byte) {
 }
 
 func wsOnDisconnect(session *melody.Session) {
-	if val, ok := common.Devices.Get(session.UUID); ok {
-		deviceInfo := val.(*modules.Device)
-		terminal.CloseSessionsByDevice(deviceInfo.ID)
-		desktop.CloseSessionsByDevice(deviceInfo.ID)
+	if device, ok := common.Devices.Get(session.UUID); ok {
+		terminal.CloseSessionsByDevice(device.ID)
+		desktop.CloseSessionsByDevice(device.ID)
 		common.Info(nil, `CLIENT_OFFLINE`, ``, ``, map[string]any{
 			`device`: map[string]any{
-				`name`: deviceInfo.Hostname,
-				`ip`:   deviceInfo.WAN,
+				`name`: device.Hostname,
+				`ip`:   device.WAN,
 			},
 		})
 	} else {
@@ -289,10 +288,9 @@ func pingDevice(s *melody.Session) {
 	trigger := utils.GetStrUUID()
 	common.SendPack(modules.Packet{Act: `PING`, Event: trigger}, s)
 	common.AddEventOnce(func(packet modules.Packet, session *melody.Session) {
-		val, ok := common.Devices.Get(s.UUID)
+		device, ok := common.Devices.Get(s.UUID)
 		if ok {
-			deviceInfo := val.(*modules.Device)
-			deviceInfo.Latency = uint(time.Now().UnixMilli()-t) / 2
+			device.Latency = uint(time.Now().UnixMilli()-t) / 2
 		}
 	}, s.UUID, trigger, 3*time.Second)
 }
@@ -300,12 +298,12 @@ func pingDevice(s *melody.Session) {
 func checkAuth() gin.HandlerFunc {
 	// Token as key and update timestamp as value.
 	// Stores authenticated tokens.
-	tokens := cmap.New()
+	tokens := cmap.New[int64]()
 	go func() {
 		for now := range time.NewTicker(60 * time.Second).C {
 			var queue []string
-			tokens.IterCb(func(key string, v any) bool {
-				if now.Unix()-v.(int64) > 1800 {
+			tokens.IterCb(func(key string, t int64) bool {
+				if now.Unix()-t > 1800 {
 					queue = append(queue, key)
 				}
 				return true
@@ -313,8 +311,8 @@ func checkAuth() gin.HandlerFunc {
 			tokens.Remove(queue...)
 			queue = nil
 
-			blocked.IterCb(func(addr string, v any) bool {
-				if now.Unix() > v.(int64) {
+			blocked.IterCb(func(addr string, t int64) bool {
+				if now.Unix() > t {
 					queue = append(queue, addr)
 				}
 				return true
@@ -347,7 +345,7 @@ func checkAuth() gin.HandlerFunc {
 		if !passed {
 			addr := common.GetRealIP(ctx)
 			if expire, ok := blocked.Get(addr); ok {
-				if now < expire.(int64) {
+				if now < expire {
 					ctx.AbortWithStatusJSON(http.StatusTooManyRequests, modules.Packet{Code: 1})
 					return
 				}

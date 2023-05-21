@@ -62,7 +62,7 @@ const imageQuality = 70
 
 var lock = &sync.Mutex{}
 var working = false
-var sessions = cmap.New()
+var sessions = cmap.New[*session]()
 var prevDesktop *image.RGBA
 var displayBounds image.Rectangle
 var errNoImage = errors.New(`DESKTOP.NO_IMAGE_YET`)
@@ -127,8 +127,7 @@ func worker() {
 }
 
 func sendImageDiff(diff []*[]byte) {
-	sessions.IterCb(func(uuid string, t any) bool {
-		desktop := t.(*session)
+	sessions.IterCb(func(uuid string, desktop *session) bool {
 		desktop.lock.Lock()
 		if !desktop.escape {
 			if len(desktop.channel) >= frameBuffer {
@@ -146,9 +145,8 @@ func sendImageDiff(diff []*[]byte) {
 
 func quitAllDesktop(info string) {
 	keys := make([]string, 0)
-	sessions.IterCb(func(uuid string, t any) bool {
+	sessions.IterCb(func(uuid string, desktop *session) bool {
 		keys = append(keys, uuid)
-		desktop := t.(*session)
 		desktop.escape = true
 		desktop.channel <- message{t: 1, info: info}
 		return true
@@ -346,24 +344,23 @@ func PingDesktop(pack modules.Packet) {
 	} else {
 		uuid = val.(string)
 	}
-	if val, ok := sessions.Get(uuid); ok {
-		desktop = val.(*session)
-		desktop.lastPack = utils.Unix
+	desktop, ok := sessions.Get(uuid)
+	if !ok {
+		return
 	}
+	desktop.lastPack = utils.Unix
 }
 
 func KillDesktop(pack modules.Packet) {
 	var uuid string
-	var desktop *session
 	if val, ok := pack.GetData(`desktop`, reflect.String); !ok {
 		return
 	} else {
 		uuid = val.(string)
 	}
-	if val, ok := sessions.Get(uuid); !ok {
+	desktop, ok := sessions.Get(uuid)
+	if !ok {
 		return
-	} else {
-		desktop = val.(*session)
 	}
 	sessions.Remove(uuid)
 	data, _ := utils.JSON.Marshal(modules.Packet{Act: `DESKTOP_QUIT`, Msg: `${i18n|DESKTOP.SESSION_CLOSED}`})
@@ -383,10 +380,9 @@ func GetDesktop(pack modules.Packet) {
 	} else {
 		uuid = val.(string)
 	}
-	if val, ok := sessions.Get(uuid); !ok {
+	desktop, ok := sessions.Get(uuid)
+	if !ok {
 		return
-	} else {
-		desktop = val.(*session)
 	}
 	if !desktop.escape {
 		lock.Lock()
@@ -450,8 +446,7 @@ func healthCheck() {
 		timestamp := now.Unix()
 		// stores sessions to be disconnected
 		keys := make([]string, 0)
-		sessions.IterCb(func(uuid string, t any) bool {
-			desktop := t.(*session)
+		sessions.IterCb(func(uuid string, desktop *session) bool {
 			if timestamp-desktop.lastPack > MaxInterval {
 				keys = append(keys, uuid)
 			}

@@ -17,7 +17,7 @@ import (
 const MaxMessageSize = (2 << 15) + 1024
 
 var Melody = melody.New()
-var Devices = cmap.New()
+var Devices = cmap.New[*modules.Device]()
 
 func SendPackByUUID(pack modules.Packet, uuid string) bool {
 	session, ok := Melody.GetSessionByUUID(uuid)
@@ -164,8 +164,7 @@ func CheckDevice(deviceID, connUUID string) (string, bool) {
 		}
 	} else {
 		tempConnUUID := ``
-		Devices.IterCb(func(uuid string, v any) bool {
-			device := v.(*modules.Device)
+		Devices.IterCb(func(uuid string, device *modules.Device) bool {
 			if device.ID == deviceID {
 				tempConnUUID = uuid
 				return false

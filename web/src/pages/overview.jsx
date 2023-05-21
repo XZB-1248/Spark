@@ -394,7 +394,7 @@ function overview(props) {
 		<>
 			<Image
 				preview={{
-					visible: screenBlob,
+					visible: !!screenBlob,
 					src: screenBlob,
 					onVisibleChange: () => {
 						URL.revokeObjectURL(screenBlob);
