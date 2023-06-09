@@ -196,15 +196,6 @@ Finally, run the executable file in that directory.
 
 ---
 
-## Sponsor
-
-The project is free and open to the public, and its growth cannot be achieved without your support. Please consider sponsoring me to make this project even better.
-
-You can sponsor me via WeChat.
-![sponsor](./docs/sponsor.jpeg)
-
----
-
 ## Dependencies
 
 Spark contains many third-party open-source projects.
