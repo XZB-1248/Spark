@@ -24,6 +24,14 @@ server forever.
 
 ---
 
+## Notice
+
+Due to my busy schedule with personal matters and the abuse of this project for cyberattacks, it's going to reach its end of life and will be archived very soon.
+
+I will no longer provide any support for this project, as it is officially abandoned.
+
+---
+
 ## Disclaimer
 
 **THIS PROJECT, ITS SOURCE CODE, AND ITS RELEASES SHOULD ONLY BE USED FOR EDUCATIONAL PURPOSES.**
