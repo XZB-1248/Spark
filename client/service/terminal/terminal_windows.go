@@ -68,7 +68,7 @@ func InitTerminal(pack modules.Packet) error {
 	readSender := func(rc io.ReadCloser) {
 		bufSize := 1024
 		for !session.escape {
-			buffer := make([]byte, 1024)
+			buffer := make([]byte, bufSize)
 			n, err := rc.Read(buffer)
 			buffer = buffer[:n]
 
@@ -89,7 +89,10 @@ func InitTerminal(pack modules.Packet) error {
 
 			session.lastPack = utils.Unix
 			if err != nil {
-				session.escape = true
+				if !session.escape {
+					session.escape = true
+					doKillTerminal(session)
+				}
 				data, _ := utils.JSON.Marshal(modules.Packet{Act: `TERMINAL_QUIT`})
 				data = utils.XOR(data, common.WSConn.GetSecret())
 				common.WSConn.SendRawData(session.rawEvent, data, 21, 01)
@@ -166,6 +169,7 @@ func KillTerminal(pack modules.Packet) {
 	common.WSConn.SendRawData(session.rawEvent, data, 21, 01)
 	session.escape = true
 	session.rawEvent = nil
+	doKillTerminal(session)
 }
 
 func PingTerminal(pack modules.Packet) {
