@@ -27,7 +27,6 @@ function overview(props) {
 	const [terminal, setTerminal] = useState(false);
 	const [screenBlob, setScreenBlob] = useState('');
 	const [dataSource, setDataSource] = useState([]);
-	const [columnsState, setColumnsState] = useState(getInitColumnsState());
 
 	const columns = [
 		{
@@ -178,26 +177,6 @@ function overview(props) {
 			};
 		}
 	}, [execute, desktop, procMgr, explorer, generate, terminal]);
-
-	function getInitColumnsState() {
-		let data = localStorage.getItem(`columnsState`);
-		if (data !== null) {
-			let stateMap = {};
-			try {
-				stateMap = JSON.parse(data);
-			} catch (e) {
-				stateMap = {};
-			}
-			return stateMap
-		} else {
-			localStorage.setItem(`columnsState`, JSON.stringify({}));
-			return {};
-		}
-	}
-	function saveColumnsState(stateMap) {
-		setColumnsState(stateMap);
-		localStorage.setItem(`columnsState`, JSON.stringify(stateMap));
-	}
 
 	function renderCPUStat(cpu) {
 		let { model, usage, cores } = cpu;
@@ -459,8 +438,8 @@ function overview(props) {
 				options={options}
 				columns={columns}
 				columnsState={{
-					value: columnsState,
-					onChange: saveColumnsState
+					persistenceKey: 'columnsState',
+					persistenceType: 'localStorage'
 				}}
 				onLoadingChange={setLoading}
 				loading={loading}
