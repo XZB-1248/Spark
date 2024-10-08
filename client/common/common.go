@@ -34,7 +34,7 @@ func CreateConn(wsConn *ws.Conn, secret []byte) *Conn {
 }
 
 func CreateClient() *req.Client {
-	return req.C().SetUserAgent(`SPARK COMMIT: ` + config.COMMIT)
+	return req.C().SetUserAgent(`SPARK COMMIT: ` + config.Commit)
 }
 
 func (wsConn *Conn) SendData(data []byte) error {
