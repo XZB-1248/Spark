@@ -400,7 +400,7 @@ func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
 		return false
 	}
 
-	etag := fmt.Sprintf(`"%x-%s"`, []byte(filename), config.COMMIT)
+	etag := fmt.Sprintf(`"%x-%s"`, []byte(filename), config.Commit)
 	if headers.Get(`If-None-Match`) == etag {
 		ctx.Status(http.StatusNotModified)
 		return true
@@ -441,7 +441,7 @@ func serveGzip(ctx *gin.Context, statikFS http.FileSystem) bool {
 func checkCache(ctx *gin.Context, _ http.FileSystem) bool {
 	filename := path.Clean(ctx.Request.RequestURI)
 
-	etag := fmt.Sprintf(`"%x-%s"`, []byte(filename), config.COMMIT)
+	etag := fmt.Sprintf(`"%x-%s"`, []byte(filename), config.Commit)
 	if ctx.Request.Header.Get(`If-None-Match`) == etag {
 		ctx.Status(http.StatusNotModified)
 		return true

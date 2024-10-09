@@ -21,8 +21,8 @@ type log struct {
 	Days  uint   `json:"days"`
 }
 
-// COMMIT is hash of this commit, for auto upgrade.
-var COMMIT = ``
+// Commit is hash of this commit, for auto upgrade.
+var Commit = ``
 var Config config
 var BuiltPath = `./built/%v_%v`
 

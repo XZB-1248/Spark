@@ -117,7 +117,7 @@ func CheckUpdate(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, modules.Packet{Code: -1, Msg: `${i18n|COMMON.INVALID_PARAMETER}`})
 		return
 	}
-	if form.Commit == config.COMMIT {
+	if form.Commit == config.Commit {
 		ctx.JSON(http.StatusOK, modules.Packet{Code: 0})
 		common.Warn(ctx, `CLIENT_UPDATE`, `success`, `latest`, map[string]any{
 			`client`: map[string]any{
@@ -125,7 +125,7 @@ func CheckUpdate(ctx *gin.Context) {
 				`arch`:   form.Arch,
 				`commit`: form.Commit,
 			},
-			`server`: config.COMMIT,
+			`server`: config.Commit,
 		})
 		return
 	}
@@ -138,7 +138,7 @@ func CheckUpdate(ctx *gin.Context) {
 				`arch`:   form.Arch,
 				`commit`: form.Commit,
 			},
-			`server`: config.COMMIT,
+			`server`: config.Commit,
 		})
 		return
 	}
@@ -153,7 +153,7 @@ func CheckUpdate(ctx *gin.Context) {
 				`arch`:   form.Arch,
 				`commit`: form.Commit,
 			},
-			`server`: config.COMMIT,
+			`server`: config.Commit,
 		})
 		return
 	}
@@ -166,7 +166,7 @@ func CheckUpdate(ctx *gin.Context) {
 				`arch`:   form.Arch,
 				`commit`: form.Commit,
 			},
-			`server`: config.COMMIT,
+			`server`: config.Commit,
 		})
 		return
 	}
@@ -179,7 +179,7 @@ func CheckUpdate(ctx *gin.Context) {
 				`arch`:   form.Arch,
 				`commit`: form.Commit,
 			},
-			`server`: config.COMMIT,
+			`server`: config.Commit,
 		})
 		return
 	}
@@ -190,10 +190,10 @@ func CheckUpdate(ctx *gin.Context) {
 			`arch`:   form.Arch,
 			`commit`: form.Commit,
 		},
-		`server`: config.COMMIT,
+		`server`: config.Commit,
 	})
 
-	ctx.Header(`Spark-Commit`, config.COMMIT)
+	ctx.Header(`Spark-Commit`, config.Commit)
 	ctx.Header(`Accept-Ranges`, `none`)
 	ctx.Header(`Content-Transfer-Encoding`, `binary`)
 	ctx.Header(`Content-Type`, `application/octet-stream`)
