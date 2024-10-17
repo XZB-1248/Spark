@@ -196,6 +196,12 @@ Finally, run the executable file in that directory.
 
 ---
 
+## Custom Features
+
+If you need to customize some features, please contact me via [**i@1248.ink**](mailto:i@1248.ink).
+
+---
+
 ## Dependencies
 
 Spark contains many third-party open-source projects.
