@@ -112,14 +112,14 @@ func reportWS(wsConn *common.Conn) error {
 }
 
 func checkUpdate(wsConn *common.Conn) error {
-	if len(config.COMMIT) == 0 {
+	if len(config.Commit) == 0 {
 		return nil
 	}
 	resp, err := common.HTTP.R().
 		SetBody(config.ConfigBuffer).
 		SetQueryParam(`os`, runtime.GOOS).
 		SetQueryParam(`arch`, runtime.GOARCH).
-		SetQueryParam(`commit`, config.COMMIT).
+		SetQueryParam(`commit`, config.Commit).
 		SetHeader(`Secret`, wsConn.GetSecretHex()).
 		Send(`POST`, config.GetBaseURL(false)+`/api/client/update`)
 	if err != nil {
