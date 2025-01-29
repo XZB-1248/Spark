@@ -18,7 +18,7 @@
 |-----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 
 | [![GitHub downloads](https://img.shields.io/github/downloads/XZB-1248/Spark/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases) | [![GitHub release (latest by date)](https://img.shields.io/github/downloads/XZB-1248/Spark/latest/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases/latest) |
-|-|-|
+|---------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ---
 
@@ -156,6 +156,59 @@ go mod download
 mkdir ./releases
 ./scripts/build.server.sh
 ```
+## Custom Features
+
+If you need to customize some features, please contact me via [**i@1248.ink**](mailto:i@1248.ink).
+
+---
+
+## Dependencies
+
+Spark contains many third-party open-source projects.
+
+Lists of dependencies can be found at `go.mod` and `package.json`.
+
+Some major dependencies are listed below.
+
+### Back-end
+
+* [Go](https://github.com/golang/go) ([License](https://github.com/golang/go/blob/master/LICENSE))
+
+* [gin-gonic/gin](https://github.com/gin-gonic/gin) (MIT License)
+
+* [imroc/req](https://github.com/imroc/req) (MIT License)
+
+* [kbinani/screenshot](https://github.com/kbinani/screenshot) (MIT License)
+
+* [shirou/gopsutil](https://github.com/shirou/gopsutil) ([License](https://github.com/shirou/gopsutil/blob/master/LICENSE))
+
+* [gorilla/websocket](https://github.com/gorilla/websocket) (BSD-2-Clause License)
+
+* [orcaman/concurrent-map](https://github.com/orcaman/concurrent-map) (MIT License)
+
+### Front-end
+
+* [React](https://github.com/facebook/react) (MIT License)
+
+* [Ant-Design](https://github.com/ant-design/ant-design) (MIT License)
+
+* [axios](https://github.com/axios/axios) (MIT License)
+
+* [xterm.js](https://github.com/xtermjs/xterm.js) (MIT License)
+
+* [crypto-js](https://github.com/brix/crypto-js) (MIT License)
+
+### Acknowledgements
+
+* [natpass](https://github.com/lwch/natpass) (MIT License)
+* Image difference algorithm inspired by natpass.
+
+---
+
+### Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/XZB-1248/Spark.svg)](https://starchart.cc/XZB-1248/Spark)
+
 
 ---
 
