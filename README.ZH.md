@@ -2,7 +2,7 @@
 
 ---
 
-<h1 align="center">Spark</h1>
+<h1 >Spark</h1>
 
 **Spark** 是一个免费、安全、开源、基于网页、跨平台且功能丰富的远程管理工具，可以让你通过浏览器，随时随地管理设备。
 
@@ -10,15 +10,13 @@
 
 ---
 
-<div align="center">
 
-|![GitHub repo size](https://img.shields.io/github/repo-size/DGP-Studio/Snap.Genshin?style=flat-square)|![GitHub issues](https://img.shields.io/github/issues/XZB-1248/Spark?style=flat-square)|![GitHub closed issues](https://img.shields.io/github/issues-closed/XZB-1248/Spark?style=flat-square)|
-|-|-|-|
 
-|[![GitHub downloads](https://img.shields.io/github/downloads/XZB-1248/Spark/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases)|[![GitHub release (latest by date)](https://img.shields.io/github/downloads/XZB-1248/Spark/latest/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases/latest)|
-|-|-|
+| ![GitHub repo size](https://img.shields.io/github/repo-size/DGP-Studio/Snap.Genshin?style=flat-square) | ![GitHub issues](https://img.shields.io/github/issues/XZB-1248/Spark?style=flat-square) | ![GitHub closed issues](https://img.shields.io/github/issues-closed/XZB-1248/Spark?style=flat-square) |
+|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 
-</div>
+| [![GitHub downloads](https://img.shields.io/github/downloads/XZB-1248/Spark/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases) | [![GitHub release (latest by date)](https://img.shields.io/github/downloads/XZB-1248/Spark/latest/total?style=flat-square)](https://github.com/XZB-1248/Spark/releases/latest) |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ---
 
@@ -71,14 +69,14 @@
 * `listen` `必填`，格式为 `IP:端口`
 * `salt` `必填`，修改后需要重新部署客户端，长度不大于24
 * `auth` `选填`，格式为 `用户名:密码`
-    * 密码强烈建议使用hash加密
-    * 格式为`$算法$密文`，例如`$sha256$11223344556677AABBCCDDEEFF`
-    * 支持的算法有：`sha256`，`sha512`和`bcrypt`
-    * 如果不按照格式填写，将会被视为明文密码
+  * 密码强烈建议使用hash加密
+  * 格式为`$算法$密文`，例如`$sha256$11223344556677AABBCCDDEEFF`
+  * 支持的算法有：`sha256`，`sha512`和`bcrypt`
+  * 如果不按照格式填写，将会被视为明文密码
 * `log` `选填`，日志配置
-    * `level` `选填`，可选值：`disable`, `fatal`, `error`, `warn`, `info`, `debug`
-    * `path` `选填`，默认为`./logs`
-    * `days` `选填`，默认为`7`
+  * `level` `选填`，可选值：`disable`, `fatal`, `error`, `warn`, `info`, `debug`
+  * `path` `选填`，默认为`./logs`
+  * `days` `选填`，默认为`7`
 
 ---
 
