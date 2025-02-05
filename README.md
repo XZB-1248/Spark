@@ -2,7 +2,7 @@
 
 ---
 
-<h1 >Spark</h1>
+<h1>Spark</h1>
 
 **[Spark](https://github.com/XZB-1248/Spark)** is a free, safe, open-source, web-based, cross-platform, and full-featured RAT (Remote Administration Tool) that allows you to control all your devices via browser anywhere.
 
@@ -156,6 +156,7 @@ go mod download
 mkdir ./releases
 ./scripts/build.server.sh
 ```
+
 ## Custom Features
 
 If you need to customize some features, please contact me via [**i@1248.ink**](mailto:i@1248.ink).
