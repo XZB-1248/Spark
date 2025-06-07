@@ -204,6 +204,8 @@ Some major dependencies are listed below.
 * [natpass](https://github.com/lwch/natpass) (MIT License)
 * Image difference algorithm inspired by natpass.
 
+[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
+
 ---
 
 ### Stargazers over time
