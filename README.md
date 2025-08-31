@@ -204,6 +204,7 @@ Some major dependencies are listed below.
 * [natpass](https://github.com/lwch/natpass) (MIT License)
 * Image difference algorithm inspired by natpass.
 
+[![VPS.Town](https://vps.town/static/images/sponsor.png)](https://vps.town "VPS.Town - Trust, Effortlessly. Your Cloud, Reimagined.")
 [![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
 
 ---
