@@ -2,7 +2,10 @@
 
 ---
 
-<h1>Spark</h1>
+<h1>
+  <img src="./docs/logo.png" alt="Spark" width="60" align="absmiddle"/>
+  Spark
+</h1>
 
 **Spark** 是一个免费、安全、开源、基于网页、跨平台且功能丰富的远程管理工具，可以让你通过浏览器，随时随地管理设备。
 

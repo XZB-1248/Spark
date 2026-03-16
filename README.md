@@ -2,7 +2,10 @@
 
 ---
 
-<h1>Spark</h1>
+<h1>
+  <img src="./docs/logo.png" alt="Spark" width="60" align="absmiddle"/>
+  Spark
+</h1>
 
 **[Spark](https://github.com/XZB-1248/Spark)** is a free, safe, open-source, web-based, cross-platform, and full-featured RAT (Remote Administration Tool) that allows you to control all your devices via browser anywhere.
 
